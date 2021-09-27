@@ -45,3 +45,7 @@ Concise rundown of when assignments are due to better inform the timeline for pr
 1. Assignment 1 (total 10%) **11th October -> 22nd October**
 2. Assignment 2 (total 20%) **25th October -> 8th November**
 3. Assignment 3 (total 20%) **8th November -> 22nd November**
+
+### Timeline
+
+**30th Sep.** - **7th Oct.** - **11th Oct. (14th Oct. - 18th Oct. - 21st Oct.) -> 22nd Oct.** - **25th Oct. (1st Nov. - 4th Nov. - 8th Nov.) -> 8th Nov. (11th Nov. - 12th Nov. - 18th Nov.) -> 19th Nov. -> 22nd Nov. (25th Nov. - 3rd Dec. - 9th Dec.) -> 10th Dec.**

@@ -1,3 +1,7 @@
 # We ignore any generated PDF
 *.pdf
 
+
+
+# Smommit ignore
+.smommit/
