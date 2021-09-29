@@ -50,6 +50,20 @@ I plan to start writing the code for the interpreter by the end of the first ter
 I plan to start writing the final report at the beginning of the second term (10th January) up until the deadline date. This will provide me with enough time to submit a complete draft of my report by the 18th February. It will also allow me to get started with programming so that issues I face during programming will be fresh in my mind whilst writing the report.<br/>
 It will also make the professional issues section easier as by that point I will have been fully engrossed in any professional issues that may occur in this field.
 
+## Research
+
+I have timetabled in reading materials so that I can gain a better understanding of the subject matter. The following books are the ones that I will read as thoroughly as possible within the given time frame.
+
+### Aho, A., Lam, M., Sethi, R. and Ullman, J., 2014. *Compilers; Principles, Techniques, and Tools*, By Alfred V.
+
+This will aid in writing both of my reports as it offers the theory and techniques behind compiler writing.<br/>
+_Timeline: **5th - 20th October**_
+
+### Wirth, N., 1976. *Algorithms + Data Structures = Programs*. p.Chapter 5, Appendix B.
+
+Wirth's book on algorithms and data structures also has a chapter on compilers and an appendix which includes Pascal syntax diagrams. These should help me understand the history of compilers as well as giving me examples of syntax diagrams.<br/>
+_Timeline: **5th - 10th October**_
+
 ## Risks
 
 ### The base set of language features might be too easy or too difficult to implement
@@ -98,3 +112,7 @@ _**Gives a high-level rundown of how parsing works and capabilities of parsers**
 _**Research into LR parsers to aid section on report on derivations**_
 1. Cs.ecu.edu. 2021. CSCI 5220: Precedence and associativity. [online] Available at: <http://www.cs.ecu.edu/karl/5220/spr16/Notes/CFG/precedence.html> [Accessed 26 September 2021].<br/>
 _**Research into precedence and associativity. Again to aid section of report on derivations**_
+1. Aho, A., Lam, M., Sethi, R. and Ullman, J., 2014. Compilers; Principles, Techniques and Tools, By Alfred V..<br/>
+_**The first of the reading materials mentioned in the [Research](#research) section**_
+1. Wirth, N., 1976. Algorithms + Data Structures = Programs. p.Chapter 5, Appendix B.<br/>
+_**The second of the reading materials mentioned in the [Research](#research) section**_
