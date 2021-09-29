@@ -98,21 +98,21 @@ These options would mean switching the target language to either C, Java or Pyth
 
 ## Material Covered for Project Plan
 
-1. Johnstone, A., n.d. Software Language Engineering. 1st ed. (As well as supplementing slides)<br/>
+1. Johnstone, A., n.d. *Software Language Engineering*. 1st ed. (As well as supplementing slides)<br/>
 _**For understanding of key subject matters and terminology**_
-1. Chong, S., 2018. CS153: Compilers Lecture 6: LR Parsing. [online] Groups.seas.harvard.edu. Available at: <https://groups.seas.harvard.edu/courses/cs153/2018fa/lectures/Lec06-LR-Parsing.pdf> [Accessed 19 September 2021].<br/>
+1. Chong, S., 2018. *CS153: Compilers Lecture 6: LR Parsing*. [online] Groups.seas.harvard.edu. Available at: <https://groups.seas.harvard.edu/courses/cs153/2018fa/lectures/Lec06-LR-Parsing.pdf> [Accessed 19 September 2021].<br/>
 _**Research into LR parsing**_
-1. Fiore, M., 2010. Lecture Notes on Regular Languages and Finite Automata for Part IA of the Computer Science Tripos. [online] Cl.cam.ac.uk. Available at: <https://www.cl.cam.ac.uk/teaching/1011/RLFA/LectureNotes.pdf> [Accessed 19 September 2021].<br/>
+1. Fiore, M., 2010. *Lecture Notes on Regular Languages and Finite Automata for Part IA of the Computer Science Tripos*. [online] Cl.cam.ac.uk. Available at: <https://www.cl.cam.ac.uk/teaching/1011/RLFA/LectureNotes.pdf> [Accessed 19 September 2021].<br/>
 _**Recap of finite automata theory taught in second year**_
-1. Kling, F., 2017. AST explorer. [online] Astexplorer.net. Available at: <https://astexplorer.net/> [Accessed 19 September 2021].<br/>
+1. Kling, F., 2017. *AST explorer*. [online] Astexplorer.net. Available at: <https://astexplorer.net/> [Accessed 19 September 2021].<br/>
 _**A Javascript AST generator. Gave me some insight as to what tokens I should be parsing and how an AST tree should look like**_
-1. Kun, J., 2019. A Working Mathematician’s Guide to Parsing. [online] Math ∩ Programming. Available at: <https://jeremykun.com/2019/04/20/a-working-mathematicians-guide-to-parsing/> [Accessed 19 September 2021].<br/>
+1. Kun, J., 2019. *A Working Mathematician’s Guide to Parsing*. [online] Math ∩ Programming. Available at: <https://jeremykun.com/2019/04/20/a-working-mathematicians-guide-to-parsing/> [Accessed 19 September 2021].<br/>
 _**Gives a high-level rundown of how parsing works and capabilities of parsers**_
-1. En.wikipedia.org. 2021. LR parser - Wikipedia. [online] Available at: <https://en.wikipedia.org/wiki/LR_parser> [Accessed 19 September 2021].<br/>
+1. En.wikipedia.org. 2021. *LR parser - Wikipedia*. [online] Available at: <https://en.wikipedia.org/wiki/LR_parser> [Accessed 19 September 2021].<br/>
 _**Research into LR parsers to aid section on report on derivations**_
-1. Cs.ecu.edu. 2021. CSCI 5220: Precedence and associativity. [online] Available at: <http://www.cs.ecu.edu/karl/5220/spr16/Notes/CFG/precedence.html> [Accessed 26 September 2021].<br/>
+1. Cs.ecu.edu. 2021. *CSCI 5220: Precedence and associativity*. [online] Available at: <http://www.cs.ecu.edu/karl/5220/spr16/Notes/CFG/precedence.html> [Accessed 26 September 2021].<br/>
 _**Research into precedence and associativity. Again to aid section of report on derivations**_
-1. Aho, A., Lam, M., Sethi, R. and Ullman, J., 2014. Compilers; Principles, Techniques and Tools, By Alfred V..<br/>
+1. Aho, A., Lam, M., Sethi, R. and Ullman, J., 2014. *Compilers; Principles, Techniques and Tools*, By Alfred V..<br/>
 _**The first of the reading materials mentioned in the [Research](#research) section**_
-1. Wirth, N., 1976. Algorithms + Data Structures = Programs. p.Chapter 5, Appendix B.<br/>
+1. Wirth, N., 1976. *Algorithms + Data Structures = Programs*. p.Chapter 5, Appendix B.<br/>
 _**The second of the reading materials mentioned in the [Research](#research) section**_
