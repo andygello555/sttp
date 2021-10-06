@@ -17,15 +17,46 @@ type Edge struct {
 
 // Graph is a wrapper for all graph methods.
 type Graph struct {
-	StateCount State
-	Graph      AdjacencyList
+	// A counter for assigning numbers to States.
+	StateCount         State
+	// The starting state. Defaults to 0.
+	Start              State
+	// A set of accepting states.
+	AcceptingStates    map[State]bool
+	// The adjacency list used to store edges.
+	Graph              AdjacencyList
+	EpsilonTransitions int
 }
 
 func InitGraph() *Graph	{
 	return &Graph{
 		0,
+		0,
+		make(map[State]bool),
 		make(AdjacencyList),
+		0,
 	}
+}
+
+func Thompson(regexString string) (graph *Graph, start State, end State, err error) {
+	graph = InitGraph()
+	err, regex := Parse(regexString)
+	if err != nil {
+		return graph, start, end, err
+	}
+	start, end = regex.Thompson(graph)
+	// We set graph.Start to be the start state returned by Thompson's construction as well as adding the end state to
+	// the set of accepting states.
+	graph.Start = start
+	graph.AcceptingStates[end] = true
+	//b, err := json.MarshalIndent(graph, "", "  ")
+	//if err != nil {
+	//	fmt.Println("error:", err)
+	//}
+	//fmt.Println("\nAdjacency Map:")
+	//fmt.Println(string(b))
+	//fmt.Println("Start, end =", start, end)
+	return graph, start, end, nil
 }
 
 // AddEdge adds an edge from the outgoing State into the ingoing State.
@@ -33,6 +64,9 @@ func (g *Graph) AddEdge(outgoing State, ingoing State, read string) {
 	if _, ok := g.Graph[outgoing]; !ok {
 		// If the outgoing state does not yet exist in the map then we will construct the array
 		g.Graph[outgoing] = make([]Edge, 0)
+	}
+	if read == EPSILON {
+		g.EpsilonTransitions += 1
 	}
 	g.Graph[outgoing] = append(g.Graph[outgoing], Edge{
 		Read:     read,
@@ -79,7 +113,7 @@ func (b *Base) Thompson(graph *Graph) (start State, end State) {
 		start = graph.StateCount
 		end = graph.StateCount + 1
 		graph.StateCount += 2
-		if *(b.Char) == "e" {
+		if *(b.Char) != EPSILON {
 			// If b.Char is "e" we will treat it as EPSILON
 			graph.AddEdge(start, end, *(b.Char))
 		} else {
@@ -100,15 +134,13 @@ func (f *Factor) Thompson(graph *Graph) (start State, end State) {
 }
 
 func (t *Term) Thompson(graph *Graph) (start State, end State) {
+	start, end = t.Factors[0].Thompson(graph)
 	if len(t.Factors) > 1 {
 		// If we have more than one factor we concatenate each factor together
 		for i := 0; i < len(t.Factors) - 1; i++ {
-			start1, end1 := t.Factors[i].Thompson(graph)
-			start2, end2 := t.Factors[i + 1].Thompson(graph)
-			start, end = graph.Concatenation(start1, end1, start2, end2)
+			tempStart, tempEnd := t.Factors[i + 1].Thompson(graph)
+			start, end = graph.Concatenation(start, end, tempStart, tempEnd)
 		}
-	} else {
-		start, end = t.Factors[0].Thompson(graph)
 	}
 	return start, end
 }

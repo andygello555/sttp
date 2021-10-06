@@ -14,20 +14,28 @@ var Lexer = lexer.MustSimple([]lexer.Rule{
 })
 
 type Base struct {
+	Tokens []lexer.Token
+
 	Char  *string `  @Char`
 	Regex *Regex  `| "(" @@ ")"`
 }
 
 type Factor struct {
+	Tokens []lexer.Token
+
 	Base    *Base `@@`
 	Closure bool  `@"*"?`
 }
 
 type Term struct {
+	Tokens []lexer.Token
+
 	Factors []*Factor `@@+`
 }
 
 type Regex struct {
+	Tokens []lexer.Token
+
 	Term  *Term  `@@ ("|"`
 	Regex *Regex `@@)?`
 }

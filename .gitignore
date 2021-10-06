@@ -5,3 +5,6 @@
 
 # Smommit ignore
 .smommit/
+
+*.png
+*.dot
