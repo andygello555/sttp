@@ -15,12 +15,18 @@ func main() {
 		}
 
 		// Save the Thompson's construction graph
-		if err = graph.Visualise(start, "thompsons"); err != nil {
+		if err = graph.Visualise(start, "thompsons", false); err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
 		fmt.Println("Epsilon transitions:", graph.EpsilonTransitions)
 		fmt.Println("States:", graph.StateCount)
+
+		graph.Subset()
+		if err = graph.Visualise(start, "subset", true); err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
 		os.Exit(0)
 	}
 	fmt.Println("No regular expression given")
