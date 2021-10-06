@@ -16,7 +16,7 @@ func (g *Graph) PossibleInputs(states...StateKey) []string {
 	possibleInputs := make(StateSetExistence)
 	for _, state := range states {
 		for _, edge := range g.NFA.Get(state) {
-			if edge.Read != EPSILON {
+			if edge.Read != Epsilon {
 				possibleInputs.Mark(StateKeyString(edge.Read))
 			}
 		}
@@ -41,7 +41,7 @@ func (g *Graph) EClosure(stack...StateKey) (closure *StateSet) {
 		stack = stack[:index]
 		for _, edge := range g.NFA.Get(t) {
 			// For each state with an edge from t to u labeled epsilon and NOT Ingoing IN closureSet
-			if edge.Read == EPSILON && !closureSet.Check(edge.Ingoing) {
+			if edge.Read == Epsilon && !closureSet.Check(edge.Ingoing) {
 				stack = append(stack, edge.Ingoing)
 				closureSet.Mark(edge.Ingoing)
 			}

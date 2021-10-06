@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/goccy/go-graphviz"
 	"github.com/goccy/go-graphviz/cgraph"
-	"strings"
 )
 
 func (g *Graph) Visualise(start StateKey, filePrefix string, dfa bool) error {
@@ -54,14 +53,7 @@ func (g *Graph) Visualise(start StateKey, filePrefix string, dfa bool) error {
 			}
 		} else {
 			// Check if the state contains any of the accepting states in the NFA
-			acceptingState := false
-			for stateKey := range g.AcceptingStates {
-				if strings.Contains(currentState.Key(), stateKey.Key()) {
-					acceptingState = true
-					break
-				}
-			}
-			if acceptingState {
+			if g.CheckIfAccepting(currentState) {
 				startNode.SetShape(cgraph.DoubleOctagonShape)
 			} else if currentState == start {
 				startNode.SetShape(cgraph.PointShape)
@@ -94,7 +86,7 @@ func (g *Graph) Visualise(start StateKey, filePrefix string, dfa bool) error {
 			if graphEdge, err = graph.CreateEdge(edge.Read, startNode, endNode); err != nil {
 				return err
 			}
-			if edge.Read != EPSILON {
+			if edge.Read != Epsilon {
 				graphEdge.SetLabel(edge.Read)
 			} else {
 				graphEdge.SetLabel("ε")

@@ -6,7 +6,7 @@ import (
 	"strconv"
 )
 
-const EPSILON = "e"
+const Epsilon = "e"
 
 // StateKey represents the key used within AdjacencyLists.
 // It wraps both State and StateSet to provide a string key usable in maps.
@@ -55,6 +55,18 @@ func (sse *StateSetExistence) Keys() *StateSet {
 	return &out
 }
 
+func (sse *StateSetExistence) String() string {
+	out := "{"
+	keys := sse.Keys()
+	for i, state := range *keys {
+		out += state.Key()
+		if i != len(*keys) - 1 {
+			out += ", "
+		}
+	}
+	return out + "}"
+}
+
 // Mark a StateKey in the set. The given StateKey will be converted into a string and then cast into the StateKeyString
 // type.
 func (sse *StateSetExistence) Mark(state StateKey) {
@@ -83,6 +95,16 @@ func (al *AdjacencyList) AddEdge(edge *Edge) {
 		(*al)[StateKeyString(edge.Outgoing.Key())] = make([]Edge, 0)
 	}
 	(*al)[StateKeyString(edge.Outgoing.Key())] = append((*al)[StateKeyString(edge.Outgoing.Key())], *edge)
+}
+
+func (al *AdjacencyList) States() (states []StateKey) {
+	states = make([]StateKey, len(*al))
+	i := 0
+	for key := range *al {
+		states[i] = key
+		i++
+	}
+	return states
 }
 
 // Edge represents an edge within the StateAdjacencyList.
@@ -142,7 +164,7 @@ func Thompson(regexString string) (graph *Graph, start StateKey, end StateKey, e
 
 // AddEdge adds an edge from the outgoing StateKey into the ingoing StateKey, reading the given input.
 func (g *Graph) AddEdge(outgoing StateKey, ingoing StateKey, read string, dfa bool) {
-	if read == EPSILON {
+	if read == Epsilon {
 		g.EpsilonTransitions += 1
 	}
 
@@ -167,15 +189,15 @@ func (g *Graph) Union(start1 State, end1 State, start2 State, end2 State) (start
 	g.StateCount += 2
 
 	// Connect them in the Thompson's construction union format
-	g.AddEdge(start, start1, EPSILON, false)
-	g.AddEdge(start, start2, EPSILON, false)
-	g.AddEdge(end1, end, EPSILON, false)
-	g.AddEdge(end2, end, EPSILON, false)
+	g.AddEdge(start, start1, Epsilon, false)
+	g.AddEdge(start, start2, Epsilon, false)
+	g.AddEdge(end1, end, Epsilon, false)
+	g.AddEdge(end2, end, Epsilon, false)
 	return start, end
 }
 
 func (g *Graph) Concatenation(start1 State, end1 State, start2 State, end2 State) (start State, end State) {
-	g.AddEdge(end1, start2, EPSILON, false)
+	g.AddEdge(end1, start2, Epsilon, false)
 	return start1, end2
 }
 
@@ -185,10 +207,10 @@ func (g *Graph) Closure(start1 State, end1 State) (start State, end State) {
 	g.StateCount += 2
 
 	// Connect them in the Thompson's construction closure format
-	g.AddEdge(start, end, EPSILON, false)    // Skip to end if no input is matched
-	g.AddEdge(start, start1, EPSILON, false) // Skip to start from start
-	g.AddEdge(end1, start1, EPSILON, false)  // Loop back to start to match another input
-	g.AddEdge(end1, end, EPSILON, false)     // Skip to end from end
+	g.AddEdge(start, end, Epsilon, false)    // Skip to end if no input is matched
+	g.AddEdge(start, start1, Epsilon, false) // Skip to start from start
+	g.AddEdge(end1, start1, Epsilon, false)  // Loop back to start to match another input
+	g.AddEdge(end1, end, Epsilon, false)     // Skip to end from end
 	return start, end
 }
 
@@ -198,11 +220,11 @@ func (b *Base) Thompson(graph *Graph) (start State, end State) {
 		start = graph.StateCount
 		end = graph.StateCount + 1
 		graph.StateCount += 2
-		if *(b.Char) != EPSILON {
-			// If b.Char is "e" we will treat it as EPSILON
+		if *(b.Char) != Epsilon {
+			// If b.Char is "e" we will treat it as Epsilon
 			graph.AddEdge(start, end, *(b.Char), false)
 		} else {
-			graph.AddEdge(start, end, EPSILON, false)
+			graph.AddEdge(start, end, Epsilon, false)
 		}
 		return start, end
 	}

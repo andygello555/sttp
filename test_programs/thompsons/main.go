@@ -31,6 +31,11 @@ func main() {
 			os.Exit(1)
 		}
 		fmt.Println("States:", len(graph.DFA))
+
+		// Dead State Minimisation
+		fmt.Println("\nDead State Minimisation:")
+		tt := InitTT(graph)
+		fmt.Println(tt)
 		os.Exit(0)
 	}
 	fmt.Println("No regular expression given")
