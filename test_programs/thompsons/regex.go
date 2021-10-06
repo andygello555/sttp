@@ -24,7 +24,7 @@ type Factor struct {
 }
 
 type Term struct {
-	Factors []*Factor `@@*`
+	Factors []*Factor `@@+`
 }
 
 type Regex struct {
