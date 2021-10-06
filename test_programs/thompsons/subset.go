@@ -1,7 +1,5 @@
 package main
 
-import "fmt"
-
 func (g *Graph) Move(read string, states...StateKey) *StateSetExistence {
 	reachable := make(StateSetExistence)
 	for _, state := range states {
@@ -17,10 +15,10 @@ func (g *Graph) Move(read string, states...StateKey) *StateSetExistence {
 func (g *Graph) PossibleInputs(states...StateKey) []string {
 	possibleInputs := make(StateSetExistence)
 	for _, state := range states {
-		fmt.Println("Checking possible inputs on state", state, "(", g.NFA[state], ")")
 		for _, edge := range g.NFA.Get(state) {
-			fmt.Println("\t", edge.Read)
-			possibleInputs.Mark(StateKeyString(edge.Read))
+			if edge.Read != EPSILON {
+				possibleInputs.Mark(StateKeyString(edge.Read))
+			}
 		}
 	}
 	inputs := make([]string, len(possibleInputs))
@@ -41,7 +39,6 @@ func (g *Graph) EClosure(stack...StateKey) (closure *StateSet) {
 		// We add the state to the eclosure
 		closureSet.Mark(t)
 		stack = stack[:index]
-		fmt.Println(t, g.NFA[t])
 		for _, edge := range g.NFA.Get(t) {
 			// For each state with an edge from t to u labeled epsilon and NOT Ingoing IN closureSet
 			if edge.Read == EPSILON && !closureSet.Check(edge.Ingoing) {
@@ -55,26 +52,18 @@ func (g *Graph) EClosure(stack...StateKey) (closure *StateSet) {
 	return closureSet.Keys()
 }
 
-func (g *Graph) Subset() {
+func (g *Graph) Subset() StateKey {
 	marked := make(StateSetExistence)
 
 	// Find the epsilon closure of the start state.
-	dStates := make([]StateSet, 0)
 	start := g.EClosure(g.Start)
-	for _, state := range *start {
-		dStates = append(dStates, StateSet{state})
-	}
-
-	// We also create the start node in the DFA adjacency list.
-	g.DFA[start] = make([]Edge, 0)
+	dStates := []StateSet{*start}
 
 	// We create a set version of dStates in order to keep track of what exists within it.
 	dStatesSet := make(StateSetExistence)
 	for _, state := range dStates {
 		dStatesSet.Mark(state)
 	}
-	fmt.Println(dStates)
-	fmt.Println(dStatesSet)
 
 	// We treat dStates as a queue
 	for len(dStates) > 0 {
@@ -87,16 +76,17 @@ func (g *Graph) Subset() {
 		if !marked.Check(states) {
 			marked.Mark(states)
 			// For each possible input find states that can be moved to then find the epsilon closure of these states.
-			fmt.Println("Possible inputs for", states, ":", g.PossibleInputs(states...))
 			for _, input := range g.PossibleInputs(states...) {
 				U := g.EClosure(*(g.Move(input, states...).Keys())...)
 				// If U is not in dStates...
 				if !dStatesSet.Check(U) {
 					dStatesSet.Mark(U)
+					dStates = append(dStates, *U)
 				}
 				// Then we add the arrow going from the current state to U reading in the current input
 				g.AddEdge(states, U, input, true)
 			}
 		}
 	}
+	return start
 }

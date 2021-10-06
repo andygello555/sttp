@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"github.com/goccy/go-graphviz"
 	"github.com/goccy/go-graphviz/cgraph"
+	"strings"
 )
 
-func (g *Graph) Visualise(start State, filePrefix string, dfa bool) error {
+func (g *Graph) Visualise(start StateKey, filePrefix string, dfa bool) error {
 	viz := graphviz.New()
 	graph, err := viz.Graph()
-	graph.SetForceLabels(true)
 	if err != nil {
 		return err
 	}
@@ -42,13 +42,32 @@ func (g *Graph) Visualise(start State, filePrefix string, dfa bool) error {
 		}
 
 		// Set the style of the node
-		if g.AcceptingStates.Check(currentState) {
-			// If the node is an accepting state then we will set it to be a double circle
-			startNode.SetShape(cgraph.DoubleCircleShape)
-		} else if currentState == g.Start {
-			startNode.SetShape(cgraph.PointShape)
+		// This depends on the graph type (NFA vs DFA)
+		if !dfa {
+			if g.AcceptingStates.Check(currentState) {
+				// If the node is an accepting state then we will set it to be a double circle
+				startNode.SetShape(cgraph.DoubleCircleShape)
+			} else if currentState == g.Start {
+				startNode.SetShape(cgraph.PointShape)
+			} else {
+				startNode.SetShape(cgraph.CircleShape)
+			}
 		} else {
-			startNode.SetShape(cgraph.CircleShape)
+			// Check if the state contains any of the accepting states in the NFA
+			acceptingState := false
+			for stateKey := range g.AcceptingStates {
+				if strings.Contains(currentState.Key(), stateKey.Key()) {
+					acceptingState = true
+					break
+				}
+			}
+			if acceptingState {
+				startNode.SetShape(cgraph.DoubleOctagonShape)
+			} else if currentState == start {
+				startNode.SetShape(cgraph.PointShape)
+			} else {
+				startNode.SetShape(cgraph.OctagonShape)
+			}
 		}
 
 		// Iterate over all adjacent nodes

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 )
 
@@ -25,11 +26,16 @@ func (s State) Key() string {
 type StateSet []StateKey
 
 func (ss StateSet) Key() string {
-	return fmt.Sprintf("%v", ss)
+	ints := make([]int, len(ss))
+	for i := range ss {
+		ints[i], _ = strconv.Atoi(ss[i].Key())
+	}
+	sort.Ints(ints)
+	return fmt.Sprintf("%v", ints)
 }
 
 // StateKeyString is a string type which implements the StateKey interface. This is done as maps require hashable types
-// for their keys. Thus StateSetExistence uses StateKeyString keys.
+// for their keys. Thus, StateSetExistence uses StateKeyString keys.
 type StateKeyString string
 
 func (sks StateKeyString) Key() string {
@@ -91,7 +97,7 @@ type Graph struct {
 	// A counter for assigning numbers to States.
 	StateCount         State
 	// The starting state. Defaults to 0.
-	Start              State
+	Start              StateKey
 	// A set of accepting states.
 	AcceptingStates    StateSetExistence
 	// The adjacency list used to store edges for our NFA (After Thompson's construction).
@@ -105,7 +111,7 @@ type Graph struct {
 func InitGraph() *Graph	{
 	return &Graph{
 		0,
-		0,
+		State(0),
 		make(StateSetExistence),
 		make(AdjacencyList),
 		make(AdjacencyList),
@@ -113,7 +119,7 @@ func InitGraph() *Graph	{
 	}
 }
 
-func Thompson(regexString string) (graph *Graph, start State, end State, err error) {
+func Thompson(regexString string) (graph *Graph, start StateKey, end StateKey, err error) {
 	graph = InitGraph()
 	err, regex := Parse(regexString)
 	if err != nil {
@@ -147,12 +153,11 @@ func (g *Graph) AddEdge(outgoing StateKey, ingoing StateKey, read string, dfa bo
 
 	edge := Edge{
 		Read:     read,
-		Outgoing: outgoing,
-		Ingoing:  ingoing,
+		Outgoing: StateKeyString(outgoing.Key()),
+		Ingoing:  StateKeyString(ingoing.Key()),
 	}
-	fmt.Println("Making edge from", outgoing, "to", ingoing, "which reads in:", read)
+	fmt.Println("Making edge from", outgoing.Key(), "to", ingoing.Key(), "which reads in:", read)
 	adjacencyList.AddEdge(&edge)
-	fmt.Println(*adjacencyList)
 }
 
 func (g *Graph) Union(start1 State, end1 State, start2 State, end2 State) (start State, end State) {
