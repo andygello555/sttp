@@ -61,21 +61,21 @@ func (ms *MergedStates) Changed(new *MergedStates) bool {
 		return true
 	}
 
-	same := true
+	changed := true
 	for _, currentMergedStateSet := range *ms {
 		for _, newMergedStateSet := range *new {
 			// We perform a difference on the currentMergedStateSet and the newMergedStateSet and vice versa to check if
 			// the sets are equal
-			if len(*currentMergedStateSet.Difference(newMergedStateSet)) != len(*newMergedStateSet.Difference(currentMergedStateSet)) {
-				same = false
+			if currentMergedStateSet.Equal(newMergedStateSet) {
+				changed = false
 				break
 			}
 		}
-		if !same {
+		if !changed {
 			break
 		}
 	}
-	return same
+	return changed
 }
 
 // Find will find the given state within the set of merged states.
@@ -96,8 +96,10 @@ type TransitionTable struct {
 	Rows     		int
 	Cols     		int
 	States   		[]StateKey
+	StateCols       map[StateKeyString]int
 	Language 		[]string
 	AcceptingStates StateSetExistence
+	MergedStates    MergedStates
 }
 
 // InitTT constructs a TransitionTable from the given Graph instance.
@@ -113,6 +115,8 @@ func InitTT(graph *Graph) *TransitionTable {
 		tt.States = append(tt.States, state)
 	}
 	tt.AcceptingStates = make(StateSetExistence)
+	tt.MergedStates = make(MergedStates)
+	tt.StateCols = make(map[StateKeyString]int)
 
 	// Then fill out the table itself
 	for i := range tt.Table {
@@ -122,8 +126,10 @@ func InitTT(graph *Graph) *TransitionTable {
 			if j == 0 {
 				// We insert the dead state at col 0 (the dead state)
 				tt.Table[i][j] = DeadState
+				tt.StateCols[DeadState] = 0
 			} else {
 				state := tt.States[j]
+				tt.StateCols[StateKeyString(state.Key())] = j
 				// Then we find out if the state is an accepting state by comparing the key to the NFA
 				if graph.CheckIfAccepting(state) {
 					tt.AcceptingStates.Mark(state)
@@ -178,58 +184,79 @@ func (tt *TransitionTable) String() string {
 	return fmt.Sprintf("%s\nAccepting states = %s", t.Render("grid"), tt.AcceptingStates.String())
 }
 
-// FindMerges returns a MergedStates instance with all the possible merges.
-func (tt *TransitionTable) FindMerges(currentMergedStates *MergedStates) *MergedStates {
-	// Create the new merged states plus some helpers
-	mergedStateNum := 0
-	mergedStateKey := func() StateKeyString {
-		return StateKeyString(strconv.Itoa(mergedStateNum))
+// ColSimilar checks if two columns make the same transitions.
+func (tt *TransitionTable) ColSimilar(col1, col2 int) bool {
+	same := true
+	for i := range tt.Language {
+		if tt.Table[i][col1] != tt.Table[i][col2] {
+			same = false
+			break
+		}
 	}
-	mergedStates := make(MergedStates)
+	return same
+}
 
-	// Iterate over the columns and find patterns
-	for checkingCol := 0; checkingCol < tt.Cols; checkingCol++ {
-		// We add the column as a merged state if we could not yet find a place for it elsewhere. If we could find a
-		// place for it then we skip checking it.
-		_, found := mergedStates.Find(StateKeyString(tt.States[checkingCol].Key()))
-		if found == nil {
-			checkingColState := make(StateSetExistence)
-			mergedStates[mergedStateKey()] = &checkingColState
-			fmt.Println("checkingCol", tt.States[checkingCol])
-			checkingColState.Mark(tt.States[checkingCol])
-			mergedStateNum += 1
-			// Look for similar cols to the current column.
-			for lookingCol := 0; lookingCol < tt.Cols; lookingCol++ {
-				// Try to find the looking for column state within the merged state structure. Only continue if the column
-				// state has not yet been added to the merged states structure.
-				_, found := mergedStates.Find(StateKeyString(tt.States[lookingCol].Key()))
-				fmt.Println("\tlookingCol", tt.States[lookingCol], found)
-				if checkingCol != lookingCol && found == nil {
-					// Check each transition on each row for the columns
-					match := true
-					for row := 0; row < tt.Rows; row++ {
-						fmt.Println("\t\trow =", row, "checking:", tt.Table[row][checkingCol], "looking:", tt.Table[row][lookingCol])
-						if tt.Table[row][checkingCol] != tt.Table[row][lookingCol] {
-							match = false
+// StateKeySimilar checks if the given two StateKeys make the same transitions.
+func (tt *TransitionTable) StateKeySimilar(state1, state2 StateKey) bool {
+	return tt.ColSimilar(tt.StateCols[StateKeyString(state1.Key())], tt.StateCols[StateKeyString(state2.Key())])
+}
+
+// FindMerges sets the MergedStates field with all the possible merged states.
+func (tt *TransitionTable) FindMerges() {
+	// Create the new merged states plus some helpers
+	mergedStateNum := len(tt.MergedStates)
+
+	// We iterate over the current merged states.
+	for _, states := range tt.MergedStates {
+		// We check if any of the merged states need to be split
+		for checkingState := range *states {
+			toLookAt := *states.Difference(&StateSetExistence{
+				checkingState: true,
+			})
+			for len(toLookAt) > 0 {
+				lookingState := toLookAt.Choose()
+				toLookAt.Unmark(lookingState)
+				if !tt.StateKeySimilar(checkingState, lookingState) {
+					// Then we see if there are any "like-minded" states
+					likeMinders := StateSetExistence{
+						StateKeyString(lookingState.Key()): true,
+					}
+					containsDeadSet := lookingState == DeadState
+					for likeMindedState := range *states {
+						if likeMindedState != lookingState && tt.StateKeySimilar(lookingState, likeMindedState) {
+							likeMinders.Mark(likeMindedState)
+							toLookAt.Unmark(likeMindedState)
+							if likeMindedState == DeadState {
+								containsDeadSet = true
+							}
 						}
 					}
-					if match {
-						fmt.Println("\tFound right place for", tt.States[lookingCol], "in", checkingColState.String())
-						// If there was a match then we add the checkingCol state to the current merged state.
-						checkingColState.Mark(tt.States[lookingCol])
+
+					key := StateKeyString(strconv.Itoa(mergedStateNum))
+					newSet := make(StateSetExistence)
+					tt.MergedStates[key] = &newSet
+					mergedStateNum += 1
+					// If this new set contains the dead set then we move the other sets instead to keep the DeadSet in
+					// the same set throughout Dead Set minimisation.
+					toAddRemove := &likeMinders
+					if containsDeadSet {
+						toAddRemove = states.Difference(toAddRemove)
 					}
+					// Add the like-minded states to the new set...
+					newSet.Mark(*toAddRemove.Keys()...)
+					// ...And remove them from the old
+					states.Unmark(*toAddRemove.Keys()...)
 				}
 			}
 		}
 	}
-	return &mergedStates
 }
 
-// Markup the transition table with the new merged states.
-func (tt *TransitionTable) Markup(original *TransitionTable, mergedStates *MergedStates) {
+// Markup the transition table with the current merged states.
+func (tt *TransitionTable) Markup(original *TransitionTable) {
 	for i := range tt.Table {
 		for j := range tt.Table[i] {
-			mergedState, _ := mergedStates.Find(original.Table[i][j])
+			mergedState, _ := tt.MergedStates.Find(original.Table[i][j])
 			tt.Table[i][j] = mergedState
 		}
 	}
@@ -246,6 +273,21 @@ func (tt *TransitionTable) Clone() *TransitionTable {
 	copy(newTT.Language, tt.Language)
 	newTT.AcceptingStates = make(StateSetExistence)
 	newTT.AcceptingStates = *tt.AcceptingStates.Difference(new(StateSetExistence))
+	newTT.MergedStates = make(MergedStates)
+	newTT.StateCols = make(map[StateKeyString]int)
+
+	// Copy over the state to column mapping
+	for i, state := range tt.States {
+		newTT.StateCols[StateKeyString(state.Key())] = i
+	}
+
+	// Copy over the merged states
+	for mergedState, set := range tt.MergedStates {
+		newTT.MergedStates[mergedState] = new(StateSetExistence)
+		for state := range *set {
+			newTT.MergedStates[mergedState].Mark(state)
+		}
+	}
 
 	// Finally, we create the table rows and copy each column into the table.
 	newTT.Table = make([][]StateKeyString, newTT.Rows)
@@ -253,13 +295,13 @@ func (tt *TransitionTable) Clone() *TransitionTable {
 		newTT.Table[i] = make([]StateKeyString, newTT.Cols)
 		copy(newTT.Table[i], tt.Table[i])
 	}
+
 	return &newTT
 }
 
 func (tt *TransitionTable) DeadStateMinimisation() {
 	// Create a map of the merged states
-	mergedStates := make(MergedStates)
-	previousMergedStates := make(MergedStates)
+	tt.MergedStates = make(MergedStates)
 	// Make a set with all states including the DeadState
 	allStates := make(StateSetExistence)
 	for _, state := range tt.States {
@@ -268,25 +310,31 @@ func (tt *TransitionTable) DeadStateMinimisation() {
 
 	// We create a clone of the transition table that we can markup
 	minimalTable := tt.Clone()
-	fmt.Println(minimalTable)
 
 	// Make a set with the: All\AcceptingStates
 	deadStates := *allStates.Difference(&tt.AcceptingStates)
-	mergedStates["0"] = &deadStates
+	minimalTable.MergedStates["0"] = &deadStates
 	// We clone the AcceptingStates set by differencing it with an empty set
-	mergedStates["1"] = tt.AcceptingStates.Difference(new(StateSetExistence))
-	minimalTable.Markup(tt, &mergedStates)
+	minimalTable.MergedStates["1"] = tt.AcceptingStates.Difference(new(StateSetExistence))
+	fmt.Println("Starting merged states:")
+	fmt.Println(minimalTable.MergedStates.String())
+	minimalTable.Markup(tt)
 
 	// We keep merging states until the mergedStates haven't changed from the previous iteration
-	for previousMergedStates.Changed(&mergedStates) {
+	for tt.MergedStates.Changed(&minimalTable.MergedStates) {
 		fmt.Println()
 		fmt.Println("Marked up transition table:")
 		fmt.Println(minimalTable.String())
-		previousMergedStates, mergedStates = mergedStates, *minimalTable.FindMerges(&mergedStates)
-		minimalTable.Markup(tt, &mergedStates)
+		tt.MergedStates = make(MergedStates)
+		for mergedStates, set := range minimalTable.MergedStates {
+			tt.MergedStates[mergedStates] = set.Difference(new(StateSetExistence))
+		}
+		minimalTable.FindMerges()
+		minimalTable.Markup(tt)
 		fmt.Println("New merged states:")
-		fmt.Println(mergedStates.String())
+		fmt.Println(minimalTable.MergedStates.String())
 	}
+	fmt.Println("NO CHANGE")
 	*tt = *minimalTable
 	fmt.Println("\nFinal transition table:")
 	fmt.Println(minimalTable.String())

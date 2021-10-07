@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sort"
 	"strconv"
+	"strings"
 )
 
 const Epsilon = "e"
@@ -69,17 +70,30 @@ func (sse *StateSetExistence) String() string {
 
 // Mark a StateKey in the set. The given StateKey will be converted into a string and then cast into the StateKeyString
 // type.
-func (sse *StateSetExistence) Mark(state StateKey) {
-	(*sse)[StateKeyString(state.Key())] = true
+func (sse *StateSetExistence) Mark(states... StateKey) {
+	for _, state := range states {
+		(*sse)[StateKeyString(state.Key())] = true
+	}
 }
 
 // Unmark a StateKey in the set.
-func (sse *StateSetExistence) Unmark(state StateKey) {
-	delete(*sse, StateKeyString(state.Key()))
+func (sse *StateSetExistence) Unmark(states... StateKey) {
+	for _, state := range states {
+		delete(*sse, StateKeyString(state.Key()))
+	}
 }
 
 func (sse *StateSetExistence) Check(state StateKey) bool {
 	return (*sse)[StateKeyString(state.Key())]
+}
+
+func (sse *StateSetExistence) Choose() StateKey {
+	var first StateKeyString
+	for state := range *sse {
+		first = state
+		break
+	}
+	return first
 }
 
 // Difference finds the difference between the referred StateSetExistence instance and the given StateSetExistence
@@ -102,6 +116,26 @@ func (sse *StateSetExistence) Difference(diff *StateSetExistence) *StateSetExist
 	return &newSet
 }
 
+// Equal checks if two StateSetExistences are equal.
+func (sse *StateSetExistence) Equal(equal *StateSetExistence) bool {
+	same := true
+	for state := range *sse {
+		if !equal.Check(state) {
+			same = false
+			break
+		}
+	}
+	if same {
+		for state := range *equal {
+			if !sse.Check(state) {
+				same = false
+				break
+			}
+		}
+	}
+	return same
+}
+
 // AdjacencyList represents a graph with collections of states as nodes as an adjacency list.
 type AdjacencyList map[StateKey][]Edge
 
@@ -110,9 +144,12 @@ func (al *AdjacencyList) Get(state StateKey) []Edge {
 }
 
 func (al *AdjacencyList) AddEdge(edge *Edge) {
-	if _, ok := (*al)[StateKeyString(edge.Outgoing.Key())]; !ok {
-		// If the outgoing state does not yet exist in the map then we will construct the array
-		(*al)[StateKeyString(edge.Outgoing.Key())] = make([]Edge, 0)
+	// We check if both the outgoing and ingoing node exists in the AdjacencyList
+	for _, node := range []StateKey{edge.Outgoing, edge.Ingoing} {
+		if _, ok := (*al)[StateKeyString(node.Key())]; !ok {
+			// If the outgoing state does not yet exist in the map then we will construct the array
+			(*al)[StateKeyString(node.Key())] = make([]Edge, 0)
+		}
 	}
 	(*al)[StateKeyString(edge.Outgoing.Key())] = append((*al)[StateKeyString(edge.Outgoing.Key())], *edge)
 }
@@ -125,6 +162,57 @@ func (al *AdjacencyList) States() (states []StateKey) {
 		i++
 	}
 	return states
+}
+
+// GetEdge checks if the given Edge exists within the AdjacencyList, if it does then the edge is returned. Otherwise,
+// nil is returned.
+func (al *AdjacencyList) GetEdge(outgoing StateKey, ingoing StateKey, read string) *Edge {
+	for _, edge := range (*al)[outgoing] {
+		if edge.Ingoing.Key() == ingoing.Key() && edge.Read == read {
+			return &edge
+		}
+	}
+	return nil
+}
+
+// Equal checks if the referred to AdjacencyList and the given AdjacencyList are equal. This is done by first checking
+// the number of states. Then, checking whether the AdjacencyLists have the same states. Then finally checking whether
+// the states have the same Edges.
+func (al *AdjacencyList) Equal(al2 *AdjacencyList) bool {
+	if len(*al) != len(*al2) {
+		return false
+	}
+
+	same := true
+	for state, edges := range *al {
+		if _, ok := (*al2)[StateKeyString(state.Key())]; !ok {
+			same = false
+			break
+		}
+		if len(edges) == len((*al2)[StateKeyString(state.Key())]) {
+			for _, edge := range edges {
+				if ptr := al2.GetEdge(edge.Outgoing, edge.Ingoing, edge.Read); ptr == nil {
+					same = false
+					break
+				}
+			}
+			if !same {
+				break
+			}
+		} else {
+			same = false
+			break
+		}
+	}
+	return same
+}
+
+func (al *AdjacencyList) String() string {
+	out := make([]string, len(*al))
+	for state, edges := range *al {
+		out = append(out, fmt.Sprintf("%v: %v", state, edges))
+	}
+	return strings.Join(out, "\n")
 }
 
 // Edge represents an edge within the StateAdjacencyList.
@@ -198,7 +286,7 @@ func (g *Graph) AddEdge(outgoing StateKey, ingoing StateKey, read string, dfa bo
 		Outgoing: StateKeyString(outgoing.Key()),
 		Ingoing:  StateKeyString(ingoing.Key()),
 	}
-	fmt.Println("Making edge from", outgoing.Key(), "to", ingoing.Key(), "which reads in:", read)
+	//fmt.Println("Making edge from", outgoing.Key(), "to", ingoing.Key(), "which reads in:", read)
 	adjacencyList.AddEdge(&edge)
 }
 

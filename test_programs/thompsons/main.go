@@ -37,6 +37,7 @@ func main() {
 		tt := InitTT(graph)
 		fmt.Println(tt)
 		tt.DeadStateMinimisation()
+		tt.Visualisation("deadstate")
 		os.Exit(0)
 	}
 	fmt.Println("No regular expression given")

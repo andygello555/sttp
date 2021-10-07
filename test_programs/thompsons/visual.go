@@ -46,8 +46,6 @@ func (g *Graph) Visualise(start StateKey, filePrefix string, dfa bool) error {
 			if g.AcceptingStates.Check(currentState) {
 				// If the node is an accepting state then we will set it to be a double circle
 				startNode.SetShape(cgraph.DoubleCircleShape)
-			} else if currentState == g.Start {
-				startNode.SetShape(cgraph.PointShape)
 			} else {
 				startNode.SetShape(cgraph.CircleShape)
 			}
@@ -55,8 +53,6 @@ func (g *Graph) Visualise(start StateKey, filePrefix string, dfa bool) error {
 			// Check if the state contains any of the accepting states in the NFA
 			if g.CheckIfAccepting(currentState) {
 				startNode.SetShape(cgraph.DoubleOctagonShape)
-			} else if currentState == start {
-				startNode.SetShape(cgraph.PointShape)
 			} else {
 				startNode.SetShape(cgraph.OctagonShape)
 			}
@@ -104,7 +100,84 @@ func (g *Graph) Visualise(start StateKey, filePrefix string, dfa bool) error {
 	return nil
 }
 
-func (tt *TransitionTable) Visualisation() {
+func (tt *TransitionTable) Visualisation(filePrefix string) {
+	viz := graphviz.New()
+	graph, err := viz.Graph()
+	if err != nil {
+		panic(err)
+	}
 
+	defer func() {
+		if err := graph.Close(); err != nil {
+			panic(err)
+		}
+		err := viz.Close()
+		if err != nil {
+			panic(err)
+		}
+	}()
+
+	//marked := make(StateSetExistence)
+	for mergedState, set := range tt.MergedStates {
+		if mergedState.Key() != "0" {
+			// Create the node if it doesn't exist
+			var startNode *cgraph.Node
+			if startNode, _ = graph.Node(mergedState.Key()); startNode == nil {
+				startNode, err = graph.CreateNode(mergedState.Key())
+				if err != nil {
+					panic(err)
+				}
+			}
+
+			// We check if the current set of states contains an accepting state
+			acceptingState := false
+			for state := range *set {
+				if tt.AcceptingStates.Check(state) {
+					acceptingState = true
+					break
+				}
+			}
+
+			if acceptingState {
+				startNode.SetShape(cgraph.DoubleCircleShape)
+			} else {
+				startNode.SetShape(cgraph.CircleShape)
+			}
+
+			randomState := set.Choose()
+			// Find the state within the set of all states
+			for j := range tt.States {
+				if tt.States[j].Key() == randomState.Key() {
+					// Once we find the state we will look up the column in the table and iterate over its rows
+					for i, input := range tt.Language {
+						// We skip any dead states
+						if tt.Table[i][j].Key() != "0" {
+							// Create the ingoing node (if it needs to be created) as well as the edge between the two
+							var endNode *cgraph.Node
+							if endNode, _ = graph.Node(tt.Table[i][j].Key()); endNode == nil {
+								endNode, err = graph.CreateNode(tt.Table[i][j].Key())
+								if err != nil {
+									panic(err)
+								}
+							}
+							var graphEdge *cgraph.Edge
+							if graphEdge, err = graph.CreateEdge(input, startNode, endNode); err != nil {
+								panic(err)
+							}
+							graphEdge.SetLabel(input)
+						}
+					}
+					break
+				}
+			}
+		}
+	}
+	// Render visualisations to both png and dot
+	if err := viz.RenderFilename(graph, graphviz.PNG, fmt.Sprintf("%s.png", filePrefix)); err != nil {
+		panic(err)
+	}
+	if err := viz.RenderFilename(graph, graphviz.XDOT, fmt.Sprintf("%s.dot", filePrefix)); err != nil {
+		panic(err)
+	}
 }
 
