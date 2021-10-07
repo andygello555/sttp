@@ -4,6 +4,7 @@ go 1.17
 
 require (
 	github.com/alecthomas/participle/v2 v2.0.0-alpha7 // indirect
+	github.com/andygello555/gotils v1.2.7 // indirect
 	github.com/bndr/gotabulate v1.1.2 // indirect
 	github.com/fogleman/gg v1.3.0 // indirect
 	github.com/goccy/go-graphviz v0.0.9 // indirect

@@ -82,6 +82,26 @@ func (sse *StateSetExistence) Check(state StateKey) bool {
 	return (*sse)[StateKeyString(state.Key())]
 }
 
+// Difference finds the difference between the referred StateSetExistence instance and the given StateSetExistence
+// instance.
+func (sse *StateSetExistence) Difference(diff *StateSetExistence) *StateSetExistence {
+	newSet := make(StateSetExistence)
+	for state1 := range *sse {
+		skip := false
+		for state2 := range *diff {
+			if state1.Key() == state2.Key() {
+				skip = true
+				break
+			}
+		}
+		if skip {
+			continue
+		}
+		newSet.Mark(state1)
+	}
+	return &newSet
+}
+
 // AdjacencyList represents a graph with collections of states as nodes as an adjacency list.
 type AdjacencyList map[StateKey][]Edge
 

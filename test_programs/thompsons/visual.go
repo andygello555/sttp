@@ -103,3 +103,8 @@ func (g *Graph) Visualise(start StateKey, filePrefix string, dfa bool) error {
 	}
 	return nil
 }
+
+func (tt *TransitionTable) Visualisation() {
+
+}
+
