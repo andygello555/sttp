@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"strings"
 	"testing"
 )
@@ -63,6 +62,7 @@ func TestThompson(t *testing.T) {
 					{"e", State(16), State(17)},
 					{"e", State(16), State(14)},
 				},
+				StateKeyString("17"): []Edge{},
 			},
 		},
 		{
@@ -105,7 +105,9 @@ func TestThompson(t *testing.T) {
 					{"e", State(8), State(6)},
 				},
 				StateKeyString("9"): {{"e", State(9), State(18)}},
-			},},
+				StateKeyString("19"): {},
+			},
+		},
 		{
 			regex: "a*a(ba|(b|e))(b|e)*",
 			adjacencyList: AdjacencyList{
@@ -155,6 +157,7 @@ func TestThompson(t *testing.T) {
 				StateKeyString("7"): {{"e", State(7), State(8)}},
 				StateKeyString("8"): {{"a", State(8), State(9)}},
 				StateKeyString("9"): {{"e", State(9), State(17)}},
+				StateKeyString("25"): {},
 			},
 		},
 		{
@@ -187,12 +190,13 @@ func TestThompson(t *testing.T) {
 				StateKeyString("7"): {{"e", State(7), State(14)}},
 				StateKeyString("8"): {{"b", State(8), State(9)}},
 				StateKeyString("9"): {{"e", State(9), State(13)}},
+				StateKeyString("15"): {},
 			},
 		},
 	}{
 		graph, _, _, err := Thompson(test.regex)
 		if err != nil || test.adjacencyList == nil || !graph.NFA.Equal(&test.adjacencyList) {
-			t.Errorf("Thompson's construction of regular expression: %s, does not produce the expected AdjacencyList", test.regex)
+			t.Errorf("Thompson's construction of regular expression: %s produces AL:\n%s\nvs.\n%s", test.regex, graph.NFA.String(), test.adjacencyList.String())
 		}
 	}
 }
@@ -311,9 +315,10 @@ func TestGraph_Subset(t *testing.T) {
 }
 
 func TestTransitionTable_DeadStateMinimisation(t *testing.T) {
-	for i, test := range []struct{
+	for _, test := range []struct{
 		inGraph Graph
 		mergedStates MergedStates
+		//table [][]StateKeyString
 	}{
 		{
 			inGraph: Graph{
@@ -351,71 +356,161 @@ func TestTransitionTable_DeadStateMinimisation(t *testing.T) {
 					StateKeyString("T5"): true,
 				},
 			},
+			mergedStates: MergedStates{
+				StateKeyString("0"): &StateSetExistence{
+					StateKeyString("dead"): true,
+					StateKeyString("T6"): true,
+					StateKeyString("T7"): true,
+				},
+				StateKeyString("1"): &StateSetExistence{
+					StateKeyString("T1"): true,
+					StateKeyString("T2"): true,
+					StateKeyString("T0"): true,
+				},
+				StateKeyString("2"): &StateSetExistence{
+					StateKeyString("T4"): true,
+				},
+				StateKeyString("3"): &StateSetExistence{
+					StateKeyString("T3"): true,
+				},
+				StateKeyString("4"): &StateSetExistence{
+					StateKeyString("T5"): true,
+				},
+			},
+			//table: [][]StateKeyString{
+			//	{StateKeyString("0"), StateKeyString("1"), StateKeyString("1"), StateKeyString("1"), StateKeyString("0"), StateKeyString("0"), StateKeyString("0"), StateKeyString("0"), StateKeyString("0")},
+			//	{StateKeyString("0"), StateKeyString("3"), StateKeyString("3"), StateKeyString("3"), StateKeyString("2"), StateKeyString("0"), StateKeyString("0"), StateKeyString("0"), StateKeyString("0")},
+			//	{StateKeyString("0"), StateKeyString("0"), StateKeyString("0"), StateKeyString("0"), StateKeyString("0"), StateKeyString("4"), StateKeyString("0"), StateKeyString("0"), StateKeyString("0")},
+			//},
 		},
-		//{
-		//	inGraph: Graph{
-		//		DFA: AdjacencyList{
-		//			StateKeyString("T0"): {
-		//				{"a", StateKeyString("T0"), StateKeyString("T2")},
-		//				{"b", StateKeyString("T0"), StateKeyString("T1")},
-		//			},
-		//			StateKeyString("T1"): {
-		//				{"a", StateKeyString("T1"), StateKeyString("T3")},
-		//			},
-		//			StateKeyString("T2"): {
-		//				{"a", StateKeyString("T2"), StateKeyString("T4")},
-		//			},
-		//			StateKeyString("T3"): {
-		//				{"c", StateKeyString("T3"), StateKeyString("T5")},
-		//			},
-		//			StateKeyString("T4"): {
-		//				{"c", StateKeyString("T4"), StateKeyString("T6")},
-		//			},
-		//			StateKeyString("T5"): {},
-		//			StateKeyString("T6"): {},
-		//		},
-		//		AcceptingStates: StateSetExistence{
-		//			StateKeyString("T3"): true,
-		//			StateKeyString("T4"): true,
-		//			StateKeyString("T5"): true,
-		//		},
-		//	},
-		//},
-		//{
-		//	inGraph: Graph{
-		//		DFA: AdjacencyList{
-		//			StateKeyString("T0"): {
-		//				{"a", StateKeyString("T0"), StateKeyString("T1")},
-		//				{"b", StateKeyString("T0"), StateKeyString("T4")},
-		//			},
-		//			StateKeyString("T1"): {
-		//				{"a", StateKeyString("T1"), StateKeyString("T2")},
-		//			},
-		//			StateKeyString("T2"): {
-		//				{"c", StateKeyString("T2"), StateKeyString("T3")},
-		//			},
-		//			StateKeyString("T3"): {},
-		//			StateKeyString("T4"): {
-		//				{"a", StateKeyString("T4"), StateKeyString("T5")},
-		//			},
-		//			StateKeyString("T5"): {
-		//				{"c", StateKeyString("T5"), StateKeyString("T6")},
-		//			},
-		//			StateKeyString("T6"): {},
-		//		},
-		//		AcceptingStates: StateSetExistence{
-		//			StateKeyString("T2"): true,
-		//			StateKeyString("T5"): true,
-		//			StateKeyString("T6"): true,
-		//		},
-		//	},
-		//},
+		{
+			inGraph: Graph{
+				DFA: AdjacencyList{
+					StateKeyString("T0"): {
+						{"a", StateKeyString("T0"), StateKeyString("T2")},
+						{"b", StateKeyString("T0"), StateKeyString("T1")},
+					},
+					StateKeyString("T1"): {
+						{"a", StateKeyString("T1"), StateKeyString("T3")},
+					},
+					StateKeyString("T2"): {
+						{"a", StateKeyString("T2"), StateKeyString("T4")},
+					},
+					StateKeyString("T3"): {
+						{"c", StateKeyString("T3"), StateKeyString("T5")},
+					},
+					StateKeyString("T4"): {
+						{"c", StateKeyString("T4"), StateKeyString("T6")},
+					},
+					StateKeyString("T5"): {},
+					StateKeyString("T6"): {},
+				},
+				AcceptingStates: StateSetExistence{
+					StateKeyString("T3"): true,
+					StateKeyString("T4"): true,
+					StateKeyString("T5"): true,
+				},
+			},
+			mergedStates: MergedStates{
+				StateKeyString("0"): &StateSetExistence{
+					StateKeyString("T6"): true,
+					StateKeyString("dead"): true,
+				},
+				StateKeyString("1"): &StateSetExistence{
+					StateKeyString("T3"): true,
+				},
+				StateKeyString("2"): &StateSetExistence{
+					StateKeyString("T1"): true,
+				},
+				StateKeyString("3"): &StateSetExistence{
+					StateKeyString("T4"): true,
+					StateKeyString("T5"): true,
+				},
+				StateKeyString("4"): &StateSetExistence{
+					StateKeyString("T2"): true,
+				},
+				StateKeyString("5"): &StateSetExistence{
+					StateKeyString("T0"): true,
+				},
+			},
+			//table: [][]StateKeyString{
+			//	{StateKeyString("0"), StateKeyString("0"), StateKeyString("0"), StateKeyString("0"), StateKeyString("4"), StateKeyString("1"), StateKeyString("3"), StateKeyString("0")},
+			//	{StateKeyString("0"), StateKeyString("0"), StateKeyString("0"), StateKeyString("0"), StateKeyString("2"), StateKeyString("0"), StateKeyString("0"), StateKeyString("0")},
+			//	{StateKeyString("0"), StateKeyString("0"), StateKeyString("0"), StateKeyString("0"), StateKeyString("0"), StateKeyString("0"), StateKeyString("0"), StateKeyString("3")},
+			//},
+		},
+		{
+			inGraph: Graph{
+				DFA: AdjacencyList{
+					StateKeyString("T0"): {
+						{"a", StateKeyString("T0"), StateKeyString("T1")},
+						{"b", StateKeyString("T0"), StateKeyString("T4")},
+					},
+					StateKeyString("T1"): {
+						{"a", StateKeyString("T1"), StateKeyString("T2")},
+					},
+					StateKeyString("T2"): {
+						{"c", StateKeyString("T2"), StateKeyString("T3")},
+					},
+					StateKeyString("T3"): {},
+					StateKeyString("T4"): {
+						{"a", StateKeyString("T4"), StateKeyString("T5")},
+					},
+					StateKeyString("T5"): {
+						{"c", StateKeyString("T5"), StateKeyString("T6")},
+					},
+					StateKeyString("T6"): {},
+				},
+				AcceptingStates: StateSetExistence{
+					StateKeyString("T2"): true,
+					StateKeyString("T5"): true,
+					StateKeyString("T6"): true,
+				},
+			},
+			mergedStates: MergedStates{
+				StateKeyString("1"): &StateSetExistence{
+					StateKeyString("T6"): true,
+					StateKeyString("T2"): true,
+				},
+				StateKeyString("2"): &StateSetExistence{
+					StateKeyString("T4"): true,
+				},
+				StateKeyString("3"): &StateSetExistence{
+					StateKeyString("T5"): true,
+				},
+				StateKeyString("4"): &StateSetExistence{
+					StateKeyString("T0"): true,
+				},
+				StateKeyString("5"): &StateSetExistence{
+					StateKeyString("T1"): true,
+				},
+				StateKeyString("0"): &StateSetExistence{
+					StateKeyString("dead"): true,
+					StateKeyString("T3"): true,
+				},
+			},
+			//table: [][]StateKeyString{
+			//	{StateKeyString("0"), StateKeyString("5"), StateKeyString("1"), StateKeyString("0"), StateKeyString("0"), StateKeyString("3"), StateKeyString("0"), StateKeyString("0")},
+			//	{StateKeyString("0"), StateKeyString("2"), StateKeyString("0"), StateKeyString("0"), StateKeyString("0"), StateKeyString("0"), StateKeyString("0"), StateKeyString("0")},
+			//	{StateKeyString("0"), StateKeyString("0"), StateKeyString("0"), StateKeyString("0"), StateKeyString("0"), StateKeyString("0"), StateKeyString("1"), StateKeyString("0")},
+			//},
+		},
 	}{
-		tt := InitTT(&test.inGraph)
+		tt := InitTT(&test.inGraph, testing.Verbose())
 		tt.DeadStateMinimisation()
-		tt.Visualisation("deadstate_test")
-		fmt.Println(i)
-		fmt.Println(tt.String())
-		fmt.Println(tt.MergedStates.String())
+		mergedStatesSame := false
+		if len(test.mergedStates) == len(tt.MergedStates) {
+			for _, expectedStateSet := range test.mergedStates {
+				for _, actualStateSet := range tt.MergedStates {
+					if expectedStateSet.Equal(actualStateSet) {
+						mergedStatesSame = true
+						break
+					}
+				}
+			}
+		}
+		if !mergedStatesSame {
+			t.Errorf("Actual merged states:\n%sDoes not match expected merged states:\n%s", tt.MergedStates.String(), test.mergedStates.String())
+		}
 	}
 }

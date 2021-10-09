@@ -100,12 +100,14 @@ type TransitionTable struct {
 	Language 		[]string
 	AcceptingStates StateSetExistence
 	MergedStates    MergedStates
+	Verbose         bool
 }
 
 // InitTT constructs a TransitionTable from the given Graph instance.
-func InitTT(graph *Graph) *TransitionTable {
+func InitTT(graph *Graph, verbose bool) *TransitionTable {
 	// Setup the basic metadata for the transition table
 	tt := TransitionTable{}
+	tt.Verbose = verbose
 	tt.Language = graph.Language()
 	tt.Rows = len(tt.Language)
 	tt.Cols = len(graph.DFA) + 1
@@ -207,7 +209,7 @@ func (tt *TransitionTable) FindMerges() {
 	mergedStateNum := len(tt.MergedStates)
 
 	// We iterate over the current merged states.
-	for _, states := range tt.MergedStates {
+	for mergedState, states := range tt.MergedStates {
 		// We check if any of the merged states need to be split
 		for checkingState := range *states {
 			toLookAt := *states.Difference(&StateSetExistence{
@@ -246,6 +248,11 @@ func (tt *TransitionTable) FindMerges() {
 					newSet.Mark(*toAddRemove.Keys()...)
 					// ...And remove them from the old
 					states.Unmark(*toAddRemove.Keys()...)
+					if tt.Verbose {
+						fmt.Println("Splitting", mergedState, "into:")
+						fmt.Println(mergedState, ":", states.String())
+						fmt.Println(key, ":", newSet.String())
+					}
 				}
 			}
 		}
@@ -265,6 +272,7 @@ func (tt *TransitionTable) Markup(original *TransitionTable) {
 // Clone the referred to TransitionTable. This will produce a deep copy.
 func (tt *TransitionTable) Clone() *TransitionTable {
 	newTT := TransitionTable{}
+	newTT.Verbose = tt.Verbose
 	newTT.Rows = tt.Rows
 	newTT.Cols = tt.Cols
 	newTT.States = make([]StateKey, len(tt.States))
@@ -316,26 +324,36 @@ func (tt *TransitionTable) DeadStateMinimisation() {
 	minimalTable.MergedStates["0"] = &deadStates
 	// We clone the AcceptingStates set by differencing it with an empty set
 	minimalTable.MergedStates["1"] = tt.AcceptingStates.Difference(new(StateSetExistence))
-	fmt.Println("Starting merged states:")
-	fmt.Println(minimalTable.MergedStates.String())
+	if tt.Verbose {
+		fmt.Println("Starting transition table:")
+		fmt.Println(minimalTable.String())
+		fmt.Println("Starting merged states:")
+		fmt.Println(minimalTable.MergedStates.String())
+	}
 	minimalTable.Markup(tt)
 
 	// We keep merging states until the mergedStates haven't changed from the previous iteration
 	for tt.MergedStates.Changed(&minimalTable.MergedStates) {
-		fmt.Println()
-		fmt.Println("Marked up transition table:")
-		fmt.Println(minimalTable.String())
+		if tt.Verbose {
+			fmt.Println()
+			fmt.Println("Marked up transition table:")
+			fmt.Println(minimalTable.String())
+		}
 		tt.MergedStates = make(MergedStates)
 		for mergedStates, set := range minimalTable.MergedStates {
 			tt.MergedStates[mergedStates] = set.Difference(new(StateSetExistence))
 		}
 		minimalTable.FindMerges()
 		minimalTable.Markup(tt)
-		fmt.Println("New merged states:")
-		fmt.Println(minimalTable.MergedStates.String())
+		if tt.Verbose {
+			fmt.Println("New merged states:")
+			fmt.Println(minimalTable.MergedStates.String())
+		}
 	}
-	fmt.Println("NO CHANGE")
 	*tt = *minimalTable
-	fmt.Println("\nFinal transition table:")
-	fmt.Println(minimalTable.String())
+	if tt.Verbose {
+		fmt.Println("NO CHANGE")
+		fmt.Println("\nFinal transition table:")
+		fmt.Println(minimalTable.String())
+	}
 }

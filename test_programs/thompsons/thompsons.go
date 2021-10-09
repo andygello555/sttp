@@ -209,8 +209,10 @@ func (al *AdjacencyList) Equal(al2 *AdjacencyList) bool {
 
 func (al *AdjacencyList) String() string {
 	out := make([]string, len(*al))
+	i := 0
 	for state, edges := range *al {
-		out = append(out, fmt.Sprintf("%v: %v", state, edges))
+		out[i] = fmt.Sprintf("%v: %v", state, edges)
+		i++
 	}
 	return strings.Join(out, "\n")
 }
