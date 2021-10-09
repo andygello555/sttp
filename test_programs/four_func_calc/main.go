@@ -8,21 +8,29 @@ import (
 )
 
 func main() {
-	parser := BuildParser(&Statement{})
-	memory := make(Memory)
-
 	if len(os.Args) > 1 {
-		sourceFile := os.Args[1]
-		if files.IsFile(sourceFile) {
-			stmt := &Statement{}
-			if err := parser.ParseString(sourceFile, "", stmt); err != nil {
-				fmt.Println(fmt.Sprintf("Error occurred whilst executing \"%s\": %v", sourceFile, err))
-				os.Exit(1)
-			}
-			result, _ := stmt.Eval(memory)
-			fmt.Println(result)
+		sourceFileOrScript := os.Args[1]
+		emptyString := ""
+		var filename, s *string
+
+		if files.IsFile(sourceFileOrScript) {
+			// If the input is a file then we parse the file
+			filename = &sourceFileOrScript
+			s = &emptyString
+		} else {
+			// Otherwise, we parse the command line arg
+			filename = &emptyString
+			s = &sourceFileOrScript
+		}
+
+		if err, results := Eval(*filename, *s); err != nil {
+			fmt.Println(fmt.Sprintf("Error occurred whilst executing \"%s\": %v", sourceFileOrScript, err))
+			os.Exit(1)
+		} else {
+			fmt.Println("Results:", results)
 		}
 	} else {
+		memory := make(Memory)
 		reader := bufio.NewReader(os.Stdin)
 		fmt.Println("  Interactive mode   ")
 		fmt.Println("---------------------")
@@ -31,16 +39,15 @@ func main() {
 			fmt.Print("> ")
 			text, _ := reader.ReadString('\n')
 
-			if text == "quit" {
+			if text == "quit\n" {
 				break
 			}
 
-			stmt := &Statement{}
-			if err := parser.ParseString("", text, stmt); err != nil {
+			if err, results := Eval("", text, &memory); err != nil {
 				fmt.Println(fmt.Sprintf("Error occurred whilst executing input: %v", err))
+			} else {
+				fmt.Println("Results:", results)
 			}
-			result, _ := stmt.Eval(memory)
-			fmt.Println(result)
 		}
 	}
 	os.Exit(0)

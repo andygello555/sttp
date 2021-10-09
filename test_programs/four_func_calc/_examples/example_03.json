@@ -1,0 +1,5 @@
+{
+  "script": "let a=2-3+4;let b=16*5;clear a;a+b",
+  "results": [],
+  "errors": ["no such variable a"]
+}
