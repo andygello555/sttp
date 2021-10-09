@@ -34,8 +34,7 @@ func main() {
 
 		// Dead State Minimisation
 		fmt.Println("\nDead State Minimisation:")
-		tt := InitTT(graph)
-		fmt.Println(tt)
+		tt := InitTT(graph, true)
 		tt.DeadStateMinimisation()
 		tt.Visualisation("deadstate")
 		os.Exit(0)
