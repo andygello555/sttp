@@ -8,11 +8,11 @@ import (
 )
 
 var Lexer = lexer.MustSimple([]lexer.Rule{
-	{"Number", `[+-]?([0-9]*[.])?[0-9]+`, nil},
+	{"Number", `([0-9]*[.])?[0-9]+`, nil},
 	{"Ident", `[a-zA-Z_]\w*`, nil},
 	{"EOL", `[\n\r]+`, nil},
 	// We add punctuation matching to our Lexer as these characters need to be consumed
-	{"Punct", `[-,()*/+%{};&!=:<>]|\[|\]`, nil},
+	{"Punct", `[()*+-/=;]`, nil},
 	{"whitespace", `\s*`, nil},
 })
 
@@ -21,6 +21,15 @@ type Operator int
 
 // Memory describes the current memory map for the calculator. Mapping of variable identifiers to their values.
 type Memory map[string]float64
+
+// Merge merges the given memories into the referred to memory.
+func (m *Memory) Merge(memories... *Memory) {
+	for _, memory := range memories {
+		for ident, val := range *memory {
+			(*m)[ident] = val
+		}
+	}
+}
 
 // Supported operators.
 const (
@@ -41,7 +50,7 @@ func (o *Operator) Capture(s []string) error {
 	var ok bool
 	*o, ok = operatorMap[s[0]]
 	if !ok {
-		panic(fmt.Sprintf("Unsupported operator: %s", s[0]))
+		panic(RuntimeError(fmt.Sprintf("Unsupported operator: %s", s[0])))
 	}
 	return nil
 }
@@ -88,18 +97,20 @@ type Clear struct {
 // An Assignment consists of the string "let", followed by a variable identifier followed by the declaration+assignment
 // operator followed by an Expression.
 type Assignment struct {
-	Tokens     []lexer.Token
 	Variable   *string     `"let" @Ident`
 	Expression *Expression `"=" @@`
 }
 
-
 // A Statement can either be an expression or a variable assignment.
 type Statement struct {
-	Tokens     []lexer.Token
 	Clear      *Clear      `(   @@`
 	Assignment *Assignment `  | @@`
-	Expression *Expression `  | @@ ) EOL`
+	Expression *Expression `  | @@ ) (EOL | ";" | EOF)`
+}
+
+// A Script is a list of none or many Statements.
+type Script struct {
+	Statements []*Statement `@@*`
 }
 
 func (o Operator) String() string {
@@ -113,7 +124,7 @@ func (o Operator) String() string {
 	case Add:
 		return "+"
 	}
-	panic("unsupported operator")
+	panic(RuntimeError("unsupported operator"))
 }
 
 func (v *Factor) String() string {
@@ -169,6 +180,14 @@ func (s *Statement) String() string {
 	return s.Expression.String()
 }
 
+func (s *Script) String() string {
+	out := make([]string, len(s.Statements))
+	for i, stmt := range s.Statements {
+		out[i] = stmt.String()
+	}
+	return strings.Join(out, "\n")
+}
+
 func (o Operator) Eval(l, r float64) float64 {
 	switch o {
 	case Mul:
@@ -180,7 +199,7 @@ func (o Operator) Eval(l, r float64) float64 {
 	case Sub:
 		return l - r
 	default:
-		panic("Unsupported operator")
+		panic(RuntimeError("Unsupported operator"))
 	}
 }
 
@@ -191,7 +210,7 @@ func (v *Factor) Eval(ctx Memory) float64 {
 	case v.Variable != nil:
 		value, ok := ctx[*v.Variable]
 		if !ok {
-			panic("no such variable " + *v.Variable)
+			panic(RuntimeError("no such variable " + *v.Variable))
 		}
 		return value
 	default:
@@ -235,10 +254,52 @@ func (s *Statement) Eval(ctx Memory) (float64, *Memory) {
 	return s.Expression.Eval(ctx), &ctx
 }
 
+func (s *Script) Eval(ctx Memory) ([]float64, *Memory) {
+	if ctx == nil {
+		ctx = make(Memory)
+	}
+	results := make([]float64, len(s.Statements))
+	for i, stmt := range s.Statements {
+		results[i], _ = stmt.Eval(ctx)
+	}
+	return results, &ctx
+}
+
 func BuildParser(grammar interface{}) *participle.Parser {
 	return participle.MustBuild(grammar,
 		participle.Lexer(Lexer),
 		participle.CaseInsensitive("Ident"),
 		participle.UseLookahead(2),
 	)
+}
+
+func Eval(filename, s string, givenContext... *Memory) (err error, results []float64) {
+	parser := BuildParser(&Script{})
+	script := &Script{}
+	err = nil
+	if err = parser.ParseString(filename, s, script); err != nil {
+		return err, results
+	}
+
+	var ctx Memory = nil
+	// We create a new memory context to merge all the given contexts into if any contexts were given
+	if len(givenContext) > 0 {
+		ctx = make(Memory)
+		ctx.Merge(givenContext...)
+	}
+
+	// We catch any panics that are runtime errors and we re-panic if not
+	defer func() {
+		if p := recover(); p != nil {
+			switch p.(type) {
+			case RuntimeError:
+				err = p.(RuntimeError)
+			default:
+				panic(p)
+			}
+		}
+	}()
+
+	results, _ = script.Eval(ctx)
+	return err, results
 }
