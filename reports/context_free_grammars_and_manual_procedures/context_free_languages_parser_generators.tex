@@ -5,6 +5,10 @@
 \usepackage{tikz}
 \usepackage{amsmath}
 \usepackage{cprotect}
+\usepackage[english]{babel}
+\usepackage{amsthm}
+\usepackage[linguistics]{forest}
+\usepackage{float}
 
 % Metadata
 \title{Context-free grammars and manual procedures for parsing languages}
@@ -21,6 +25,9 @@
 }{%
   \end{center}
 }
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}[subsubsection]
 
 \begin{document}
 
@@ -65,16 +72,16 @@ A grammar is defined as context free if the non-terminals on the left hand side 
 
 Most natural languages are defined by a context-sensitive grammar due to things such as the existence of many grammatical cases for the same word that depends on context.
 
-One such example in the English language could be the sub-sentence \textit{"burnt like hell"}. When used in this sentence:
+One such example in the English language could be the sub-sentence \textit{``burnt like hell"}. When used in this sentence:
 
 \begin{center}
-    "The toast was burnt like hell"
+    ``The toast was burnt like hell"
 \end{center}
 
 \textit{Burnt} is an \textbf{adjective} applied to the noun. Whereas in:
 
 \begin{center}
-    "The fire burnt like hell"
+    ``The fire burnt like hell"
 \end{center}
 
 \textit{Burnt} is a \textbf{verb}. The grammar of the word \textit{burnt} would be impossible to describe using a context-free grammar as the \textbf{meaning} of the word depends on the \textbf{context} of the words surrounding it.
@@ -198,13 +205,189 @@ One of the possible derivations for the string \verb|1 + 2 * 3| with the start s
     \cprotect\caption{A possible derivation of \verb|1 + 2 * 3| with start state $S$ on the grammar given in fig. 3}
 \end{figure}
 
-This derivation is a \textit{leftmost derivation}, which means that it always derives the leftmost non-terminal. It is also a derivation of an \textbf{ambiguous} grammar which means that this derivation belongs to the set of all possible derivations. Each possible derivation can be treated as different subtree whenever a production rule with no terminals on the right hand side is used.
+This derivation is performed \textit{top-down} by taking \textit{leftmost derivation}, this means that we start with the start state and produce a parse tree by applying derivation step for the leftmost non-terminal until we end up with the input string. It is also a derivation of an \textbf{ambiguous} grammar which means that this derivation belongs to the set of all possible derivations. Each possible derivation can be treated as different subtree whenever a production rule with no terminals on the right hand side is used.
 
 \subsection{Top-down vs. Bottom-up parsing}
 
 \subsubsection{Top-down}
 
+\begin{definition}[Top-down parser]
+    A top-down parser produces a parse tree by starting at a given state $S$ by applying derivation steps until the input string is reached. Backtracking is used heavily to assure a correct derivation is reached.
+\end{definition}
+
+For a human the derivation style shown in fig. 4 seems easier to digest. This is because as humans, we can lookahead in the input expression and decide which derivation step to apply. This makes manual parsing for a given grammar trivial, for example given the grammar:
+
+\begin{figure}[h]
+    \begin{center}
+        \begin{verbatim}
+            J ::= [] | {} | [ E ] | { K }
+            E ::= J | E, J
+            K ::= S: J | K, S: J
+            S ::= " a | b | c "
+            N ::= 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
+        \end{verbatim}
+    \end{center}
+    \vspace{-1.75em}
+    \caption{Grammar for a reduced JSON-like metalanguage}
+\end{figure}
+
+The top-down parse tree for the input string: \verb|{"a": 0}|, can be constructed manually very easily.
+
+\begin{figure}[h]
+    \begin{center}
+        \begin{forest}
+            for tree={
+                if n children=0{
+                  font=\itshape,
+                }{},
+              }
+              [$J_1$
+                [{\{}]
+                [$K_2$
+                  [$S_3$
+                    [{"}]
+                    [$a$]
+                    [{"}]
+                  ]
+                  [{:}]
+                  [$J_4$
+                    [$N_5$
+                        [$0$]
+                    ]
+                  ]
+                ]
+                [{\}}]
+              ]
+        \end{forest}
+    \end{center}
+    \vspace{-1.75em}
+    \cprotect\caption{The parse/derivation tree produced by the top-down parsing of the string \verb|{"a": 0}|}
+\end{figure}
+
+However, when it comes to creating a formal algorithm definition for this technique, it becomes a lot less straightforward. This is because at every non-terminal symbol the parser has to explore each possible derivation step. Effectively building multiple subtrees below it and finally choosing the one which ends up at the correct terminal, or backtracking to the previous derivation step if no match can be found.
+
+There are ways to speed up parsing such as restructuring the grammar to be accepted by an LL(k) parser. The grammar in fig. 7 is the grammar in fig. 6 restructured to remove all left-recursion.
+
+\begin{figure}[h]
+    \begin{center}
+        \begin{equation}
+            \begin{split}
+                J &\rightarrow O\;|\;A\\
+                O &\rightarrow [\;]\;|\;[\;M\;]\\
+                M &\rightarrow P\;|\;P\;,\;M\\
+                P &\rightarrow S\;:\;V\\
+                A &\rightarrow [\;]\;|\;[\;E\;]\\
+                E &\rightarrow V\;|\;V,\;E\\
+                V &\rightarrow	S\;|\;N\\
+                S &\rightarrow	"a"\;|\;"b"\;|\;"c"\\
+                N &\rightarrow 0\;|\;1\;|\;2\;|\;3\;|\;4\;|\;5\;|\;6\;|\;7\;|\;8\;|\;9
+            \end{split}
+            \nonumber
+        \end{equation}
+    \end{center}
+    \vspace{-1em}
+    \caption{The grammar in fig. 6 restructured to remove left-recursion}
+\end{figure}
+
+\begin{definition}[First-set]
+    A first set for a non-terminal consists of all the terminals that can be found by following each of its production rules until a rule beginning with a terminal is found.
+\end{definition}
+
+\begin{figure}[H]
+    \begin{center}
+        \begin{equation}
+            \begin{split}
+                J &= \{``\{", ``\}"\}\;
+                O = \{ ``\{" \}\;
+                M = \{ \text{``"'} \}\;
+                P = \{ \text{``"'} \}\;
+                A = \{ ``[" \}\\
+                E &= \{ \text{``"'}, ``0", ``1", ``2", ``3", ``4", ``5", ``6", ``7", ``8", ``9" \}\\
+                V &= \{ \text{``"'}, ``0", ``1", ``2", ``3", ``4", ``5", ``6", ``7", ``8", ``9" \}\\
+                S &= \{ ``\{" \}\\
+                N &= \{``0", ``1", ``2", ``3", ``4", ``5", ``6", ``7", ``8", ``9" \}
+            \end{split}
+            \nonumber
+        \end{equation}
+    \end{center}
+    \caption{First-sets of each terminal and non-terminal}
+\end{figure}
+
+However, this grammar is still not LL(k) due to the first set conflicts within $O$, $M$, $E$, $A$, and $S$. This occurs when the first sets of two different grammar rules for the same non-terminal intersect with each other. After removing left factors the grammar is now acceptable by an LL(k) parser.
+
+\begin{figure}[H]
+    \begin{center}
+        \begin{equation}
+            \begin{split}
+                J &\rightarrow	O\;|\;A\\
+                O &\rightarrow	\{\;Fcurly\\
+                Fcurly &\rightarrow\;\}\;|\;M\;\}\\
+                M &\rightarrow	P\;\;FP\\
+                FP &\rightarrow\;\epsilon\;|\;,\;M\\
+                P &\rightarrow	S\;:\;V\\
+                A &\rightarrow	[\;Fsqr\\
+                Fsqr &\rightarrow \;]\;|\;E\;]\\
+                E &\rightarrow	V\;\;FV\\
+                FV &\rightarrow\;\epsilon\;|\;,\;E\\
+                V &\rightarrow	S\;|\;N\\
+                S &\rightarrow	"\;Fquote\\
+                Fquote &\rightarrow\;a\;"\;|\;b\;"\;|\;c\;"\\
+                N &\rightarrow	0\;|\;1\;|\;2\;|\;3\;|\;4\;|\;5\;|\;6\;|\;7\;|\;8\;|\;9
+            \end{split}
+            \nonumber
+        \end{equation}
+    \end{center}
+    \vspace{-1em}
+    \caption{Grammar in fig. 7 restructured to remove first-set conflicts using the removal of left factors method}
+\end{figure}
+
+\pagebreak
+
+We can now construct a unique top-down derivation of \verb|{"a": 0}|:
+
+\begin{figure}[H]
+    \begin{center}
+        \begin{forest}
+            for tree={
+                if n children=0{
+                  font=\itshape,
+                }{},
+              }
+              [$J_1$
+                [$O$
+                    [{\{}]
+                    [Fcurly
+                        [M
+                            [P
+                                [S
+                                    ["]
+                                    [Fquote
+                                        [a"]
+                                    ]
+                                ]
+                                [:]
+                                [V
+                                    [N
+                                        [0]
+                                    ]
+                                ]
+                            ]
+                            [FP
+                                [$\epsilon$]
+                            ]
+                        ]
+                        [{\}}]
+                    ]
+                ]
+              ]
+        \end{forest}
+    \end{center}
+    \cprotect\caption{The unique derivation of \verb|{"a": 0}| after restructuring the grammar in fig. 5 to be an LL(k) grammar}
+\end{figure}
+    
 \subsubsection{Bottom-up}
+
+Bottom-up
 
 % Describe the shift-reduce algorithm and give an example
 
