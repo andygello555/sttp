@@ -11,6 +11,7 @@
 *.dot
 
 *.cpt
+*.out
 *.aux
 *.fdb_latexmk
 *.fls

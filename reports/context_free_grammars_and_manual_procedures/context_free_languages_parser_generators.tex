@@ -9,6 +9,8 @@
 \usepackage{amsthm}
 \usepackage[linguistics]{forest}
 \usepackage{float}
+\usepackage{array}
+\usepackage{hyperref}
 
 % Metadata
 \title{Context-free grammars and manual procedures for parsing languages}
@@ -212,7 +214,7 @@ This derivation is performed \textit{top-down} by taking \textit{leftmost deriva
 \subsubsection{Top-down}
 
 \begin{definition}[Top-down parser]
-    A top-down parser produces a parse tree by starting at a given state $S$ by applying derivation steps until the input string is reached. Backtracking is used heavily to assure a correct derivation is reached.
+    A top-down parser produces a parse tree by starting at a given state $S$ by applying derivation steps until the input string is reached. Backtracking might be used in certain grammars to assure a correct derivation is reached.
 \end{definition}
 
 For a human the derivation style shown in fig. 4 seems easier to digest. This is because as humans, we can lookahead in the input expression and decide which derivation step to apply. This makes manual parsing for a given grammar trivial, for example given the grammar:
@@ -387,9 +389,111 @@ We can now construct a unique top-down derivation of \verb|{"a": 0}|:
     
 \subsubsection{Bottom-up}
 
-Bottom-up
+\begin{definition}[Bottom-up parser]
+    A bottom-up parser produces a parse tree by starting at a given input string and applying derivation steps until start symbol of the grammar is reached. Effectively constructing the derivation tree from the leaf nodes upwards. Shift-reduce parsers are an example of bottom-up parsing and have a linear runtime.
+\end{definition}
 
 % Describe the shift-reduce algorithm and give an example
+
+Even though it seems unnatural to construct a derivation tree from the bottom-up there is one method which is quite intuitive for manual use. This is shift-reduce parsing. We shall define a new grammar (fig. 11) for the upcoming example of the shift-reduce method.
+
+\begin{figure}[h]
+    \begin{center}
+        \begin{equation}
+            \begin{split}
+                Section &\rightarrow Header\;Property\;|\;Section\;Property\;|\;Section\;Header\\
+                Header &\rightarrow [\;S\;]\\
+                Property &\rightarrow S\;=\;V;\\
+                V &\rightarrow S\;|\;N\\
+                S &\rightarrow a\;|\;b\;|\;c\\
+                N &\rightarrow 0\;|\;1\;|\;2\;|\;3\;|\;4\;|\;5\;|\;6\;|\;7\;|\;8\;|\;9
+            \end{split}
+            \nonumber
+        \end{equation}
+    \end{center}
+    \vspace{-1em}
+    \caption{Grammar for a simplified INI config file type language}
+\end{figure}
+
+Shift-reduce parsing parses a given input string by applying one of the two actions:
+
+\begin{itemize}
+    \item \textbf{Reduce}: If we can find a rule $A \rightarrow \alpha$ and if the contents of the stack are $\beta\alpha$ for some $\beta$, then we can reduce the stack to $\beta A$. In effect, we are applying production rules for non-terminals backwards. If the \textbf{current stack is just the start symbol} and \textbf{no input is left}, then this means that given input is a valid sentence within the language defined by the given grammar.
+    \item \textbf{Shift}: If it's not possible to perform a reduction on the current stack symbol, then the next terminal can be pushed onto the stack from the input.
+\end{itemize}
+
+Along with those actions we also define a \textbf{lookahead} variable which defines the next available token in the input. This is necessary to parse the grammar in fig. 11 to avoid backtracking. For example, if the symbol $S$ was on the stack we might need to use the lookahead to see if the next token is ``$]$" or ``$=$" to avoid reducing $S$ into $V$.
+
+Different amount of lookahead denotes different subsets of grammars. For instance, the grammar defined in fig. 11 is an $LR(k)$ grammar, where $k$ is the number of tokens of lookahead and $k=1$.
+
+With that in mind here's an example of shift-reduce trace table using the grammar given in fig. 11:
+
+\begin{figure}[H]
+    \begin{center}
+        \begin{tabular}{| m{3.5cm} | m{3cm} | m{2cm} | m{5cm} |}
+            \hline
+            Stack & \mbox{Remaining Input} & Lookahead & Action\\
+            \hline
+            & \verb|[a]a=0;b=a;$| & \verb|[| & Shift\\
+            \hline
+            \verb|[| & \verb|a]a=0;b=a;$| & \verb|a| & Shift\\
+            \hline
+            \verb|[a| & \verb|]a=0;b=a;$| & \verb|]| & Reduce: $S \rightarrow a$\\
+            \hline
+            \verb|[S| & \verb|]a=0;b=a;$| & \verb|]| & Lookahead is \verb|]|. Can reduce to $Header$ after shifting.\\
+            \hline
+            \verb|[S]| & \verb|a=0;b=a;$| & \verb|a| & Reduce: $Header \rightarrow [\;S\;]$\\
+            \hline
+            \verb|Header| & \verb|a=0;b=a;$| & \verb|a| & Shift\\
+            \hline
+            \verb|Header a| & \verb|=0;b=a;$| & \verb|=| & Reduce: $S \rightarrow a$\\
+            \hline
+            \verb|Header S| & \verb|=0;b=a;$| & \verb|=| & Lookahead is \verb|=|. Might be able to reduce later.\\
+            \hline
+            \verb|[Header S=| & \verb|0;b=a;$| & \verb|0| & Shift\\
+            \hline
+            \verb|Header S=0| & \verb|;b=c;$| & \verb|;| & Reduce: $N \rightarrow 0$\\
+            \hline
+            \verb|Header S=N| & \verb|;b=c;$| & \verb|;| & Reduce: $V \rightarrow N$\\
+            \hline
+            \verb|Header S=V| & \verb|;b=c;$| & \verb|;| & Shift\\
+            \hline
+            \verb|Header S=V;| & \verb|b=c;$| & \verb|b| & Reduce: $Property \rightarrow S = V;$\\
+            \hline
+            \verb|Header Property| & \verb|b=c;$| & \verb|b| & Reduce: $Section \rightarrow Header\;Property$\\
+            \hline
+            \verb|Section| & \verb|b=c;$| & \verb|b| & Shift\\
+            \hline
+            \verb|Section b| & \verb|=c$;| & \verb|=| & Reduce: $S \rightarrow b$\\
+            \hline
+            \verb|Section S| & \verb|=c;$| & \verb|=| & Lookahead is \verb|=|. Might be able to reduce later.\\
+            \hline
+            \verb|Section S=| & \verb|c;$| & \verb|c| & Shift\\
+            \hline
+            \verb|Section S=c| & \verb|;$| & \verb|;| & Reduce: $S \rightarrow c$\\
+            \hline
+            \verb|Section S=S| & \verb|;$| & \verb|;| & Reduce: $V \rightarrow S$, lookahead is ``$;$": assume that reduction to $V$ can be made.\\
+            \hline
+            \verb|Section S=V| & \verb|;$| & \verb|;| & Shift\\
+            \hline
+            \verb|Section S=V;| & \verb|$| & \verb|$| & Reduce: $Property \rightarrow S = V;$\\
+            \hline
+            \verb|Section Property| & \verb|$| & \verb|$| & Reduce: $Section \rightarrow Section\;Property$\\
+            \hline
+            \verb|Section| & \verb|$| & \verb|$| & \\
+            \hline
+        \end{tabular}
+    \end{center}
+    \cprotect\caption{Trace table for a shift-reduce parser with the input \verb|[a]a=0;b=a;| with the grammar shown in fig. 11}
+\end{figure}
+
+As you can see if the grammar is LR(k), a shift-reduce method can easily be carried out manually.
+
+\section{Parser generators}
+
+The parser generator that I will be using for my interpreter is the \href{https://github.com/alecthomas/participle#overview}{participle parser by Alec Thomas}. Participle will generate a recursive descent parser with backtracking for a given grammar. This means that the grammar you need to write can be, but is not limited to LL(k). However, if the grammar is not LL(k) the parser is not guaranteed to terminate. This means that grammar will need to be restructured to remove any left-recursion (if it exists).
+
+If a grammar that is LL(k) can be constructed it will mean that the parser generated will be a \textit{predictive parser} which means that there will be no backtracking.
 
 % Bibliography
 
