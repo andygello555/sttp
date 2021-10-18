@@ -1,0 +1,329 @@
+\documentclass[12pt, letterpaper]{article}
+
+% Metadata
+\title{Specification for Web API testing language}
+
+\author{Jakab Zeller}
+
+\date{October 2021}
+
+\begin{document}
+
+\maketitle
+
+\section{Grammar}
+
+\subsection{Tokens}
+
+The following are all the tokens, along with their regular expressions, that the lexical analyser accepts.
+
+\begin{center}
+    \begin{verbatim}
+        # Tokens passed to the parser
+        Number    = `[-+]?(\d*\.)?\d+'
+        StringLit = `"(\\"|[^"])*"'
+        Ident     = `[a-zA-Z_]\w*'
+        Method    = `(GET|HEAD|POST|PUT|DELETE|CONNECT|OPTIONS|TRACE|PATCH)'
+        While     = `while'
+        For       = `for'
+        Do        = `do'
+        Break     = `break'
+        Then      = `then'
+        End       = `end'
+        Function  = `function'
+        Return    = `return'
+        If        = `if'
+        Elif      = `elif'
+        Else      = `else'
+        In        = `in'
+        True      = `true'
+        False     = `false'
+        Null      = `null'
+        Punct     = `[-,()*/+{};&!=:<>]|\[|\]'
+        # Ignored tokens
+        comment    = `//.*|/\*.*?\*/'
+        whitespace = `\s+'
+    \end{verbatim}
+\end{center}
+
+All capitalised symbols are tokens that are passed from the lexical analyser to the parser. Whereas, the uncapitalised symbols are read by the lexical analyser and ignored by the parser.
+
+\subsection{Grammar in EBNF}
+
+\begin{center}
+    \begin{verbatim}
+        Program  -> Block
+        Block    -> { Stmt } [ RetStmt ]
+        Stmt -> (   JSONPath "=" Exp
+                  | FuncCall
+                  | MethCall
+                  | Break
+                  | While Exp Do Block End
+                  | For Ident "=" Exp ";" Exp [ ";" Exp ] Do Block End
+                  | For Ident [ "," Ident ] In Exp Do Block End
+                  | Function JSONPath FuncBody
+                  | If Exp Then Block { ElifSeg } [ ElseSeg ] End )? ";"
+
+        # Moved to seperate rules for readability
+        ElifSeg  -> Elif Exp Then Block
+        ElseSeg  -> Else Block
+
+        # JSON Path
+        JSONPath -> Part { "." Part }
+        Part     -> Ident { "[" Exp "]" }
+
+        RetStmt  -> Return [ Exp ] [ ";" ]
+        FuncCall -> JSONPath Args
+        MethCall -> Method Args
+        FuncBody -> "(" [Params] ")" Block End
+        Params   -> Ident { "," Ident }
+        Args     -> "(" [ExpList] ")"
+        ExpList  -> Exp { "," Exp }
+
+        # Our "arithmetic expressions" have 5 levels of precedence
+        # "||": lowest precedence
+        Exp      -> Prec5T { Prec5 }
+        Prec5    -> Prec5Op Prec5T Prec5
+        Prec5Op  -> "||"
+
+        # "&&": 2nd lowest precedence
+        Prec5T   -> Prec4T { Prec4 }
+        Prec4    -> Prec4Op Prec4T Prec4
+        Prec4Op  -> "&&"
+
+        # "==" and "!=": 3rd lowest precedence
+        Prec4T   -> Prec3T { Prec3 }
+        Prec3    -> Prec3Op Prec3T Prec3
+        Prec3Op  -> "==" | "!="
+
+        # "<", ">", "<=", and ">=": 4th lowest precedence
+        Prec3T   -> Prec2T { Prec2 }
+        Prec2    -> Prec2Op Prec2T Prec2
+        Prec2Op  -> "<" | ">" | "<=" | ">="
+
+        # "+" and "-": 5th lowest precedence
+        Prec2T   -> Prec1T { Prec1 }
+        Prec1    -> Prec1Op Prec1T Prec1
+        Prec1Op  -> "+" | "-"
+
+        # "*" and "/": Highest precedence
+        Prec1T   -> Factor { Prec0 }
+        Prec0    -> Prec0Op Factor Prec0
+        Prec0Op  -> "*" | "/"
+
+        # The factors are our base values
+        Factor   -> Null |
+                    False |
+                    True |
+                    Number |
+                    StringLit |
+                    JSONPath |
+                    JSON |
+                    FuncCall |
+                    MethodCall |
+                    "(" Exp ")"
+
+        # JSON literal
+        JSON     -> Object | Array
+        Object   -> "{" Members "}"
+        Members  -> Pair { "," Pair }
+        Pair     -> Key ":" Exp
+        Key      -> StringLit | JSONPath | AriExp
+        Array    -> "[" ExpList "]"
+    \end{verbatim}
+\end{center}
+
+There are a few things to note about this grammar.
+
+\subsubsection{Statements}
+
+Statements can be one of the following:
+
+\begin{center}
+    \begin{enumerate}
+        \item An assignment. Only one assignment operator is supported: `='.
+        \item A function call.
+        \item The break keyword.
+        \item A `while' loop. The condition of which is an expression. This is explained more in the `Expressions and arithmetic' subsection.
+        \item A `for' loop. Supports either the ``traditional" C-style format or the iterator style format. The iterator style `for' loop has an optional additional iterator assignment for key-value pair iteration or index-value iteration.
+        \item A function definition.
+        \item An `if-elif-else' block.
+        \item A `NOP'. Defined by a statement followed by a singular semi-colon.
+    \end{enumerate}
+\end{center}
+
+\subsubsection{Variables and values}
+
+All values are stored internally as JSON parsable strings. This means that the supported ``data types" are strings, floats, integers, arrays, objects, `true'/`false' and `null'. Some other semantics:
+
+\begin{center}
+    \begin{itemize} 
+        \item Variables can be modified using `JSON path'.
+        \item Variable assignment will carry out a \textbf{deep copy}.
+        \item \textbf{Variables are always passed by reference}{Variables are always passed by reference} and expressions are passed by value.
+        \item \textbf{Variables are declared and defined} when a new \textbf{root identifier} is used in a JSONPath assignment that \textbf{doesn't exist} in the \textbf{current scope}.
+        \item \textbf{Variables are set} when the root identifier \textbf{exists} in the \textbf{current scope}.
+        \item \textbf{Variables are filled sparsely} when a \textbf{JSONPath accessing a non-existent sublevel} of the JSON is assigned to. For instance:
+        \begin{verbatim}
+            hello_world = {
+                "hello": "world"
+            };
+            hello_world.world[1].hello = "world";
+            /*
+            hello = {
+                "hello": "world",
+                "world": [
+                    null,
+                    {"hello": "world"}
+                ]
+            }
+            */
+        \end{verbatim}
+        \item The resulting values of boolean operators are converted to the integers `0' or `1' when they are a part of a larger arithmetic expression.
+    \end{itemize}
+\end{center}
+
+\subsubsection{JSON path}
+
+The grammar for the language supports rudimentary JSON path expressions. This includes the standard `.' property accessing or the string indexing style. Below are some valid JSON path expressions:
+
+\begin{center}
+    \begin{verbatim}
+        json[0].path.is.cool
+        json[0]["path"].is.["cool"]
+        json[x + 2]["path"].is.["co" + "ol"]
+    \end{verbatim}
+\end{center}
+
+JSON paths can be assigned to which sets the appropriate property of the variable.
+
+% \begin{center}
+%     \begin{verbatim}
+%         chunk ::= block
+%         block ::= {stat} [retstat]
+%         stat ::=  ‘;’ | 
+%              varlist ‘=’ explist | 
+%              functioncall | 
+%              label | 
+%              break | 
+%              goto Name | 
+%              do block end | 
+%              while exp do block end | 
+%              repeat block until exp | 
+%              if exp then block {elseif exp then block} [else block] end | 
+%              for Name ‘=’ exp ‘,’ exp [‘,’ exp] do block end | 
+%              for namelist in explist do block end | 
+%              function funcname funcbody | 
+%              local function Name funcbody | 
+%              local attnamelist [‘=’ explist] 
+%         attnamelist ::=  Name attrib {‘,’ Name attrib}
+%         attrib ::= [‘<’ Name ‘>’]
+%         retstat ::= return [explist] [‘;’]
+%         label ::= ‘::’ Name ‘::’
+%         funcname ::= Name {‘.’ Name} [‘:’ Name]
+%         varlist ::= var {‘,’ var}
+%         var ::=  Name | prefixexp ‘[’ exp ‘]’ | prefixexp ‘.’ Name 
+%         namelist ::= Name {‘,’ Name}
+%         explist ::= exp {‘,’ exp}
+%         exp ::=  nil | false | true | Numeral | LiteralString | ‘...’ |
+%              functiondef | prefixexp | tableconstructor | exp binop exp |
+%              unop exp 
+%         prefixexp ::= var | functioncall | ‘(’ exp ‘)’
+%         functioncall ::=  prefixexp args | prefixexp ‘:’ Name args 
+%         args ::=  ‘(’ [explist] ‘)’ | tableconstructor | LiteralString 
+%         functiondef ::= function funcbody
+%         funcbody ::= ‘(’ [parlist] ‘)’ block end
+%         parlist ::= namelist [‘,’ ‘...’] | ‘...’
+%         tableconstructor ::= ‘{’ [fieldlist] ‘}’
+%         fieldlist ::= field {fieldsep field} [fieldsep]
+%         field ::= ‘[’ exp ‘]’ ‘=’ exp | Name ‘=’ exp | exp
+%         fieldsep ::= ‘,’ | ‘;’
+%         binop ::=  ‘+’ | ‘-’ | ‘*’ | ‘/’ | ‘//’ | ‘^’ | ‘%’ | 
+%              ‘&’ | ‘~’ | ‘|’ | ‘>>’ | ‘<<’ | ‘..’ | 
+%              ‘<’ | ‘<=’ | ‘>’ | ‘>=’ | ‘==’ | ‘~=’ | 
+%              and | or
+%         unop ::= ‘-’ | not | ‘#’ | ‘~’
+%     \end{verbatim}
+% \end{center}
+
+% Program  -> Block.
+% Block    -> Stmt | Stmt RetStmt.
+% Stmts    -> Stmt Stmt |.
+% Stmt     -> semi |
+%     JSONPath equal Exp |
+%     FuncCall |
+%     Break |
+%     While Exp Do Block End |
+%     For Ident equal Exp semi Exp Do Block End |
+%     For Ident equal Exp semi Exp semi Exp Do Block End |
+%     For Ident In Exp Do Block End |
+%     For Ident comma Ident In Exp Do Block End |
+%     Function JSONPath FuncBody |
+%     If Exp Then Block Elifs End |
+%     If Exp Then Block Elifs Else Block End.
+% Elifs    -> Elif Exp Then Block Elifs |.
+% JSONPath -> Part Parts.
+% Parts    -> dot Part Parts |.
+% Part     -> Ident Indices.
+% Indices  -> sqrL Exp sqrR Indices|.
+% RetStmt  -> Return |
+%             Return semi |
+%             Return Exp semi |
+%             Return Exp.
+% FuncCall -> JSONPath Args.
+% FuncBody -> parenL Params parenR Block End | parenL parenR Block End.
+% Params   -> Ident Idents.
+% Idents   -> comma Ident Idents |.
+% Args     -> parenL ExpList parenR | parenL parenR.
+% Exp      -> Null |
+%             False |
+%             True |
+%             Number |
+%             StringLit |
+%             JSONPath |
+%             JSON |
+%             AriExp.
+% ExpList  -> Exp Exps.
+% Exps     -> comma Exp Exps |.
+
+% AriExp   -> Prec5T Precs5.
+% Precs5   -> Prec5 Precs5|.
+% Prec5    -> Prec5Op Prec5T Prec5.
+% Prec5Op  -> union.
+
+% Prec5T   -> Prec4T Precs4.
+% Precs4   -> Prec4 Precs4|.
+% Prec4    -> Prec4Op Prec4T Prec4.
+% Prec4Op  -> and.
+
+% Prec4T   -> Prec3T Precs3.
+% Precs3   -> Prec3 Precs3|.
+% Prec3    -> Prec3Op Prec3T Prec3.
+% Prec3Op  -> eq | ne.
+
+% Prec3T   -> Prec2T Precs2.
+% Precs2   -> Prec2 Precs2|.
+% Prec2    -> Prec2Op Prec2T Prec2.
+% Prec2Op  -> lt | gt | lte | gte.
+
+% Prec2T   -> Prec1T Precs1.
+% Precs1   -> Prec1 Precs1|.
+% Prec1    -> Prec1Op Prec1T Prec1.
+% Prec1Op  -> plus | minus.
+
+% Prec1T   -> Factor Precs0.
+% Precs0   -> Prec0 Precs0|.
+% Prec0    -> Prec0Op Factor Prec0.
+% Prec0Op  -> mult | div.
+
+% Factor   -> Number | JSONPath | parenL AriExp parenR.
+
+% JSON     -> Object | Array.
+% Object   -> curlyL Members curlyR.
+% Members  -> Pair Pairs.
+% Pairs    -> comma Pair Pairs |.
+% Pair     -> Key colon Exp.
+% Key      -> StringLit | JSONPath | AriExp.
+% Array    -> sqrL ExpList sqrR.
+
+\end{document}
