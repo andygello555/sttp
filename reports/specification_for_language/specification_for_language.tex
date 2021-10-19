@@ -1,5 +1,10 @@
 \documentclass[12pt, letterpaper]{article}
 
+\usepackage{float}
+\usepackage{cprotect}
+\usepackage{array}
+\usepackage{hyperref}
+
 % Metadata
 \title{Specification for Web API testing language}
 
@@ -11,9 +16,7 @@
 
 \maketitle
 
-\section{Grammar}
-
-\subsection{Tokens}
+\section{Tokens}
 
 The following are all the tokens, along with their regular expressions, that the lexical analyser accepts.
 
@@ -48,7 +51,7 @@ The following are all the tokens, along with their regular expressions, that the
 
 All capitalised symbols are tokens that are passed from the lexical analyser to the parser. Whereas, the uncapitalised symbols are read by the lexical analyser and ignored by the parser.
 
-\subsection{Grammar in EBNF}
+\section{Grammar}
 
 \begin{center}
     \begin{verbatim}
@@ -133,9 +136,9 @@ All capitalised symbols are tokens that are passed from the lexical analyser to 
     \end{verbatim}
 \end{center}
 
-There are a few things to note about this grammar.
+\section{Semantics}
 
-\subsubsection{Statements}
+\subsection{Statements}
 
 Statements can be one of the following:
 
@@ -144,7 +147,7 @@ Statements can be one of the following:
         \item An assignment. Only one assignment operator is supported: `='.
         \item A function call.
         \item The break keyword.
-        \item A `while' loop. The condition of which is an expression. This is explained more in the `Expressions and arithmetic' subsection.
+        \item A `while' loop. The condition of which is an expression. This is explained more in the \hyperref[sec:expressions]{`Expressions'} subsection.
         \item A `for' loop. Supports either the ``traditional" C-style format or the iterator style format. The iterator style `for' loop has an optional additional iterator assignment for key-value pair iteration or index-value iteration.
         \item A function definition.
         \item An `if-elif-else' block.
@@ -152,7 +155,7 @@ Statements can be one of the following:
     \end{enumerate}
 \end{center}
 
-\subsubsection{Variables and values}
+\subsection{Variables and values}
 
 All values are stored internally as JSON parsable strings. This means that the supported ``data types" are strings, floats, integers, arrays, objects, `true'/`false' and `null'. Some other semantics:
 
@@ -180,22 +183,82 @@ All values are stored internally as JSON parsable strings. This means that the s
             */
         \end{verbatim}
         \item The resulting values of boolean operators are converted to the integers `0' or `1' when they are a part of a larger arithmetic expression.
+        \item JSON literals can be directly assigned to variables.
     \end{itemize}
 \end{center}
 
-\subsubsection{JSON path}
+\subsection{JSON path}
 
 The grammar for the language supports rudimentary JSON path expressions. This includes the standard `.' property accessing or the string indexing style. Below are some valid JSON path expressions:
 
-\begin{center}
-    \begin{verbatim}
-        json[0].path.is.cool
-        json[0]["path"].is.["cool"]
-        json[x + 2]["path"].is.["co" + "ol"]
-    \end{verbatim}
-\end{center}
+\begin{figure}[H]
+    \begin{center}
+        \begin{verbatim}
+            json[0].path.is.cool
+            json[0]["path"].is.["cool"]
+            json[x + 2]["path"].is.["co" + "ol"]
+        \end{verbatim}
+    \end{center}
+    \vspace{-1.5em}
+    \cprotect\caption{Examples of some valid JSON paths. These all access the \verb|json| variable.}
+\end{figure}
 
-JSON paths can be assigned to which sets the appropriate property of the variable.
+JSON paths can be assigned to. This sets the appropriate property of the variable.
+
+\subsection{Expressions}
+\label{sec:expressions}
+
+Both \textbf{boolean and arithmetic expressions are a part of the same precedence hierarchy}. If binary expressions and arithmetic expressions are mixed together, the result of a boolean operator will be coerced to either a `0' or a `1'. \textbf{All operators are left-to-right associative}.
+
+\subsubsection{Operator precedence}
+
+\begin{figure}[H]
+    \begin{center}
+        \begin{tabular}{| m{2cm} | m{2cm} | m{5cm} |}
+            \hline
+            Precedence & Operators & Description\\
+            \hline
+            \textbf{0} & \verb|* /| & Multiplication and division\\
+            \hline
+            \textbf{1} & \verb|+ -| & Addition and subtraction\\
+            \hline
+            \textbf{2} & \verb|< > <= >=| & Less than, greater than, less than or equal to, and greater than or equal to\\
+            \hline
+            \textbf{3} & \verb|== !=| & Equal and not equal\\
+            \hline
+            \textbf{4} & \verb|&&| & Logical and\\
+            \hline
+            \textbf{5} & \verb+||+ & Logical or\\
+            \hline
+        \end{tabular}
+    \end{center}
+    \caption{Operators and their precedence from highest precedence (top) to lowest precedence (bottom)}
+\end{figure}
+
+\subsubsection{Conditions}
+
+In statements that require conditions (such as `if-elif-else', `while', and `for' statements) a purely arithmetic, a purely binary operator expression, or a mixed expression can all be used. Here is a list of all truthy and falsy values.
+
+\begin{figure}[H]
+    \begin{center}
+        \begin{tabular}{| c | c | c |}
+            \hline
+            Type & Truthy value & Falsy value\\
+            \hline
+            Boolean & \verb|true| & \verb|false|\\
+            \hline
+            null & & \verb|null|\\
+            \hline
+            Number & \verb|!= 0| & \verb|0|\\
+            \hline
+            String & \verb|"..."| & \verb|""|\\
+            \hline
+            JSON & \verb|{...}| & \verb|{}|\\
+            \hline
+        \end{tabular}
+    \end{center}
+    \caption{Table of truthy and falsy values of each type}
+\end{figure}
 
 % \begin{center}
 %     \begin{verbatim}
