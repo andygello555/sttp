@@ -2,10 +2,16 @@ package parser
 
 import (
 	"fmt"
+	"github.com/alecthomas/participle/v2"
 	"github.com/alecthomas/participle/v2/lexer"
 )
 
 type Null bool
+
+func (n *Null) Capture(values []string) error {
+	*n = values[0] == "null"
+	return nil
+}
 
 type Boolean bool
 
@@ -19,6 +25,7 @@ type Operator int
 const (
 	Mul Operator = iota
 	Div
+	Mod
 	Add
 	Sub
 	Lt
@@ -34,6 +41,7 @@ const (
 var operatorMap = map[string]Operator{
 	"*": Mul,
 	"/": Div,
+	"%": Mod,
 	"+": Add,
 	"-": Sub,
 	"<": Lt,
@@ -44,6 +52,22 @@ var operatorMap = map[string]Operator{
 	"!=": Ne,
 	"&&": And,
 	"||": Or,
+}
+
+var operatorSymbolMap = map[Operator]string{
+	Mul: "*",
+	Div: "/",
+	Mod: "%",
+	Add: "+",
+	Sub: "-",
+	Lt: "<",
+	Gt: ">",
+	Lte: "<=",
+	Gte: ">=",
+	Eq: "==",
+	Ne: "!=",
+	And: "&&",
+	Or: "||",
 }
 
 func (o *Operator) Capture(s []string) error {
@@ -81,6 +105,18 @@ var methodMap = map[string]Method{
 	"PATCH": PATCH,
 }
 
+var methodNameMap = map[Method]string{
+	GET: "GET",
+	HEAD: "HEAD",
+	POST: "POST",
+	PUT: "PUT",
+	DELETE: "DELETE",
+	CONNECT: "CONNECT",
+	OPTIONS: "OPTIONS",
+	TRACE: "TRACE",
+	PATCH: "PATCH",
+}
+
 func (m *Method) Capture(s []string) error {
 	var ok bool
 	*m, ok = methodMap[s[0]]
@@ -90,60 +126,44 @@ func (m *Method) Capture(s []string) error {
 	return nil
 }
 
-var lex = lexer.MustSimple([]lexer.Rule{
-	{"Number", `([+-]?[0-9]*[.])?[0-9]+`, nil},
-	{"StringLit", `"(\\"|[^"])*"`, nil},
-	{"Ident", `[a-zA-Z_]\w*`, nil},
-	{"Method", `(GET|HEAD|POST|PUT|DELETE|CONNECT|OPTIONS|TRACE|PATCH)`, nil},
-	{"While", `while`, nil},
-	{"For", `for`, nil},
-	{"Do", `do`, nil},
-	{"Break", `break`, nil},
-	{"Then", `then`, nil},
-	{"End", `end`, nil},
-	{"Function", `function`, nil},
-	{"Return", `return`, nil},
-	{"If", `if`, nil},
-	{"Elif", `elif`, nil},
-	{"Else", `else`, nil},
-	{"In", `in`, nil},
-	{"True", `true`, nil},
-	{"False", `false`, nil},
-	{"Null", `null`, nil},
-	{"Punct", `[-,()*/+{};&!=:<>]|\[|\]`, nil},
-	{"EOL", `[\n\r]+`, nil},
-	{"comment", `//.*|/\*.*?\*/`, nil},
-	{"whitespace", `\s+`, nil},
-})
-
 // JSON describes a JSON literal.
 type JSON struct {
+	Pos lexer.Position
+
 	Object *Object `@@ |`
 	Array  *Array  `@@`
 }
 
 // Object describes a JSON object within a JSON literal.
 type Object struct {
+	Pos lexer.Position
+
 	Pairs []*Pair `"{" (@@ ( "," @@)*)? "}"`
 }
 
 // Pair describes a key-value pair inside a JSON object within a JSON literal.
 type Pair struct {
+	Pos lexer.Position
+
 	Key   *Expression `@@`
 	Value *Expression `":" @@`
 }
 
 // Array describes an array within a JSON literal.
 type Array struct {
-	Elements []*Expression `"{" (@@ ( "," @@)*)? "}"`
+	Pos lexer.Position
+
+	Elements []*Expression `"[" (@@ ( "," @@)*)? "]"`
 }
 
 // Factor represents a factor within an expression.
 type Factor struct {
-	Null          *Null         `  @Null?`
+	Pos lexer.Position
+
+	Null          *Null         `  @Null`
 	Boolean       *Boolean      `| @(True | False)`
 	Number        *float64      `| @Number`
-	String        *string       `| @StringLit`
+	StringLit     *string       `| @StringLit`
 	JSONPath      *JSONPath     `| @@`
 	JSON          *JSON         `| @@`
 	FunctionCall  *FunctionCall `| @@`
@@ -152,148 +172,187 @@ type Factor struct {
 }
 
 type Prec1Term struct {
-	Factor *Factor  `@@`
-	Next   []*Prec0 `@@*`
+	Pos lexer.Position
+
+	Left  *Factor  `@@`
+	Right []*Prec0 `@@*`
 }
 
 // Prec0 captures expressions which use multiply and divide.
 type Prec0 struct {
-	Operator Operator `@("*" | "/")`
+	Pos lexer.Position
+
+	Operator Operator `@("*" | "/" | "%")`
 	Factor   *Factor  `@@`
-	Same     *Prec0   `@@`
 }
 
 type Prec2Term struct {
-	Factor *Prec1Term `@@`
-	Next   []*Prec1   `@@*`
+	Pos lexer.Position
+
+	Left  *Prec1Term `@@`
+	Right []*Prec1   `@@*`
 }
 
 // Prec1 captures expressions which use plus and minus.
 type Prec1 struct {
+	Pos lexer.Position
+
 	Operator Operator   `@("+" | "-")`
 	Factor   *Prec1Term `@@`
-	Same     *Prec1     `@@`
 }
 
 type Prec3Term struct {
-	Factor *Prec2Term `@@`
-	Next   []*Prec2   `@@*`
+	Pos lexer.Position
+
+	Left  *Prec2Term `@@`
+	Right []*Prec2   `@@*`
 }
 
 // Prec2 captures expressions which use less than, greater than, less than or equal to and greater than or equal to.
 type Prec2 struct {
+	Pos lexer.Position
+
 	Operator Operator   `@("<" | ">" | "<=" | ">=")`
 	Factor   *Prec2Term `@@`
-	Same     *Prec2     `@@`
 }
 
 type Prec4Term struct {
-	Factor *Prec3Term `@@`
-	Next   []*Prec3   `@@*`
+	Pos lexer.Position
+
+	Left  *Prec3Term `@@`
+	Right []*Prec3   `@@*`
 }
 
 // Prec3 captures expressions which use not equal and equal.
 type Prec3 struct {
+	Pos lexer.Position
+
 	Operator Operator   `@("!=" | "==")`
 	Factor   *Prec3Term `@@`
-	Same     *Prec3     `@@`
 }
 
 type Prec5Term struct {
-	Factor *Prec4Term `@@`
-	Next   []*Prec4   `@@*`
+	Pos lexer.Position
+
+	Left  *Prec4Term `@@`
+	Right []*Prec4   `@@*`
 }
 
 // Prec4 captures expressions which use logical and.
 type Prec4 struct {
+	Pos lexer.Position
+
 	Operator Operator   `@"&&"`
 	Factor   *Prec4Term `@@`
-	Same     *Prec4     `@@`
 }
 
 type Expression struct {
-	Factor *Prec5Term `@@`
-	Next   []*Prec5   `@@*`
+	Pos lexer.Position
+
+	Left  *Prec5Term `@@`
+	Right []*Prec5   `@@*`
 }
 
 // Prec5 captures expressions which use logical or.
 type Prec5 struct {
+	Pos lexer.Position
+
 	Operator Operator   `@"||"`
 	Factor   *Prec5Term `@@`
-	Same     *Prec5     `@@`
 }
 
 // FunctionBody describes what follows a function identifier.
 type FunctionBody struct {
-	Parameters []*string `"(" (@Ident ( "," @Ident )*)? ")"`
+	Pos lexer.Position
+
+	Parameters []*JSONPath `"(" ( @@ ( "," @@ )* )? ")"`
 	Block      *Block    `@@ End`
 }
 
 // MethodCall describes a call to a HTTP method.
 type MethodCall struct {
+	Pos lexer.Position
+
 	Method    Method        `@Method`
 	Arguments []*Expression `"(" (@@ ( "," @@ )*)? ")"`
 }
 
 // FunctionCall describes a call to a function.
 type FunctionCall struct {
+	Pos lexer.Position
+
 	JSONPath  *JSONPath     `@@`
 	Arguments []*Expression `"(" (@@ ( "," @@ )*)? ")"`
 }
 
 // ReturnStatement describes a return statement which can at the end of any block.
 type ReturnStatement struct {
+	Pos lexer.Position
+
 	Value *Expression `Return @@? ";"`
 }
 
 // JSONPath describes a path to a property within a variable.
 type JSONPath struct {
+	Pos lexer.Position
+
 	Parts []*Part `@@ ( "." @@ )*`
 }
 
 // Part describes an index or property within a JSONPath.
 type Part struct {
+	Pos lexer.Position
+
 	Property *string       `@Ident`
 	Indices  []*Expression `( "[" @@ "]" )*`
 }
 
 // Statement describes one of the statements that can be used in each "line" of a Block.
 type Statement struct {
-	Assignment         *Assignment         `(   @@`
-	FunctionCall       *FunctionCall       `  | @@`
-	MethodCall         *MethodCall         `  | @@`
-	Break              bool                `  | @Break?`
-	While              *While              `  | @@`
-	For                *For                `  | @@`
-	ForEach            *ForEach            `  | @@`
-	FunctionDefinition *FunctionDefinition `  | @@`
-	IfElifElse         *IfElifElse         `  | @@ )? ";"`
+	Pos lexer.Position
+
+	Assignment         *Assignment         `  @@`
+	FunctionCall       *FunctionCall       `| @@`
+	MethodCall         *MethodCall         `| @@`
+	Break              *string             `| @Break`
+	While              *While              `| @@`
+	For                *For                `| @@`
+	ForEach            *ForEach            `| @@`
+	FunctionDefinition *FunctionDefinition `| @@`
+	IfElifElse         *IfElifElse         `| @@`
 }
 
 // Assignment describes an assignment to a property pointed to by a JSONPath.
 type Assignment struct {
-	JSONPath *JSONPath   `@@ "="`
+	Pos lexer.Position
+
+	JSONPath *JSONPath   `Set @@ "="`
 	Value    *Expression `@@`
 }
 
 // While loop.
 type While struct {
+	Pos lexer.Position
+
 	Condition *Expression `While @@ Do`
 	Block     *Block      `@@ End`
 }
 
 // For loop with assignment, condition, and step.
 type For struct {
-	Var        *string     `For @Ident "="`
-	StartValue *Expression `@@ ";"`
+	Pos lexer.Position
+
+	Var        *Assignment `For @@ ";"`
 	Condition  *Expression `@@`
-	Step       *Expression `(";" @@)?`
+	Step       *Assignment `(";" @@)?`
 	Block      *Block      `Do @@ End`
 }
 
 // ForEach loop with iterator(s).
 type ForEach struct {
-	Key   *string     `@Ident`
+	Pos lexer.Position
+
+	Key   *string     `For @Ident`
 	Value *string     `("," @Ident)?`
 	In    *Expression `In @@ Do`
 	Block *Block      `@@ End`
@@ -301,31 +360,80 @@ type ForEach struct {
 
 // FunctionDefinition describes the definition of function.
 type FunctionDefinition struct {
+	Pos lexer.Position
+
 	JSONPath *JSONPath     `Function @@`
 	Body     *FunctionBody `@@`
 }
 
 // IfElifElse is the main construct which defines a if-elif-else statement.
 type IfElifElse struct {
+	Pos lexer.Position
+
 	IfCondition *Expression `If @@ Then`
 	IfBlock     *Block      `@@`
 	Elifs       []*Elif     `@@*`
-	Else        *Block      `@@? End`
+	Else        *Block      `Else @@? End`
 }
 
 // Elif is used within IfElifElse to match Elif branches.
 type Elif struct {
+	Pos lexer.Position
+
 	Condition *Expression `Elif @@ Then`
 	Block     *Block      `@@`
 }
 
 // Block describes a "block" of statements which might end with a return statement.
 type Block struct {
-	Statements []*Statement     `@@*`
+	Pos lexer.Position
+
+	Statements []*Statement     `( @@? ";" )*`
 	Return     *ReturnStatement `@@?`
 }
 
 // Program describes an entire program which is just a Block of statements.
 type Program struct {
+	Pos lexer.Position
+
 	Block *Block `@@`
+}
+
+var lex = lexer.MustSimple([]lexer.Rule{
+	{"comment", `//.*`, nil},
+
+	{"StringLit", `"(\\"|[^"])*"`, nil},
+	{"Method", `(GET|HEAD|POST|PUT|DELETE|CONNECT|OPTIONS|TRACE|PATCH)`, nil},
+	{"Set", `set\s`, nil},
+	{"While", `while\s`, nil},
+	{"For", `for\s`, nil},
+	{"Do", `\sdo\s`, nil},
+	{"Break", `break`, nil},
+	{"Then", `\sthen\s`, nil},
+	{"End", `end`, nil},
+	{"Function", `function\s`, nil},
+	{"Return", `return`, nil},
+	{"If", `if\s`, nil},
+	{"Elif", `elif\s`, nil},
+	{"Else", `else\s`, nil},
+	{"In", `\sin\s`, nil},
+	{"True", `true`, nil},
+	{"False", `false`, nil},
+	{"Null", `null`, nil},
+	{"Operators", `\|\||&&|<=|>=|!=|==|[-+*/%=!<>]`, nil},
+	{"Punct", `[;,.(){}:]|\[|\]`, nil},
+	{"Ident", `[a-zA-Z_]\w*`, nil},
+	{"Number", `([+-]?[0-9]*[.])?[0-9]+`, nil},
+	{"whitespace", `\s+`, nil},
+})
+
+func Parse(filename, s string) (error, *Program) {
+	parser := participle.MustBuild(&Program{},
+		participle.Lexer(lex),
+		participle.CaseInsensitive("Ident"),
+		participle.Unquote("StringLit"),
+		participle.UseLookahead(2),
+	)
+	program := &Program{}
+	return parser.ParseString(filename, s, program), program
 }

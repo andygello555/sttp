@@ -27,24 +27,26 @@ The following are all the tokens, along with their regular expressions, that the
         StringLit = `"(\\"|[^"])*"'
         Ident     = `[a-zA-Z_]\w*'
         Method    = `(GET|HEAD|POST|PUT|DELETE|CONNECT|OPTIONS|TRACE|PATCH)'
-        While     = `while'
-        For       = `for'
-        Do        = `do'
+        Set       = `set\s'
+        While     = `while\s'
+        For       = `for\s'
+        Do        = `\sdo\s'
         Break     = `break'
-        Then      = `then'
+        Then      = `\sthen\s'
         End       = `end'
-        Function  = `function'
+        Function  = `function\s'
         Return    = `return'
-        If        = `if'
-        Elif      = `elif'
-        Else      = `else'
-        In        = `in'
+        If        = `if\s'
+        Elif      = `elif\s'
+        Else      = `else\s'
+        In        = `\sin\s'
         True      = `true'
         False     = `false'
         Null      = `null'
-        Punct     = `[-,()*/+{};&!=:<>]|\[|\]'
+        Operators = `\|\||&&|<=|>=|!=|==|[-+*/%=!<>]'
+        Punct     = `[;,.(){}:]|\[|\]'
         # Ignored tokens
-        comment    = `//.*|/\*.*?\*/'
+        comment    = `//.*'
         whitespace = `\s+'
     \end{verbatim}
 \end{center}
@@ -56,18 +58,18 @@ All capitalised symbols are tokens that are passed from the lexical analyser to 
 \begin{center}
     \begin{verbatim}
         Program  ::= Block
-        Block    ::= { Stmt } [ RetStmt ]
-        Stmt ::= (   JSONPath "=" Exp
-                   | FuncCall
-                   | MethCall
-                   | Break
-                   | While Exp Do Block End
-                   | For Ident "=" Exp ";" Exp [ ";" Exp ] Do Block End
-                   | For Ident [ "," Ident ] In Exp Do Block End
-                   | Function JSONPath FuncBody
-                   | If Exp Then Block { ElifSeg } [ ElseSeg ] End )? ";"
+        Block    ::= { [ Stmt ] ";" } [ RetStmt ]
+        Stmt ::= Ass |
+                 FuncCall |
+                 MethCall |
+                 Break |
+                 While Exp Do Block End |
+                 For Ass ";" Exp [ ";" Ass ] Do Block End |
+                 For Ident [ "," Ident ] In Exp Do Block End |
+                 Function JSONPath FuncBody |
+                 If Exp Then Block { ElifSeg } [ ElseSeg ] End
 
-        # Moved to seperate rules for readability
+        Ass      ::= Set JSONPath "=" Exp
         ElifSeg  ::= Elif Exp Then Block
         ElseSeg  ::= Else Block
 
@@ -79,40 +81,40 @@ All capitalised symbols are tokens that are passed from the lexical analyser to 
         FuncCall ::= JSONPath Args
         MethCall ::= Method Args
         FuncBody ::= "(" [Params] ")" Block End
-        Params   ::= Ident { "," Ident }
+        Params   ::= JSONPath { "," JSONPath }
         Args     ::= "(" [ExpList] ")"
         ExpList  ::= Exp { "," Exp }
 
         # Our "arithmetic expressions" have 5 levels of precedence
         # "||": lowest precedence
         Exp      ::= Prec5T { Prec5 }
-        Prec5    ::= Prec5Op Prec5T Prec5
+        Prec5    ::= Prec5Op Prec5T
         Prec5Op  ::= "||"
 
         # "&&": 2nd lowest precedence
         Prec5T   ::= Prec4T { Prec4 }
-        Prec4    ::= Prec4Op Prec4T Prec4
+        Prec4    ::= Prec4Op Prec4T
         Prec4Op  ::= "&&"
 
         # "==" and "!=": 3rd lowest precedence
         Prec4T   ::= Prec3T { Prec3 }
-        Prec3    ::= Prec3Op Prec3T Prec3
+        Prec3    ::= Prec3Op Prec3T
         Prec3Op  ::= "==" | "!="
 
         # "<", ">", "<=", and ">=": 4th lowest precedence
         Prec3T   ::= Prec2T { Prec2 }
-        Prec2    ::= Prec2Op Prec2T Prec2
+        Prec2    ::= Prec2Op Prec2T
         Prec2Op  ::= "<" | ">" | "<=" | ">="
 
         # "+" and "-": 5th lowest precedence
         Prec2T   ::= Prec1T { Prec1 }
-        Prec1    ::= Prec1Op Prec1T Prec1
+        Prec1    ::= Prec1Op Prec1T
         Prec1Op  ::= "+" | "-"
 
-        # "*" and "/": Highest precedence
+        # "*", "/", and "%": Highest precedence
         Prec1T   ::= Factor { Prec0 }
-        Prec0    ::= Prec0Op Factor Prec0
-        Prec0Op  ::= "*" | "/"
+        Prec0    ::= Prec0Op Factor
+        Prec0Op  ::= "*" | "/" | "%"
 
         # The factors are our base values
         Factor   ::= Null |
@@ -217,7 +219,7 @@ Both \textbf{boolean and arithmetic expressions are a part of the same precedenc
             \hline
             Precedence & Operators & Description\\
             \hline
-            \textbf{0} & \verb|* /| & Multiplication and division\\
+            \textbf{0} & \verb|* / %| & Multiplication, division, and modulus\\
             \hline
             \textbf{1} & \verb|+ -| & Addition and subtraction\\
             \hline

@@ -1,0 +1,44 @@
+set object = {
+    "repeats": 30,
+    "null": null,
+    "false": false,
+    "true": true,
+    "pi": 3.142,
+    "object": {
+        "hello": "world!",
+        "array": [
+            1,
+            1 + 1,
+            1 + 1 + 1
+        ]
+    },
+    "methodcall": GET("https://example.com"),
+    "results": []
+};
+
+// Object Functions
+// Self can be used to access the functions within the bound object
+function object.execute(self.ifvar, self.var_ifwithin_self, party_variable.wow[0].a_a[0])
+    // Parameters are JSON paths which fill sparsely fill a JSON object that can be passed into the function */
+    for set i = 0; i < self.repeats; set i = i + 1 do
+        if i % 3 == 0 then
+            set self.results = self.results + GET("https://google.com");;;;
+            if true then
+                print(("hello" + "world")+"!");
+            elif true then
+                print("still true");
+            else
+                print("hello");print("hello 2");print("hello 3");
+            end;
+        elif i % 5 == 0 then
+            set self.results = self.results + GET("https://twitter.com");
+        elif i % 7 == 0 then
+            set self.results = self.results + GET("https://reddit.com");
+        else
+            set self.results = self.results + GET("https://facebook.com");
+        end;
+    end;
+    return "wow!";
+end;
+
+object.execute();
