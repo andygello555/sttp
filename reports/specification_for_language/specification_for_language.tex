@@ -55,84 +55,83 @@ All capitalised symbols are tokens that are passed from the lexical analyser to 
 
 \begin{center}
     \begin{verbatim}
-        Program  -> Block
-        Block    -> { Stmt } [ RetStmt ]
-        Stmt -> (   JSONPath "=" Exp
-                  | FuncCall
-                  | MethCall
-                  | Break
-                  | While Exp Do Block End
-                  | For Ident "=" Exp ";" Exp [ ";" Exp ] Do Block End
-                  | For Ident [ "," Ident ] In Exp Do Block End
-                  | Function JSONPath FuncBody
-                  | If Exp Then Block { ElifSeg } [ ElseSeg ] End )? ";"
+        Program  ::= Block
+        Block    ::= { Stmt } [ RetStmt ]
+        Stmt ::= (   JSONPath "=" Exp
+                   | FuncCall
+                   | MethCall
+                   | Break
+                   | While Exp Do Block End
+                   | For Ident "=" Exp ";" Exp [ ";" Exp ] Do Block End
+                   | For Ident [ "," Ident ] In Exp Do Block End
+                   | Function JSONPath FuncBody
+                   | If Exp Then Block { ElifSeg } [ ElseSeg ] End )? ";"
 
         # Moved to seperate rules for readability
-        ElifSeg  -> Elif Exp Then Block
-        ElseSeg  -> Else Block
+        ElifSeg  ::= Elif Exp Then Block
+        ElseSeg  ::= Else Block
 
         # JSON Path
-        JSONPath -> Part { "." Part }
-        Part     -> Ident { "[" Exp "]" }
+        JSONPath ::= Part { "." Part }
+        Part     ::= Ident { "[" Exp "]" }
 
-        RetStmt  -> Return [ Exp ] [ ";" ]
-        FuncCall -> JSONPath Args
-        MethCall -> Method Args
-        FuncBody -> "(" [Params] ")" Block End
-        Params   -> Ident { "," Ident }
-        Args     -> "(" [ExpList] ")"
-        ExpList  -> Exp { "," Exp }
+        RetStmt  ::= Return [ Exp ] ";"
+        FuncCall ::= JSONPath Args
+        MethCall ::= Method Args
+        FuncBody ::= "(" [Params] ")" Block End
+        Params   ::= Ident { "," Ident }
+        Args     ::= "(" [ExpList] ")"
+        ExpList  ::= Exp { "," Exp }
 
         # Our "arithmetic expressions" have 5 levels of precedence
         # "||": lowest precedence
-        Exp      -> Prec5T { Prec5 }
-        Prec5    -> Prec5Op Prec5T Prec5
-        Prec5Op  -> "||"
+        Exp      ::= Prec5T { Prec5 }
+        Prec5    ::= Prec5Op Prec5T Prec5
+        Prec5Op  ::= "||"
 
         # "&&": 2nd lowest precedence
-        Prec5T   -> Prec4T { Prec4 }
-        Prec4    -> Prec4Op Prec4T Prec4
-        Prec4Op  -> "&&"
+        Prec5T   ::= Prec4T { Prec4 }
+        Prec4    ::= Prec4Op Prec4T Prec4
+        Prec4Op  ::= "&&"
 
         # "==" and "!=": 3rd lowest precedence
-        Prec4T   -> Prec3T { Prec3 }
-        Prec3    -> Prec3Op Prec3T Prec3
-        Prec3Op  -> "==" | "!="
+        Prec4T   ::= Prec3T { Prec3 }
+        Prec3    ::= Prec3Op Prec3T Prec3
+        Prec3Op  ::= "==" | "!="
 
         # "<", ">", "<=", and ">=": 4th lowest precedence
-        Prec3T   -> Prec2T { Prec2 }
-        Prec2    -> Prec2Op Prec2T Prec2
-        Prec2Op  -> "<" | ">" | "<=" | ">="
+        Prec3T   ::= Prec2T { Prec2 }
+        Prec2    ::= Prec2Op Prec2T Prec2
+        Prec2Op  ::= "<" | ">" | "<=" | ">="
 
         # "+" and "-": 5th lowest precedence
-        Prec2T   -> Prec1T { Prec1 }
-        Prec1    -> Prec1Op Prec1T Prec1
-        Prec1Op  -> "+" | "-"
+        Prec2T   ::= Prec1T { Prec1 }
+        Prec1    ::= Prec1Op Prec1T Prec1
+        Prec1Op  ::= "+" | "-"
 
         # "*" and "/": Highest precedence
-        Prec1T   -> Factor { Prec0 }
-        Prec0    -> Prec0Op Factor Prec0
-        Prec0Op  -> "*" | "/"
+        Prec1T   ::= Factor { Prec0 }
+        Prec0    ::= Prec0Op Factor Prec0
+        Prec0Op  ::= "*" | "/"
 
         # The factors are our base values
-        Factor   -> Null |
-                    False |
-                    True |
-                    Number |
-                    StringLit |
-                    JSONPath |
-                    JSON |
-                    FuncCall |
-                    MethodCall |
-                    "(" Exp ")"
+        Factor   ::= Null |
+                     False |
+                     True |
+                     Number |
+                     StringLit |
+                     JSONPath |
+                     JSON |
+                     FuncCall |
+                     MethodCall |
+                     "(" Exp ")"
 
         # JSON literal
-        JSON     -> Object | Array
-        Object   -> "{" Members "}"
-        Members  -> Pair { "," Pair }
-        Pair     -> Key ":" Exp
-        Key      -> StringLit | JSONPath | AriExp
-        Array    -> "[" ExpList "]"
+        JSON     ::= Object | Array
+        Object   ::= "{" [ Members ] "}"
+        Members  ::= Pair { "," Pair }
+        Pair     ::= Exp ":" Exp
+        Array    ::= "[" [ ExpList ] "]"
     \end{verbatim}
 \end{center}
 
@@ -315,6 +314,7 @@ In statements that require conditions (such as `if-elif-else', `while', and `for
 % Stmt     -> semi |
 %     JSONPath equal Exp |
 %     FuncCall |
+%     MethodCall |
 %     Break |
 %     While Exp Do Block End |
 %     For Ident equal Exp semi Exp Do Block End |
@@ -334,22 +334,15 @@ In statements that require conditions (such as `if-elif-else', `while', and `for
 %             Return Exp semi |
 %             Return Exp.
 % FuncCall -> JSONPath Args.
+% MethodCall -> Method Args.
 % FuncBody -> parenL Params parenR Block End | parenL parenR Block End.
 % Params   -> Ident Idents.
 % Idents   -> comma Ident Idents |.
 % Args     -> parenL ExpList parenR | parenL parenR.
-% Exp      -> Null |
-%             False |
-%             True |
-%             Number |
-%             StringLit |
-%             JSONPath |
-%             JSON |
-%             AriExp.
 % ExpList  -> Exp Exps.
 % Exps     -> comma Exp Exps |.
 
-% AriExp   -> Prec5T Precs5.
+% Exp      -> Prec5T Precs5.
 % Precs5   -> Prec5 Precs5|.
 % Prec5    -> Prec5Op Prec5T Prec5.
 % Prec5Op  -> union.
@@ -379,14 +372,22 @@ In statements that require conditions (such as `if-elif-else', `while', and `for
 % Prec0    -> Prec0Op Factor Prec0.
 % Prec0Op  -> mult | div.
 
-% Factor   -> Number | JSONPath | parenL AriExp parenR.
+% Factor   -> Null |
+%             False |
+%             True |
+%             Number |
+%             StringLit |
+%             JSONPath |
+%             JSON |
+%             FuncCall | MethodCall |
+%             AriExp |
+%             parenL Exp parenR.
 
 % JSON     -> Object | Array.
-% Object   -> curlyL Members curlyR.
+% Object   -> curlyL Members curlyR | curlyL curlyR.
 % Members  -> Pair Pairs.
 % Pairs    -> comma Pair Pairs |.
-% Pair     -> Key colon Exp.
-% Key      -> StringLit | JSONPath | AriExp.
+% Pair     -> Exp colon Exp.
 % Array    -> sqrL ExpList sqrR.
 
 \end{document}
