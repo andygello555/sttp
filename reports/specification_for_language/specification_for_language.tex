@@ -169,10 +169,10 @@ All values are stored internally as JSON parsable strings. This means that the s
         \item \textbf{Variables are set} when the root identifier \textbf{exists} in the \textbf{current scope}.
         \item \textbf{Variables are filled sparsely} when a \textbf{JSONPath accessing a non-existent sublevel} of the JSON is assigned to. For instance:
         \begin{verbatim}
-            hello_world = {
+            set hello_world = {
                 "hello": "world"
             };
-            hello_world.world[1].hello = "world";
+            set hello_world.world[1].hello = "world";
             /*
             hello = {
                 "hello": "world",
@@ -209,7 +209,7 @@ JSON paths can be assigned to. This sets the appropriate property of the variabl
 \subsection{Expressions}
 \label{sec:expressions}
 
-Both \textbf{boolean and arithmetic expressions are a part of the same precedence hierarchy}. If binary expressions and arithmetic expressions are mixed together, the result of a boolean operator will be coerced to either a `0' or a `1'. \textbf{All operators are left-to-right associative}.
+Both \textbf{boolean and arithmetic expressions are a part of the same precedence hierarchy}. \textbf{All operators are left-to-right associative}.
 
 \subsubsection{Operator precedence}
 
@@ -236,6 +236,33 @@ Both \textbf{boolean and arithmetic expressions are a part of the same precedenc
     \caption{Operators and their precedence from highest precedence (top) to lowest precedence (bottom)}
 \end{figure}
 
+If multiple value types exist within an expression, all other values will be coerced depending on the coercion hierarchy shown below.
+
+\subsubsection{Coercion heirarchy}
+
+\begin{figure}[H]
+    \begin{center}
+        \begin{tabular}{| m{2cm} | m{2cm} | m{6cm} |}
+            \hline
+            Precedence & Type & Description\\
+            \hline
+            \textbf{0} & String & If a string is contained in any expression all other values will be coerced to a string. This is the JSON string version of the value.\\
+            \hline
+            \textbf{1} & Object & If an Object value has the highest coercion precedence in an expression then all other values are converted to strings then wrapped in object with a \verb|null| value.\\
+            \hline
+            \textbf{2} & Array & If an Array value has the highest coercion precedence in an expression then all other values are treated as potential elements. This is explained more in \hyperref[sec:operatorvaluerel]{`Operator-value relationship'}.\\
+            \hline
+            \textbf{3} & Number & If a Number value has the highest coercion precedence in an expression then all other values will be coerced to Numbers. Boolean's being \verb|0/1| and Null being \verb|-1|.\\
+            \hline
+            \textbf{4} & Boolean & If a Boolean value has the highest coercion precedence in an expression then Null's are converted to \verb|false|.\\
+            \hline
+            \textbf{5} & Null & Null's are always coerced to other values unless the expression contains strictly \verb|null| values.\\
+            \hline
+        \end{tabular}
+    \end{center}
+    \caption{Value types and their coercion precedence in expressions from highest precedence (top) to lowest (bottom)}
+\end{figure}
+
 \subsubsection{Conditions}
 
 In statements that require conditions (such as `if-elif-else', `while', and `for' statements) a purely arithmetic, a purely binary operator expression, or a mixed expression can all be used. Here is a list of all truthy and falsy values.
@@ -254,12 +281,70 @@ In statements that require conditions (such as `if-elif-else', `while', and `for
             \hline
             String & \verb|"..."| & \verb|""|\\
             \hline
-            JSON & \verb|{...}| & \verb|{}|\\
+            Object & \verb|{...}| & \verb|{}|\\
+            \hline
+            Array & \verb|[...]| & \verb|[]|\\
             \hline
         \end{tabular}
     \end{center}
     \caption{Table of truthy and falsy values of each type}
 \end{figure}
+
+\subsection{Operator-value relationship}
+\label{sec:operatorvaluerel}
+
+Instead of having built-in functions for operations such as appending to an array, removing from an array, merging objects, etc. Below, is a run through of each value type. \textbf{All operators that aren't mentioned are not supported}.
+
+\subsubsection{Objects}
+
+\begin{itemize}
+    \item \textbf{Addition}: Right value will merge into left value, much like a union operation.
+    \item \textbf{Subtraction}: Left value will have key-value pairs found in right value deleted from it.
+    \item \textbf{Modulus}: Reverse of subtraction (reverse set subtraction).
+    \item \textbf{Equal}: \textbf{Deep} equal. \textbf{Returns boolean}.
+    \item \textbf{Not-equal}: \textbf{Deep} not-equal. \textbf{Returns boolean}.
+    \item \textbf{Less-than, greater-than, less-than or equal, greater-than or equal}: Comparison between the number of keys for both. \textbf{Returns a Boolean}.
+    \item \textbf{Logical And}: Compares by coercing left and right to boolean values.
+    \item \textbf{Logical Or}: Compares by coercing left and right to boolean values.
+\end{itemize}
+
+\subsubsection{Arrays}
+
+\begin{itemize}
+    \item \textbf{Addition}: Right value will be appended to the left value.
+    \item \textbf{Subtraction}: Left value will have elements that are equal to the elements in the left removed. If the element is \verb|null| then the start of the list is removed.
+    \item \textbf{Equal}: \textbf{Deep} equal. \textbf{Returns boolean}.
+    \item \textbf{Not-equal}: \textbf{Deep} not-equal. \textbf{Returns boolean}.
+    \item \textbf{Less-than, greater-than, less-than or equal, greater-than or equal}: Comparison between the number of elements in both. \textbf{Returns a Boolean}.
+    \item \textbf{Logical And}: Compares by coercing left and right to boolean values.
+    \item \textbf{Logical Or}: Compares by coercing left and right to boolean values.
+\end{itemize}
+
+\subsubsection{Strings}
+
+\begin{itemize}
+    \item \textbf{Addition}: Concatenation.
+    \item \textbf{Equal}: \textbf{Deep} equal. \textbf{Returns boolean}.
+    \item \textbf{Not-equal}: \textbf{Deep} not-equal. \textbf{Returns boolean}.
+    \item \textbf{Less-than, greater-than, less-than or equal, greater-than or equal}: String comparison. \textbf{Returns a Boolean}.
+\end{itemize}
+
+\subsubsection{Numbers}
+
+All operators work as expected.
+
+\subsubsection{Booleans}
+
+\begin{itemize}
+    \item \textbf{Equal}: Equal.
+    \item \textbf{Not-equal}: Not-equal.
+    \item \textbf{Logical And}: Lazy logical and of left and right.
+    \item \textbf{Logical Or}: Lazy logical or of left and right.
+\end{itemize}
+
+\subsubsection{Nulls}
+
+The only supported operators are \verb|==| and \verb|!=| which both work as expected.
 
 % \begin{center}
 %     \begin{verbatim}
