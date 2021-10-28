@@ -318,6 +318,8 @@ type Statement struct {
 	While              *While              `| @@`
 	For                *For                `| @@`
 	ForEach            *ForEach            `| @@`
+	Batch              *Batch              `| @@`
+	TryCatch           *TryCatch           `| @@`
 	FunctionDefinition *FunctionDefinition `| @@`
 	IfElifElse         *IfElifElse         `| @@`
 }
@@ -358,6 +360,20 @@ type ForEach struct {
 	Block *Block      `@@ End`
 }
 
+type Batch struct {
+	Pos lexer.Position
+
+	Block *Block `Batch This @@ End`
+}
+
+type TryCatch struct {
+	Pos lexer.Position
+
+	Try     *Block  `Try This @@`
+	CatchAs *string `Catch As @Ident Then`
+	Caught  *Block  `@@ End`
+}
+
 // FunctionDefinition describes the definition of function.
 type FunctionDefinition struct {
 	Pos lexer.Position
@@ -387,6 +403,7 @@ type Elif struct {
 // Block describes a "block" of statements which might end with a return statement.
 type Block struct {
 	Pos lexer.Position
+	Tokens []lexer.Token
 
 	Statements []*Statement     `( @@? ";" )*`
 	Return     *ReturnStatement `@@?`
@@ -408,6 +425,8 @@ var lex = lexer.MustSimple([]lexer.Rule{
 	{"While", `while\s`, nil},
 	{"For", `for\s`, nil},
 	{"Do", `\sdo\s`, nil},
+	{"This", `this\s`, nil},
+	//{"This", `this\s`, nil},
 	{"Break", `break`, nil},
 	{"Then", `\sthen\s`, nil},
 	{"End", `end`, nil},
@@ -416,10 +435,14 @@ var lex = lexer.MustSimple([]lexer.Rule{
 	{"If", `if\s`, nil},
 	{"Elif", `elif\s`, nil},
 	{"Else", `else\s`, nil},
+	{"Catch", `catch\s`, nil},
 	{"In", `\sin\s`, nil},
+	{"As", `as\s`, nil},
 	{"True", `true`, nil},
 	{"False", `false`, nil},
 	{"Null", `null`, nil},
+	{"Batch", `batch\s`, nil},
+	{"Try", `try\s`, nil},
 	{"Operators", `\|\||&&|<=|>=|!=|==|[-+*/%=!<>]`, nil},
 	{"Punct", `[;,.(){}:]|\[|\]`, nil},
 	{"Ident", `[a-zA-Z_]\w*`, nil},
