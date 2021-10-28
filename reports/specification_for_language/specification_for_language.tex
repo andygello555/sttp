@@ -31,6 +31,7 @@ The following are all the tokens, along with their regular expressions, that the
         While     = `while\s'
         For       = `for\s'
         Do        = `\sdo\s'
+        This      = `this\s'
         Break     = `break'
         Then      = `\sthen\s'
         End       = `end'
@@ -39,10 +40,14 @@ The following are all the tokens, along with their regular expressions, that the
         If        = `if\s'
         Elif      = `elif\s'
         Else      = `else\s'
+        Catch     = `catch\s'
         In        = `\sin\s'
+        As        = `\sas\s'
         True      = `true'
         False     = `false'
         Null      = `null'
+        Batch     = `batch\s'
+        Try       = `try\s'
         Operators = `\|\||&&|<=|>=|!=|==|[-+*/%=!<>]'
         Punct     = `[;,.(){}:]|\[|\]'
         # Ignored tokens
@@ -66,6 +71,8 @@ All capitalised symbols are tokens that are passed from the lexical analyser to 
                  While Exp Do Block End |
                  For Ass ";" Exp [ ";" Ass ] Do Block End |
                  For Ident [ "," Ident ] In Exp Do Block End |
+                 Batch This Block End |
+                 Try This Block Catch As Ident Then End |
                  Function JSONPath FuncBody |
                  If Exp Then Block { ElifSeg } [ ElseSeg ] End
 
@@ -345,6 +352,66 @@ All operators work as expected.
 \subsubsection{Nulls}
 
 The only supported operators are \verb|==| and \verb|!=| which both work as expected.
+
+\section{Batching}
+
+The \verb|batch| construct lets you \textbf{parallelise all HTTP method calls made within a block}. This is made possible using Golang's extensive parallelism support. Batching will be explained through the use of this example code snippet:
+
+\begin{center}
+    \begin{verbatim}
+    1  batch this
+    2      for url in [
+    3          "https://a.com",
+    4          "https://b.com",
+    5          "https://c.com"
+    6      ] do
+    7          set result = GET(url);
+    8          print(result);
+    9      end;
+    10     set oops_forgot_this = GET("https://d.com");
+    11     print(oops_forgot_this);
+    12 end;
+    \end{verbatim}
+\end{center}
+
+A \verb|batch| block is \textbf{always evaluated twice}. This means that it is important to \textbf{keep all non-HTTP-method-call statements and expressions to a minimum} as these will only slow down the interpreter.
+
+Before the first pass begins, the contents of the variables in memory are deep copied so that they can be reverted to after the first pass. In the first pass the interpreter enqueues every single HTTP method call as a job within a work queue. Each job has a unique ID and the order of this work queue is saved (more on this later). In the example the HTTP method on line 7 will be added to the work queue 3 separate times with different arguments. Whereas, the HTTP method on line 10 is only enqueued once.
+
+After this, the jobs in the work queue are executed using a pool of threads. The result of each job is added to a queue along with the executed job's ID. The result queue is then sorted back into the same order in which their respective jobs were added to the work queue. For instance, the result queue of the example above might look like this:
+
+\begin{center}
+    \begin{verbatim}
+                Head -> "Response from 'a'" ->
+                        "Response from 'b'" ->
+                        "Response from 'c'" ->
+                        "Response from 'd'"
+    \end{verbatim}
+\end{center}
+
+Then, the contents of the variables in memory are set back to what they were before the first pass and the second pass is initiated. In the second pass, each time a HTTP method call is stepped into the next result in the result queue is dequeued and used.
+
+\subsection{Caveats}
+
+\subsubsection{Be sensible.}
+
+A \verb|batch| block will offer no performance boosts if the block contains long running code with sparse usage of HTTP method calls, and could very well be \textbf{detrimental} to the performance of your code. Some general tips...
+
+\begin{itemize}
+    \item \textbf{Don't surround long running for or while loops in a batch statement.}
+    \item \textbf{Keep expressions and statements without HTTP method calls down to a minimum.}
+    \item \textbf{If you are only making a few HTTP method calls rather than 10s or 100s then it might be more performant to remove the batch block.}
+\end{itemize}
+
+It is also worth noting that if there is a \verb|batch| block containing \textbf{zero HTTP method calls}, then the interpreter will \textbf{silently skip the second pass}. There is no need to batch what cannot be batched.
+
+\subsubsection{You cannot batch what has already been batched}
+
+You cannot use a \verb|batch| block within a \verb|batch| block. Your program will throw an uncatchable error. This will be thrown after parsing in a special AST checking procedure before evaluation is started.
+
+\subsubsection{Method calls within function calls are not batched}
+
+HTTP method calls made within functions are not batched for the simple fact that a function could already contain another \verb|batch| block. This is undefined behavior (see above). However, \verb|batch| statements can still be used inside function definitions if functional-abstraction is necessary/nice.
 
 % \begin{center}
 %     \begin{verbatim}

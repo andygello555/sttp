@@ -52,12 +52,20 @@ func (f *FunctionDefinition) String(indent int) string {
 	return fmt.Sprintf("%sfunction %s%s", tabs(indent), f.JSONPath.String(0), f.Body.String(0))
 }
 
+func (tc *TryCatch) String(indent int) string {
+	return fmt.Sprintf("%stry this\n%s%scatch as %s then\n%s%send", tabs(indent), tc.Try.String(indent + 1), tabs(indent), *tc.CatchAs, tc.Caught.String(indent + 1), tabs(indent))
+}
+
+func (b *Batch) String(indent int) string {
+	return fmt.Sprintf("%sbatch this\n%s%send", tabs(indent), b.Block.String(indent + 1), tabs(indent))
+}
+
 func (f *ForEach) String(indent int) string {
 	forEach := fmt.Sprintf("%sfor %s", tabs(indent), *f.Key)
 	if f.Value != nil {
 		forEach += fmt.Sprintf(", %s", *f.Value)
 	}
-	return forEach + fmt.Sprintf(" in %s do\n%s\n%send", f.In.String(0), f.Block.String(indent + 1), tabs(indent))
+	return forEach + fmt.Sprintf(" in %s do\n%s%send", f.In.String(0), f.Block.String(indent + 1), tabs(indent))
 }
 
 func (f *For) String(indent int) string {
@@ -93,6 +101,10 @@ func (s *Statement) String(indent int) string {
 		stmt = s.For.String(indent)
 	case s.ForEach != nil:
 		stmt = s.ForEach.String(indent)
+	case s.Batch != nil:
+		stmt = s.Batch.String(indent)
+	case s.TryCatch != nil:
+		stmt = s.TryCatch.String(indent)
 	case s.FunctionDefinition != nil:
 		stmt = s.FunctionDefinition.String(indent)
 	case s.IfElifElse != nil:

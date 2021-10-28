@@ -41,4 +41,37 @@ function object.execute(self.ifvar, self.var_ifwithin_self, party_variable.wow[0
     return "wow!";
 end;
 
+// Here we show three new statements:
+// - Try-catch: try do ... catch as var then ... end, catches any exceptions that might occur in the "try" block
+// - Batch: executes the inner block twice:
+//   1. A copy of the heap is made
+//   2. First time is without executing any HTTP requests and instead adding them to a work queue
+//   3. Then all requests in the work queue are executed in parallel. The results are loaded into another queue in the
+//      order they were added to the work queue
+//   4. The heap is restored to the copy that was made in step 1
+//   5. Second time run through of the block now uses the next response in the queue rather than executing the HTTP
+//      request in sequence
+// - For-each: iterate over the elements in an object/array/string
+try this
+    batch this
+        for url in [
+            "https://a.com",
+            "https://b.com",
+            "https://c.com"
+        ] do
+            set result = GET(url);
+            print(result);
+        end;
+        set oops_forgot_this = GET("https://d.com");
+        print(oops_forgot_this);
+    end;
+catch as err then
+    print(err);
+end;
+
+set this_boy = "to be this boy";
+
+// Same thing again but on one line
+try this batch this for url in ["https://a.com","https://b.com","https://c.com"] do set result = GET(url);print(result);end;set oops_forgot_this = GET("https://d.com");print(oops_forgot_this);end;catch as err then print(err);end;
+
 object.execute();
