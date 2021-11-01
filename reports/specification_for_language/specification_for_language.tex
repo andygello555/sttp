@@ -37,6 +37,7 @@ The following are all the tokens, along with their regular expressions, that the
         End       = `end'
         Function  = `function\s'
         Return    = `return'
+        Throw     = `throw'
         If        = `if\s'
         Elif      = `elif\s'
         Else      = `else\s'
@@ -63,7 +64,7 @@ All capitalised symbols are tokens that are passed from the lexical analyser to 
 \begin{center}
     \begin{verbatim}
         Program  ::= Block
-        Block    ::= { [ Stmt ] ";" } [ RetStmt ]
+        Block    ::= { [ Stmt ] ";" } [ RetStmt | ThrwStmt ]
         Stmt ::= Ass |
                  FuncCall |
                  MethCall |
@@ -85,6 +86,7 @@ All capitalised symbols are tokens that are passed from the lexical analyser to 
         Part     ::= Ident { "[" Exp "]" }
 
         RetStmt  ::= Return [ Exp ] ";"
+        ThrwStmt ::= Throw [ Exp ] ";"
         FuncCall ::= JSONPath Args
         MethCall ::= Method Args
         FuncBody ::= "(" [Params] ")" Block End
@@ -359,15 +361,15 @@ The \verb|batch| construct lets you \textbf{parallelise all HTTP method calls ma
 
 \begin{center}
     \begin{verbatim}
-    1  batch this
-    2      for url in [
-    3          "https://a.com",
-    4          "https://b.com",
-    5          "https://c.com"
-    6      ] do
-    7          set result = GET(url);
-    8          print(result);
-    9      end;
+    01 batch this
+    02     for url in [
+    03         "https://a.com",
+    04         "https://b.com",
+    05         "https://c.com"
+    06     ] do
+    07         set result = GET(url);
+    08         print(result);
+    09     end;
     10     set oops_forgot_this = GET("https://d.com");
     11     print(oops_forgot_this);
     12 end;
@@ -417,7 +419,7 @@ HTTP method calls made within functions are not batched for the simple fact that
 
 If an exception occurs in the first or second pass and there is a try-catch surrounding the batch block, then the batch block will be canceled from that point onwards.
 
-If the exception occurs in the thread execution phase then the exception is thrown after all requests are made. If multiple exceptions occur they will be wrapped into one exception.
+If the exception occurs in the thread execution phase then the exception is thrown after all requests are made. If multiple exceptions occur they will be wrapped into one exception in the form of an object.
 
 % \begin{center}
 %     \begin{verbatim}

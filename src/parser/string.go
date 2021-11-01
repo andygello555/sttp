@@ -24,6 +24,8 @@ func (b *Block) String(indent int) string {
 	}
 	if b.Return != nil {
 		stmts = append(stmts, b.Return.String(indent))
+	} else if b.Throw != nil {
+		stmts = append(stmts, b.Throw.String(indent))
 	}
 	return strings.Join(stmts, "")
 }
@@ -140,7 +142,15 @@ func (r *ReturnStatement) String(indent int) string {
 	if r.Value != nil {
 		returnStmt += fmt.Sprintf(" %s", r.Value.String(0))
 	}
-	return returnStmt + ";"
+	return returnStmt + ";\n"
+}
+
+func (t *ThrowStatement) String(indent int) string {
+	throwStmt := fmt.Sprintf("%sthrow", tabs(indent))
+	if t.Value != nil {
+		throwStmt += fmt.Sprintf(" %s", t.Value.String(0))
+	}
+	return throwStmt + ";\n"
 }
 
 func (f *FunctionCall) String(indent int) string {
@@ -172,7 +182,7 @@ func (fb *FunctionBody) String(indent int) string {
 	for i, param := range fb.Parameters {
 		params[i] = param.String(0)
 	}
-	return fmt.Sprintf("(%s)\n%s\nend", strings.Join(params, ", "), fb.Block.String(indent + 1))
+	return fmt.Sprintf("(%s)\n%send", strings.Join(params, ", "), fb.Block.String(indent + 1))
 }
 
 func termString(indent int, factor indentString, next []indentString) string {

@@ -285,11 +285,18 @@ type FunctionCall struct {
 	Arguments []*Expression `"(" (@@ ( "," @@ )*)? ")"`
 }
 
-// ReturnStatement describes a return statement which can at the end of any block.
+// ReturnStatement describes a return statement which can be at the end of any block.
 type ReturnStatement struct {
 	Pos lexer.Position
 
 	Value *Expression `Return @@? ";"`
+}
+
+// ThrowStatement describes an expression that is thrown which can be at the end of any block.
+type ThrowStatement struct {
+	Pos lexer.Position
+
+	Value *Expression `Throw @@? ";"`
 }
 
 // JSONPath describes a path to a property within a variable.
@@ -360,12 +367,15 @@ type ForEach struct {
 	Block *Block      `@@ End`
 }
 
+// Batch describes a block of code where all HTTP method calls are executed in parallel.
 type Batch struct {
 	Pos lexer.Position
 
 	Block *Block `Batch This @@ End`
 }
 
+// TryCatch describes a try-catch structure. The "as" segment must always be defined so a variable can be allocated with
+// the caught exception.
 type TryCatch struct {
 	Pos lexer.Position
 
@@ -406,7 +416,8 @@ type Block struct {
 	Tokens []lexer.Token
 
 	Statements []*Statement     `( @@? ";" )*`
-	Return     *ReturnStatement `@@?`
+	Return     *ReturnStatement `( @@ |`
+	Throw      *ThrowStatement  `  @@ )?`
 }
 
 // Program describes an entire program which is just a Block of statements.
@@ -432,6 +443,7 @@ var lex = lexer.MustSimple([]lexer.Rule{
 	{"End", `end`, nil},
 	{"Function", `function\s`, nil},
 	{"Return", `return`, nil},
+	{"Throw", `throw`, nil},
 	{"If", `if\s`, nil},
 	{"Elif", `elif\s`, nil},
 	{"Else", `else\s`, nil},

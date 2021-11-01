@@ -65,6 +65,7 @@ try this
         set oops_forgot_this = GET("https://d.com");
         print(oops_forgot_this);
     end;
+    throw {"error": "time", "ohno": true};
 catch as err then
     print(err);
 end;
@@ -72,6 +73,6 @@ end;
 set this_boy = "to be this boy";
 
 // Same thing again but on one line
-try this batch this for url in ["https://a.com","https://b.com","https://c.com"] do set result = GET(url);print(result);end;set oops_forgot_this = GET("https://d.com");print(oops_forgot_this);end;catch as err then print(err);end;
+try this batch this for url in ["https://a.com","https://b.com","https://c.com"] do set result = GET(url);print(result);end;set oops_forgot_this = GET("https://d.com");print(oops_forgot_this);end;throw {"error": "time", "ohno": true};catch as err then print(err);end;
 
 object.execute();
