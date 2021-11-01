@@ -1,0 +1,89 @@
+\documentclass[12pt, letterpaper]{article}
+
+% Packages
+\usepackage[utf8]{inputenc}
+\usepackage{tikz}
+\usepackage{amsmath}
+\usepackage{cprotect}
+\usepackage[english]{babel}
+\usepackage{amsthm}
+\usepackage[linguistics]{forest}
+\usepackage{float}
+\usepackage{array}
+\usepackage{hyperref}
+
+% Metadata
+\title{The use derivation rules, and grammar idioms to capture notions of associativity and priority in arithmetic expressions}
+
+\author{Jakab Zeller}
+
+\date{October 2021}
+
+% Environments
+\newenvironment{tightcenter}{%
+  \setlength\topsep{0pt}
+  \setlength\parskip{0pt}
+  \begin{center}
+}{%
+  \end{center}
+}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}[subsubsection]
+
+\begin{document}
+
+\maketitle
+
+\section{Associativity}
+
+Formally, a binary operation $\star$, is associative if the \textbf{associative property} will hold for all $x$, $y$, and $z$.
+
+\begin{figure}[H]
+    \begin{equation}
+        (x \star y) \star z = x \star (y \star z)
+        \nonumber
+    \end{equation}
+\end{figure}
+
+Informally the associative property says that any given expression which uses solely associative binary operators can have any number of parentheses within it. The result will not be any different if all parentheses were removed/rearranged. Examples of associative binary operations include:
+
+\begin{enumerate}
+    \item String concatentation
+    \item Addition of complex and real numbers
+    \item Multiplication of complex and real numbers
+\end{enumerate}
+
+Non-associative operations are ones that do not hold the associative property. Such as...
+
+\begin{enumerate}
+    \item Subtraction
+    \item Division
+    \item Exponentiation
+\end{enumerate}
+
+Conventionally, we have derived notions to evaluate expressions containing non-associative operations without parentheses. This is done by deciding on an order to carry out said operations. There two notational conventions for this:
+
+\begin{itemize}
+    \item \textbf{Left-associative} operators are conventionally evaluated from left to right. This is the case for \textbf{subtraction} and \textbf{division}.
+    \begin{equation}
+        \begin{split}
+            x - y - z &= (x - y) - z\\
+            x / y / z &= (x / y) / z
+        \end{split}
+        \nonumber
+    \end{equation}
+    \item \textbf{Right-associative} operators are conventionally evaluated from right to left. This is the case for \textbf{exponentiation}.
+    \begin{equation}
+        x^{y^z} = x^{(y^z)}
+        \nonumber
+    \end{equation}
+\end{itemize}
+
+\subsection{Grammars}
+
+In programming language grammars 
+
+\section{Priority}
+
+\end{document}

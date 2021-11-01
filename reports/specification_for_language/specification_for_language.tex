@@ -413,6 +413,12 @@ You cannot use a \verb|batch| block within a \verb|batch| block. Your program wi
 
 HTTP method calls made within functions are not batched for the simple fact that a function could already contain another \verb|batch| block. This is undefined behavior (see above). However, \verb|batch| statements can still be used inside function definitions if functional-abstraction is necessary/nice.
 
+\subsubsection{Try-catch surrounding batch blocks}
+
+If an exception occurs in the first or second pass and there is a try-catch surrounding the batch block, then the batch block will be canceled from that point onwards.
+
+If the exception occurs in the thread execution phase then the exception is thrown after all requests are made. If multiple exceptions occur they will be wrapped into one exception.
+
 % \begin{center}
 %     \begin{verbatim}
 %         chunk ::= block
