@@ -11,6 +11,7 @@
 \usepackage{float}
 \usepackage{array}
 \usepackage{hyperref}
+\usepackage{makecell}
 
 % Metadata
 \title{The use derivation rules, and grammar idioms to capture notions of associativity and precedence in arithmetic expressions}
@@ -27,6 +28,7 @@
 }{%
   \end{center}
 }
+\newcommand{\wrap}[1]{\parbox{.33\linewidth}{\vspace{1.5mm}#1\vspace{1mm}}}
 
 \theoremstyle{definition}
 \newtheorem{definition}{Definition}[subsubsection]
@@ -465,17 +467,58 @@ To carry out this technique you need to define an operator precedence and associ
 
 This derivation tree can then be traversed in-order to produce the infix expression. This expression can then be input into the Shunting-Yard algorithm in order to parse the operator precedence of an expression.
 
-It's important to note that in the case of the grammar shown in fig. 6, parsing the expression is fairly redundant as the accepted language is already an infix expression. However, when the accepted language includes other constructs along with expressions, such as how a conventional programming language might, this process makes a lot more sense. Below is the execution of the Shunting-Yard algorithm for the input: \verb|3 + 4 * 2 / ( 1 - 5 ) ^ 2 ^ 3|.
+It's important to note that in the case of the grammar shown in fig. 6, parsing the expression is fairly redundant as the accepted language is already an infix expression. However, when the accepted language includes other constructs along with expressions, such as how a conventional programming language might, this process makes a lot more sense. Below is the execution of the Shunting-Yard algorithm for the input: \verb|7 + 4 * 2 / ( 3 - 5 ) ^ 2 ^ 3|.
 
 \begin{figure}[H]
     \begin{center}
-        \begin{tabular}{| m{1.2cm} | m{3cm} | m{3cm} | m{3cm} | m{3cm} |}
+        \begin{tabular}{| m{1.2cm} | m{3.1cm} | m{3.6cm} | m{2.3cm} | m{3.5cm} |}
             \hline
-            Token & Action & Output & Operators & Note\\
+            \textbf{Token} & \textbf{Action} & \textbf{Output} & \textbf{Operators} & \textbf{Note}\\
+            \hline
+            $7$ & Add to output & \verb|7| & &\\
+            \hline
+            $+$ & Push to stack & \verb|7| & \verb|+| &\\
+            \hline
+            $4$ & Add to output & \verb|7 4| & \verb|+| &\\
+            \hline
+            $*$ & Push to stack & \verb|7 4| & \verb|* +| & * has higher precedence than +\\
+            \hline
+            $2$ & Add to output & \verb|7 4 2| & \verb|*| + &\\
+            \hline
+            $/$ & Pop stack to output & \verb|7 4 2| * & \verb|+| & / and * have same precedence\\
+            \hline
+            $/$ & Push to stack & \verb|7 4 2| & \verb|/ +| & / has higher precedence than +\\
+            \hline
+            $($ & Push to stack & \verb|7 4 2 *| & \verb|( / +| &\\
+            \hline
+            $3$ & Add to output & \verb|7 4 2 * 3| & \verb|( / +| &\\
+            \hline
+            $-$ & Push to stack & \verb|7 4 2 * 3| & \verb|- ( / +| &\\
+            \hline
+            $5$ & Add to output & \verb|7 4 2 * 3 5| & \verb|- ( / +| &\\
+            \hline
+            $)$ & Pop to output & \verb|7 4 2 * 3 5 -| & \verb|( / +| & Repeated until ( found\\
+            \hline
+            $)$ & Pop stack & \verb|7 4 2 * 3 5 -| & \verb|/ +| & Discard matching parenthesis\\
+            \hline
+            $\hat{}$ & Push to stack & \verb|7 4 2 * 3 5 -| & \verb|^ / +| & \verb|^| has higher precedence than \verb|/|\\
+            \hline
+            $2$ & Add to output & \verb|7 4 2 * 3 5 - 2| & \verb|^ / +| &\\
+            \hline
+            $\hat{}$ & Push to stack & \verb|7 4 2 * 3 5 - 2| & \verb|^ ^ / +| & \verb|^| is evaluated right-to-left\\
+            \hline
+            $3$ & Add to output & \verb|7 4 2 * 3 5 - 2 3| & \verb|^ ^ / +| &\\
+            \hline
+            \verb|end| & Pop stack to output & \begin{verbatim}
+7 4 2 * 3 5 - 2 3
+^ ^ / +
+            \end{verbatim} & & \\
             \hline
         \end{tabular}
     \end{center}
 \end{figure}
+
+At this point the expression can be evaluated without the ambiguity of precedence or associativity. The expression can also be reconstructed into a tree during Shunting-Yard in the correct precedence heirarchy. This parse tree below the relevant \verb|exp| node could then be replaced by this new tree, and evaluated along with the entire tree.
 
 % Bibliography
 % http://www.cs.rhul.ac.uk/research/languages/publications/rdp_user.pdf
