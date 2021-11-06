@@ -2,9 +2,18 @@
 *.pdf
 
 .idea/
+.vscode/
 
 # Smommit ignore
 .smommit/
 
 *.png
 *.dot
+
+*.cpt
+*.out
+*.aux
+*.fdb_latexmk
+*.fls
+*.log
+*.gz
