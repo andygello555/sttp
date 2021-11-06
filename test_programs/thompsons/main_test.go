@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 )
@@ -315,7 +316,7 @@ func TestGraph_Subset(t *testing.T) {
 }
 
 func TestTransitionTable_DeadStateMinimisation(t *testing.T) {
-	for _, test := range []struct{
+	for i, test := range []struct{
 		inGraph Graph
 		mergedStates MergedStates
 		//table [][]StateKeyString
@@ -495,9 +496,54 @@ func TestTransitionTable_DeadStateMinimisation(t *testing.T) {
 			//	{StateKeyString("0"), StateKeyString("0"), StateKeyString("0"), StateKeyString("0"), StateKeyString("0"), StateKeyString("0"), StateKeyString("1"), StateKeyString("0")},
 			//},
 		},
+		{
+			inGraph: Graph{
+				DFA: AdjacencyList{
+					StateKeyString("T0"): {
+						{"b", StateKeyString("T0"), StateKeyString("T3")},
+					},
+					StateKeyString("T1"): {
+						{"b", StateKeyString("T1"), StateKeyString("T4")},
+					},
+					StateKeyString("T2"): {
+						{"a", StateKeyString("T2"), StateKeyString("T1")},
+					},
+					StateKeyString("T3"): {
+						{"a", StateKeyString("T3"), StateKeyString("T4")},
+						{"b", StateKeyString("T3"), StateKeyString("T2")},
+					},
+					StateKeyString("T4"): {
+						{"a", StateKeyString("T4"), StateKeyString("T3")},
+						{"b", StateKeyString("T4"), StateKeyString("T2")},
+					},
+				},
+				AcceptingStates: StateSetExistence{
+					StateKeyString("T2"): true,
+					StateKeyString("T3"): true,
+					StateKeyString("T4"): true,
+				},
+			},
+			mergedStates: MergedStates{
+				StateKeyString("0"): &StateSetExistence{
+					StateKeyString("dead"): true,
+				},
+				StateKeyString("1"): &StateSetExistence{
+					StateKeyString("T3"): true,
+					StateKeyString("T4"): true,
+				},
+				StateKeyString("2"): &StateSetExistence{
+					StateKeyString("T0"): true,
+					StateKeyString("T1"): true,
+				},
+				StateKeyString("3"): &StateSetExistence{
+					StateKeyString("T2"): true,
+				},
+			},
+		},
 	}{
 		tt := InitTT(&test.inGraph, testing.Verbose())
 		tt.DeadStateMinimisation()
+		tt.Visualisation(fmt.Sprintf("deadstate_test_%d", i))
 		mergedStatesSame := false
 		if len(test.mergedStates) == len(tt.MergedStates) {
 			for _, expectedStateSet := range test.mergedStates {
