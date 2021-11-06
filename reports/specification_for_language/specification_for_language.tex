@@ -1,0 +1,555 @@
+\documentclass[12pt, letterpaper]{article}
+
+\usepackage{float}
+\usepackage{cprotect}
+\usepackage{array}
+\usepackage{hyperref}
+
+% Metadata
+\title{Specification for Web API testing language}
+
+\author{Jakab Zeller}
+
+\date{October 2021}
+
+\begin{document}
+
+\maketitle
+
+\section{Tokens}
+
+The following are all the tokens, along with their regular expressions, that the lexical analyser accepts.
+
+\begin{center}
+    \begin{verbatim}
+        # Tokens passed to the parser
+        Number    = `[-+]?(\d*\.)?\d+'
+        StringLit = `"(\\"|[^"])*"'
+        Ident     = `[a-zA-Z_]\w*'
+        Method    = `(GET|HEAD|POST|PUT|DELETE|CONNECT|OPTIONS|TRACE|PATCH)'
+        Set       = `set\s'
+        While     = `while\s'
+        For       = `for\s'
+        Do        = `\sdo\s'
+        This      = `this\s'
+        Break     = `break'
+        Then      = `\sthen\s'
+        End       = `end'
+        Function  = `function\s'
+        Return    = `return'
+        Throw     = `throw'
+        If        = `if\s'
+        Elif      = `elif\s'
+        Else      = `else\s'
+        Catch     = `catch\s'
+        In        = `\sin\s'
+        As        = `\sas\s'
+        True      = `true'
+        False     = `false'
+        Null      = `null'
+        Batch     = `batch\s'
+        Try       = `try\s'
+        Operators = `\|\||&&|<=|>=|!=|==|[-+*/%=!<>]'
+        Punct     = `[;,.(){}:]|\[|\]'
+        # Ignored tokens
+        comment    = `//.*'
+        whitespace = `\s+'
+    \end{verbatim}
+\end{center}
+
+All capitalised symbols are tokens that are passed from the lexical analyser to the parser. Whereas, the uncapitalised symbols are read by the lexical analyser and ignored by the parser.
+
+\section{Grammar}
+
+\begin{center}
+    \begin{verbatim}
+        Program  ::= Block
+        Block    ::= { [ Stmt ] ";" } [ RetStmt | ThrwStmt ]
+        Stmt ::= Ass |
+                 FuncCall |
+                 MethCall |
+                 Break |
+                 While Exp Do Block End |
+                 For Ass ";" Exp [ ";" Ass ] Do Block End |
+                 For Ident [ "," Ident ] In Exp Do Block End |
+                 Batch This Block End |
+                 Try This Block Catch As Ident Then End |
+                 Function JSONPath FuncBody |
+                 If Exp Then Block { ElifSeg } [ ElseSeg ] End
+
+        Ass      ::= Set JSONPath "=" Exp
+        ElifSeg  ::= Elif Exp Then Block
+        ElseSeg  ::= Else Block
+
+        # JSON Path
+        JSONPath ::= Part { "." Part }
+        Part     ::= Ident { "[" Exp "]" }
+
+        RetStmt  ::= Return [ Exp ] ";"
+        ThrwStmt ::= Throw [ Exp ] ";"
+        FuncCall ::= JSONPath Args
+        MethCall ::= Method Args
+        FuncBody ::= "(" [Params] ")" Block End
+        Params   ::= JSONPath { "," JSONPath }
+        Args     ::= "(" [ExpList] ")"
+        ExpList  ::= Exp { "," Exp }
+
+        # Our "arithmetic expressions" have 5 levels of precedence
+        # "||": lowest precedence
+        Exp      ::= Prec5T { Prec5 }
+        Prec5    ::= Prec5Op Prec5T
+        Prec5Op  ::= "||"
+
+        # "&&": 2nd lowest precedence
+        Prec5T   ::= Prec4T { Prec4 }
+        Prec4    ::= Prec4Op Prec4T
+        Prec4Op  ::= "&&"
+
+        # "==" and "!=": 3rd lowest precedence
+        Prec4T   ::= Prec3T { Prec3 }
+        Prec3    ::= Prec3Op Prec3T
+        Prec3Op  ::= "==" | "!="
+
+        # "<", ">", "<=", and ">=": 4th lowest precedence
+        Prec3T   ::= Prec2T { Prec2 }
+        Prec2    ::= Prec2Op Prec2T
+        Prec2Op  ::= "<" | ">" | "<=" | ">="
+
+        # "+" and "-": 5th lowest precedence
+        Prec2T   ::= Prec1T { Prec1 }
+        Prec1    ::= Prec1Op Prec1T
+        Prec1Op  ::= "+" | "-"
+
+        # "*", "/", and "%": Highest precedence
+        Prec1T   ::= Factor { Prec0 }
+        Prec0    ::= Prec0Op Factor
+        Prec0Op  ::= "*" | "/" | "%"
+
+        # The factors are our base values
+        Factor   ::= Null |
+                     False |
+                     True |
+                     Number |
+                     StringLit |
+                     JSONPath |
+                     JSON |
+                     FuncCall |
+                     MethodCall |
+                     "(" Exp ")"
+
+        # JSON literal
+        JSON     ::= Object | Array
+        Object   ::= "{" [ Members ] "}"
+        Members  ::= Pair { "," Pair }
+        Pair     ::= Exp ":" Exp
+        Array    ::= "[" [ ExpList ] "]"
+    \end{verbatim}
+\end{center}
+
+\section{Semantics}
+
+\subsection{Statements}
+
+Statements can be one of the following:
+
+\begin{center}
+    \begin{enumerate}
+        \item An assignment. Only one assignment operator is supported: `='.
+        \item A function call.
+        \item The break keyword.
+        \item A `while' loop. The condition of which is an expression. This is explained more in the \hyperref[sec:expressions]{`Expressions'} subsection.
+        \item A `for' loop. Supports either the ``traditional" C-style format or the iterator style format. The iterator style `for' loop has an optional additional iterator assignment for key-value pair iteration or index-value iteration.
+        \item A function definition.
+        \item An `if-elif-else' block.
+        \item A `NOP'. Defined by a statement followed by a singular semi-colon.
+    \end{enumerate}
+\end{center}
+
+\subsection{Variables and values}
+
+All values are stored internally as JSON parsable strings. This means that the supported ``data types" are strings, floats, integers, arrays, objects, `true'/`false' and `null'. Some other semantics:
+
+\begin{center}
+    \begin{itemize} 
+        \item Variables can be modified using `JSON path'.
+        \item Variable assignment will carry out a \textbf{deep copy}.
+        \item \textbf{Variables are always passed by reference}{Variables are always passed by reference} and expressions are passed by value.
+        \item \textbf{Variables are declared and defined} when a new \textbf{root identifier} is used in a JSONPath assignment that \textbf{doesn't exist} in the \textbf{current scope}.
+        \item \textbf{Variables are set} when the root identifier \textbf{exists} in the \textbf{current scope}.
+        \item \textbf{Variables are filled sparsely} when a \textbf{JSONPath accessing a non-existent sublevel} of the JSON is assigned to. For instance:
+        \begin{verbatim}
+            set hello_world = {
+                "hello": "world"
+            };
+            set hello_world.world[1].hello = "world";
+            /*
+            hello = {
+                "hello": "world",
+                "world": [
+                    null,
+                    {"hello": "world"}
+                ]
+            }
+            */
+        \end{verbatim}
+        \item The resulting values of boolean operators are converted to the integers `0' or `1' when they are a part of a larger arithmetic expression.
+        \item JSON literals can be directly assigned to variables.
+    \end{itemize}
+\end{center}
+
+\subsection{JSON path}
+
+The grammar for the language supports rudimentary JSON path expressions. This includes the standard `.' property accessing or the string indexing style. Below are some valid JSON path expressions:
+
+\begin{figure}[H]
+    \begin{center}
+        \begin{verbatim}
+            json[0].path.is.cool
+            json[0]["path"].is.["cool"]
+            json[x + 2]["path"].is.["co" + "ol"]
+        \end{verbatim}
+    \end{center}
+    \vspace{-1.5em}
+    \cprotect\caption{Examples of some valid JSON paths. These all access the \verb|json| variable.}
+\end{figure}
+
+JSON paths can be assigned to. This sets the appropriate property of the variable.
+
+\subsection{Expressions}
+\label{sec:expressions}
+
+Both \textbf{boolean and arithmetic expressions are a part of the same precedence hierarchy}. \textbf{All operators are left-to-right associative}.
+
+\subsubsection{Operator precedence}
+
+\begin{figure}[H]
+    \begin{center}
+        \begin{tabular}{| m{2cm} | m{2cm} | m{5cm} |}
+            \hline
+            Precedence & Operators & Description\\
+            \hline
+            \textbf{0} & \verb|* / %| & Multiplication, division, and modulus\\
+            \hline
+            \textbf{1} & \verb|+ -| & Addition and subtraction\\
+            \hline
+            \textbf{2} & \verb|< > <= >=| & Less than, greater than, less than or equal to, and greater than or equal to\\
+            \hline
+            \textbf{3} & \verb|== !=| & Equal and not equal\\
+            \hline
+            \textbf{4} & \verb|&&| & Logical and\\
+            \hline
+            \textbf{5} & \verb+||+ & Logical or\\
+            \hline
+        \end{tabular}
+    \end{center}
+    \caption{Operators and their precedence from highest precedence (top) to lowest precedence (bottom)}
+\end{figure}
+
+If multiple value types exist within an expression, all other values will be coerced depending on the coercion hierarchy shown below.
+
+\subsubsection{Coercion heirarchy}
+
+\begin{figure}[H]
+    \begin{center}
+        \begin{tabular}{| m{2cm} | m{2cm} | m{6cm} |}
+            \hline
+            Precedence & Type & Description\\
+            \hline
+            \textbf{0} & String & If a string is contained in any expression all other values will be coerced to a string. This is the JSON string version of the value.\\
+            \hline
+            \textbf{1} & Object & If an Object value has the highest coercion precedence in an expression then all other values are converted to strings then wrapped in object with a \verb|null| value.\\
+            \hline
+            \textbf{2} & Array & If an Array value has the highest coercion precedence in an expression then all other values are treated as potential elements. This is explained more in \hyperref[sec:operatorvaluerel]{`Operator-value relationship'}.\\
+            \hline
+            \textbf{3} & Number & If a Number value has the highest coercion precedence in an expression then all other values will be coerced to Numbers. Boolean's being \verb|0/1| and Null being \verb|-1|.\\
+            \hline
+            \textbf{4} & Boolean & If a Boolean value has the highest coercion precedence in an expression then Null's are converted to \verb|false|.\\
+            \hline
+            \textbf{5} & Null & Null's are always coerced to other values unless the expression contains strictly \verb|null| values.\\
+            \hline
+        \end{tabular}
+    \end{center}
+    \caption{Value types and their coercion precedence in expressions from highest precedence (top) to lowest (bottom)}
+\end{figure}
+
+\subsubsection{Conditions}
+
+In statements that require conditions (such as `if-elif-else', `while', and `for' statements) a purely arithmetic, a purely binary operator expression, or a mixed expression can all be used. Here is a list of all truthy and falsy values.
+
+\begin{figure}[H]
+    \begin{center}
+        \begin{tabular}{| c | c | c |}
+            \hline
+            Type & Truthy value & Falsy value\\
+            \hline
+            Boolean & \verb|true| & \verb|false|\\
+            \hline
+            null & & \verb|null|\\
+            \hline
+            Number & \verb|!= 0| & \verb|0|\\
+            \hline
+            String & \verb|"..."| & \verb|""|\\
+            \hline
+            Object & \verb|{...}| & \verb|{}|\\
+            \hline
+            Array & \verb|[...]| & \verb|[]|\\
+            \hline
+        \end{tabular}
+    \end{center}
+    \caption{Table of truthy and falsy values of each type}
+\end{figure}
+
+\subsection{Operator-value relationship}
+\label{sec:operatorvaluerel}
+
+Instead of having built-in functions for operations such as appending to an array, removing from an array, merging objects, etc. Below, is a run through of each value type. \textbf{All operators that aren't mentioned are not supported}.
+
+\subsubsection{Objects}
+
+\begin{itemize}
+    \item \textbf{Addition}: Right value will merge into left value, much like a union operation.
+    \item \textbf{Subtraction}: Left value will have key-value pairs found in right value deleted from it.
+    \item \textbf{Modulus}: Reverse of subtraction (reverse set subtraction).
+    \item \textbf{Equal}: \textbf{Deep} equal. \textbf{Returns boolean}.
+    \item \textbf{Not-equal}: \textbf{Deep} not-equal. \textbf{Returns boolean}.
+    \item \textbf{Less-than, greater-than, less-than or equal, greater-than or equal}: Comparison between the number of keys for both. \textbf{Returns a Boolean}.
+    \item \textbf{Logical And}: Compares by coercing left and right to boolean values.
+    \item \textbf{Logical Or}: Compares by coercing left and right to boolean values.
+\end{itemize}
+
+\subsubsection{Arrays}
+
+\begin{itemize}
+    \item \textbf{Addition}: Right value will be appended to the left value.
+    \item \textbf{Subtraction}: Left value will have elements that are equal to the elements in the left removed. If the element is \verb|null| then the start of the list is removed.
+    \item \textbf{Equal}: \textbf{Deep} equal. \textbf{Returns boolean}.
+    \item \textbf{Not-equal}: \textbf{Deep} not-equal. \textbf{Returns boolean}.
+    \item \textbf{Less-than, greater-than, less-than or equal, greater-than or equal}: Comparison between the number of elements in both. \textbf{Returns a Boolean}.
+    \item \textbf{Logical And}: Compares by coercing left and right to boolean values.
+    \item \textbf{Logical Or}: Compares by coercing left and right to boolean values.
+\end{itemize}
+
+\subsubsection{Strings}
+
+\begin{itemize}
+    \item \textbf{Addition}: Concatenation.
+    \item \textbf{Equal}: \textbf{Deep} equal. \textbf{Returns boolean}.
+    \item \textbf{Not-equal}: \textbf{Deep} not-equal. \textbf{Returns boolean}.
+    \item \textbf{Less-than, greater-than, less-than or equal, greater-than or equal}: String comparison. \textbf{Returns a Boolean}.
+\end{itemize}
+
+\subsubsection{Numbers}
+
+All operators work as expected.
+
+\subsubsection{Booleans}
+
+\begin{itemize}
+    \item \textbf{Equal}: Equal.
+    \item \textbf{Not-equal}: Not-equal.
+    \item \textbf{Logical And}: Lazy logical and of left and right.
+    \item \textbf{Logical Or}: Lazy logical or of left and right.
+\end{itemize}
+
+\subsubsection{Nulls}
+
+The only supported operators are \verb|==| and \verb|!=| which both work as expected.
+
+\section{Batching}
+
+The \verb|batch| construct lets you \textbf{parallelise all HTTP method calls made within a block}. This is made possible using Golang's extensive parallelism support. Batching will be explained through the use of this example code snippet:
+
+\begin{center}
+    \begin{verbatim}
+    01 batch this
+    02     for url in [
+    03         "https://a.com",
+    04         "https://b.com",
+    05         "https://c.com"
+    06     ] do
+    07         set result = GET(url);
+    08         print(result);
+    09     end;
+    10     set oops_forgot_this = GET("https://d.com");
+    11     print(oops_forgot_this);
+    12 end;
+    \end{verbatim}
+\end{center}
+
+A \verb|batch| block is \textbf{always evaluated twice}. This means that it is important to \textbf{keep all non-HTTP-method-call statements and expressions to a minimum} as these will only slow down the interpreter.
+
+Before the first pass begins, the contents of the variables in memory are deep copied so that they can be reverted to after the first pass. In the first pass the interpreter enqueues every single HTTP method call as a job within a work queue. Each job has a unique ID and the order of this work queue is saved (more on this later). In the example the HTTP method on line 7 will be added to the work queue 3 separate times with different arguments. Whereas, the HTTP method on line 10 is only enqueued once.
+
+After this, the jobs in the work queue are executed using a pool of threads. The result of each job is added to a queue along with the executed job's ID. The result queue is then sorted back into the same order in which their respective jobs were added to the work queue. For instance, the result queue of the example above might look like this:
+
+\begin{center}
+    \begin{verbatim}
+                Head -> "Response from 'a'" ->
+                        "Response from 'b'" ->
+                        "Response from 'c'" ->
+                        "Response from 'd'"
+    \end{verbatim}
+\end{center}
+
+Then, the contents of the variables in memory are set back to what they were before the first pass and the second pass is initiated. In the second pass, each time a HTTP method call is stepped into the next result in the result queue is dequeued and used.
+
+\subsection{Caveats}
+
+\subsubsection{Be sensible.}
+
+A \verb|batch| block will offer no performance boosts if the block contains long running code with sparse usage of HTTP method calls, and could very well be \textbf{detrimental} to the performance of your code. Some general tips...
+
+\begin{itemize}
+    \item \textbf{Don't surround long running for or while loops in a batch statement.}
+    \item \textbf{Keep expressions and statements without HTTP method calls down to a minimum.}
+    \item \textbf{If you are only making a few HTTP method calls rather than 10s or 100s then it might be more performant to remove the batch block.}
+\end{itemize}
+
+It is also worth noting that if there is a \verb|batch| block containing \textbf{zero HTTP method calls}, then the interpreter will \textbf{silently skip the second pass}. There is no need to batch what cannot be batched.
+
+\subsubsection{You cannot batch what has already been batched}
+
+You cannot use a \verb|batch| block within a \verb|batch| block. Your program will throw an uncatchable error. This will be thrown after parsing in a special AST checking procedure before evaluation is started.
+
+\subsubsection{Method calls within function calls are not batched}
+
+HTTP method calls made within functions are not batched for the simple fact that a function could already contain another \verb|batch| block. This is undefined behavior (see above). However, \verb|batch| statements can still be used inside function definitions if functional-abstraction is necessary/nice.
+
+\subsubsection{Try-catch surrounding batch blocks}
+
+If an exception occurs in the first or second pass and there is a try-catch surrounding the batch block, then the batch block will be canceled from that point onwards.
+
+If the exception occurs in the thread execution phase then the exception is thrown after all requests are made. If multiple exceptions occur they will be wrapped into one exception in the form of an object.
+
+% \begin{center}
+%     \begin{verbatim}
+%         chunk ::= block
+%         block ::= {stat} [retstat]
+%         stat ::=  ‘;’ | 
+%              varlist ‘=’ explist | 
+%              functioncall | 
+%              label | 
+%              break | 
+%              goto Name | 
+%              do block end | 
+%              while exp do block end | 
+%              repeat block until exp | 
+%              if exp then block {elseif exp then block} [else block] end | 
+%              for Name ‘=’ exp ‘,’ exp [‘,’ exp] do block end | 
+%              for namelist in explist do block end | 
+%              function funcname funcbody | 
+%              local function Name funcbody | 
+%              local attnamelist [‘=’ explist] 
+%         attnamelist ::=  Name attrib {‘,’ Name attrib}
+%         attrib ::= [‘<’ Name ‘>’]
+%         retstat ::= return [explist] [‘;’]
+%         label ::= ‘::’ Name ‘::’
+%         funcname ::= Name {‘.’ Name} [‘:’ Name]
+%         varlist ::= var {‘,’ var}
+%         var ::=  Name | prefixexp ‘[’ exp ‘]’ | prefixexp ‘.’ Name 
+%         namelist ::= Name {‘,’ Name}
+%         explist ::= exp {‘,’ exp}
+%         exp ::=  nil | false | true | Numeral | LiteralString | ‘...’ |
+%              functiondef | prefixexp | tableconstructor | exp binop exp |
+%              unop exp 
+%         prefixexp ::= var | functioncall | ‘(’ exp ‘)’
+%         functioncall ::=  prefixexp args | prefixexp ‘:’ Name args 
+%         args ::=  ‘(’ [explist] ‘)’ | tableconstructor | LiteralString 
+%         functiondef ::= function funcbody
+%         funcbody ::= ‘(’ [parlist] ‘)’ block end
+%         parlist ::= namelist [‘,’ ‘...’] | ‘...’
+%         tableconstructor ::= ‘{’ [fieldlist] ‘}’
+%         fieldlist ::= field {fieldsep field} [fieldsep]
+%         field ::= ‘[’ exp ‘]’ ‘=’ exp | Name ‘=’ exp | exp
+%         fieldsep ::= ‘,’ | ‘;’
+%         binop ::=  ‘+’ | ‘-’ | ‘*’ | ‘/’ | ‘//’ | ‘^’ | ‘%’ | 
+%              ‘&’ | ‘~’ | ‘|’ | ‘>>’ | ‘<<’ | ‘..’ | 
+%              ‘<’ | ‘<=’ | ‘>’ | ‘>=’ | ‘==’ | ‘~=’ | 
+%              and | or
+%         unop ::= ‘-’ | not | ‘#’ | ‘~’
+%     \end{verbatim}
+% \end{center}
+
+% Program  -> Block.
+% Block    -> Stmt | Stmt RetStmt.
+% Stmts    -> Stmt Stmt |.
+% Stmt     -> semi |
+%     JSONPath equal Exp |
+%     FuncCall |
+%     MethodCall |
+%     Break |
+%     While Exp Do Block End |
+%     For Ident equal Exp semi Exp Do Block End |
+%     For Ident equal Exp semi Exp semi Exp Do Block End |
+%     For Ident In Exp Do Block End |
+%     For Ident comma Ident In Exp Do Block End |
+%     Function JSONPath FuncBody |
+%     If Exp Then Block Elifs End |
+%     If Exp Then Block Elifs Else Block End.
+% Elifs    -> Elif Exp Then Block Elifs |.
+% JSONPath -> Part Parts.
+% Parts    -> dot Part Parts |.
+% Part     -> Ident Indices.
+% Indices  -> sqrL Exp sqrR Indices|.
+% RetStmt  -> Return |
+%             Return semi |
+%             Return Exp semi |
+%             Return Exp.
+% FuncCall -> JSONPath Args.
+% MethodCall -> Method Args.
+% FuncBody -> parenL Params parenR Block End | parenL parenR Block End.
+% Params   -> Ident Idents.
+% Idents   -> comma Ident Idents |.
+% Args     -> parenL ExpList parenR | parenL parenR.
+% ExpList  -> Exp Exps.
+% Exps     -> comma Exp Exps |.
+
+% Exp      -> Prec5T Precs5.
+% Precs5   -> Prec5 Precs5|.
+% Prec5    -> Prec5Op Prec5T Prec5.
+% Prec5Op  -> union.
+
+% Prec5T   -> Prec4T Precs4.
+% Precs4   -> Prec4 Precs4|.
+% Prec4    -> Prec4Op Prec4T Prec4.
+% Prec4Op  -> and.
+
+% Prec4T   -> Prec3T Precs3.
+% Precs3   -> Prec3 Precs3|.
+% Prec3    -> Prec3Op Prec3T Prec3.
+% Prec3Op  -> eq | ne.
+
+% Prec3T   -> Prec2T Precs2.
+% Precs2   -> Prec2 Precs2|.
+% Prec2    -> Prec2Op Prec2T Prec2.
+% Prec2Op  -> lt | gt | lte | gte.
+
+% Prec2T   -> Prec1T Precs1.
+% Precs1   -> Prec1 Precs1|.
+% Prec1    -> Prec1Op Prec1T Prec1.
+% Prec1Op  -> plus | minus.
+
+% Prec1T   -> Factor Precs0.
+% Precs0   -> Prec0 Precs0|.
+% Prec0    -> Prec0Op Factor Prec0.
+% Prec0Op  -> mult | div.
+
+% Factor   -> Null |
+%             False |
+%             True |
+%             Number |
+%             StringLit |
+%             JSONPath |
+%             JSON |
+%             FuncCall | MethodCall |
+%             AriExp |
+%             parenL Exp parenR.
+
+% JSON     -> Object | Array.
+% Object   -> curlyL Members curlyR | curlyL curlyR.
+% Members  -> Pair Pairs.
+% Pairs    -> comma Pair Pairs |.
+% Pair     -> Exp colon Exp.
+% Array    -> sqrL ExpList sqrR.
+
+\end{document}

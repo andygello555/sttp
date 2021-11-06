@@ -14,7 +14,7 @@ The interpreter itself will be implemented in Go using the [participle](https://
 
 #### A report on the use of context free grammars to specify syntax, along with manual procedures for generating and parsing languages
 
-This is to gain a better understanding when it comes to implementing a grammar using a context free language, as well as giving a deeper understanding as to what makes parser generators tick.<br/>
+This is to gain a better understanding when it comes to implementing a grammar using a context free grammar, as well as giving a deeper understanding as to what makes parser generators tick.<br/>
 _Timeline: **15th October - 20th of October**_
 
 #### A report on the use derivations, and grammar idioms to capture notions of associativity and priority in arithmetic expressions
