@@ -13,8 +13,8 @@ func tabs(i int) string {
 	return strings.Repeat("\t", i)
 }
 
-func (p *Program) String() string {
-	return p.Block.String(0) + "\n"
+func (p *Program) String(indent int) string {
+	return p.Block.String(indent) + "\n"
 }
 
 func (b *Block) String(indent int) string {
