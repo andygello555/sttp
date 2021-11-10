@@ -32,7 +32,7 @@ func TestParse(t *testing.T) {
 				if err != nil {
 					fmt.Println(err.Error())
 				}
-				fmt.Println(p.String())
+				fmt.Println(p.String(0))
 			}
 		}
 	}

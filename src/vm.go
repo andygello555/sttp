@@ -13,6 +13,8 @@ type VM struct {
 	Scope           int
 	// ParentStatement is a pointer to the first parent of the currently evaluated node
 	ParentStatement interface{}
+	// CallStack contains the current call stack state.
+	CallStack       *CallStack
 }
 
 func New() *VM {
@@ -44,4 +46,8 @@ func (vm *VM) GetScope() *int {
 
 func (vm *VM) GetParentStatement() interface{} {
 	return vm.ParentStatement
+}
+
+func (vm *VM) GetCallStack() parser.CallStack {
+	return vm.CallStack
 }

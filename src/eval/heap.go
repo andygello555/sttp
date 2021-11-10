@@ -2,6 +2,7 @@ package eval
 
 import (
 	"fmt"
+	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/errors"
 )
 
 type Heap map[string][]*Symbol
@@ -18,16 +19,18 @@ func (h *Heap) New(name string, value interface{}, t Type, scope int) {
 		panic(fmt.Sprintf("type: %d, is not a valid type", t))
 	}
 
-	// Create the list if it doesn't exist
+	var start int
 	if !h.Exists(name) {
+		// Create the list if it doesn't exist
 		(*h)[name] = make([]*Symbol, 0)
+		start = 0
+	} else {
+		start = (*h)[name][len((*h)[name])-1].Scope + 1
 	}
 
-	if scope != 0 {
-		// Append any number of NullSymbol to fill the gap
-		for i := (*h)[name][len((*h)[name])-1].Scope + 1; i < scope; i += 1 {
-			(*h)[name] = append((*h)[name], NullSymbol)
-		}
+	// Append any number of NullSymbol to fill the gap
+	for i := start; i < scope; i += 1 {
+		(*h)[name] = append((*h)[name], NullSymbol)
 	}
 
 	// Append the symbol to the end of the symbol list
@@ -42,7 +45,7 @@ func (h *Heap) New(name string, value interface{}, t Type, scope int) {
 // will be deleted. Will return an error if it cannot be found.
 func (h *Heap) Delete(name string, scope int) error {
 	if !h.Exists(name) {
-		return HeapEntryDoesNotExist.Errorf(name, scope, name)
+		return errors.HeapEntryDoesNotExist.Errorf(name, scope, name)
 	}
 
 	scopes := len((*h)[name])
@@ -50,16 +53,32 @@ func (h *Heap) Delete(name string, scope int) error {
 	if scope >= 0 {
 		// If the scope exceeds the limits of the list or the element at the scope points to the NullSymbol then we will return an error
 		if scope >= scopes || (*h)[name][scope] == NullSymbol {
-			return HeapScopeDoesNotExist.Errorf(name, scope, scope, name)
+			return errors.HeapScopeDoesNotExist.Errorf(name, scope, scope, name)
 		}
 	} else {
 		// Remove the last element
 		toRemove = scopes - 1
 	}
 
-	// We will remove that element using copy
-	copy((*h)[name][toRemove:], (*h)[name][toRemove + 1:])
-	(*h)[name] = (*h)[name][:scopes- 1]
+	// Set the symbol to the NullSymbol
+	(*h)[name][toRemove] = NullSymbol
+
+	// If we have "removed" the last element then we need to iterate through the scope list in reverse deleting each
+	// NullSymbol until we get to a regular symbol.
+	if toRemove == scopes - 1 {
+		var i int
+		for i = toRemove; i >= 0; i-- {
+			if (*h)[name][i] != NullSymbol {
+				break
+			}
+		}
+		(*h)[name] = (*h)[name][:i]
+	}
+
+	// If the scope list is now empty we will remove the entry from the heap
+	if len((*h)[name]) == 0 {
+		delete(*h, name)
+	}
 	return nil
 }
 
@@ -74,7 +93,7 @@ func (h *Heap) Assign(name string, value interface{}, t Type, scope int) {
 	} else {
 		override := scope
 		if scope < 0 {
-			override = len((*h)[name])
+			override = len((*h)[name]) - 1
 		}
 
 		symbol := (*h)[name][override]
@@ -90,7 +109,7 @@ func (h *Heap) Assign(name string, value interface{}, t Type, scope int) {
 // will be fetched. Will return an error if it cannot be found.
 func (h *Heap) Get(name string, scope int) (error, *Symbol) {
 	if !h.Exists(name) {
-		return HeapEntryDoesNotExist.Errorf(name, scope, name), nil
+		return errors.HeapEntryDoesNotExist.Errorf(name, scope, name), nil
 	}
 	scopes := len((*h)[name])
 	get := scope
@@ -98,13 +117,13 @@ func (h *Heap) Get(name string, scope int) (error, *Symbol) {
 		scope = scopes - 1
 	} else if scope >= scopes {
 		// Scope exceeds the limits of the scope list for the entry
-		return HeapScopeDoesNotExist.Errorf(name, scope, scope, name), nil
+		return errors.HeapScopeDoesNotExist.Errorf(name, scope, scope, name), nil
 	}
 
 	symbol := (*h)[name][get]
 	// If the symbol is the NullSymbol then we will return an error as well as the NullSymbol
 	if symbol == NullSymbol {
-		return HeapScopeDoesNotExist.Errorf(name, scope, scope, name), symbol
+		return errors.HeapScopeDoesNotExist.Errorf(name, scope, scope, name), symbol
 	}
 	return nil, symbol
 }
@@ -126,14 +145,19 @@ var NullSymbol = &Symbol{
 type Type int
 
 const (
-	// NoType is used for logic within the Heap referrers
+	// NoType is used for logic within the Heap referrers.
 	NoType = -1
+	// Object is a standard JSON object.
 	Object Type = iota
+	// Array is a standard JSON array.
 	Array
 	String
 	Number
 	Boolean
 	Null
+	// Function cannot be stored in a variable per-say but is put on the heap as a symbol. A symbol which has a Function
+	// type has a value which points to a FunctionBody struct.
+	Function
 )
 
 var Types = map[Type]bool{
@@ -143,4 +167,5 @@ var Types = map[Type]bool{
 	Number: true,
 	Boolean: true,
 	Null: true,
+	Function: true,
 }

@@ -4,6 +4,10 @@ import (
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/eval"
 )
 
-func (p *Program) Eval(vm eval.VM) *eval.Symbol {
+type evalNode interface {
+	Eval(vm VM) *eval.Symbol
+}
+
+func (p *Program) Eval(vm VM) *eval.Symbol {
 	return nil
 }
