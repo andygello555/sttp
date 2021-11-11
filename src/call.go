@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/errors"
+	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/eval"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/parser"
 	"strings"
 )
@@ -17,14 +18,36 @@ const (
 	MaxStackFramesPrint = 25
 )
 
-// CallStack represents a stack of frames each of which representing a function call.
-type CallStack []*Frame
-
 // Frame is a stack frame which is allocated on the call stack.
 type Frame struct {
+	// Caller is the reference to the FunctionCall node in the AST.
 	Caller  *parser.FunctionCall
+	// Current is the reference to the FunctionDefinition node in the AST.
 	Current *parser.FunctionDefinition
+	// Heap contains the parameters and local variables assigned within the function.
+	Heap    *eval.Heap
+	// Return is the value/symbol returned by the function.
+	Return  *eval.Symbol
 }
+
+func (f *Frame) GetCaller() *parser.FunctionCall {
+	return f.Caller
+}
+
+func (f *Frame) GetCurrent() *parser.FunctionDefinition {
+	return f.Current
+}
+
+func (f *Frame) GetHeap() *eval.Heap {
+	return f.Heap
+}
+
+func (f *Frame) GetReturn() *eval.Symbol {
+	return f.Return
+}
+
+// CallStack represents a stack of frames each of which representing a function call.
+type CallStack []*Frame
 
 // Call allocates a new stack Frame with the given caller and function definition and adds it to the top of the stack.
 // Returns an error if there is a stack overflow as well as the allocated stack frame.
@@ -41,15 +64,15 @@ func (cs *CallStack) Call(caller *parser.FunctionCall, current *parser.FunctionD
 }
 
 // Return pops off the topmost stack Frame and returns it. Also returns an error if there is a stack underflow.
-func (cs *CallStack) Return() (err error, caller *parser.FunctionCall, current *parser.FunctionDefinition) {
+func (cs *CallStack) Return() (err error, frame parser.Frame) {
 	if len(*cs) == MinStackFrames {
-		return errors.StackUnderFlow.Errorf(MinStackFrames), nil, nil
+		return errors.StackUnderFlow.Errorf(MinStackFrames), nil
 	}
 
 	// Pop off the topmost frame
-	frame := (*cs)[len(*cs) - 1]
+	frame = (*cs)[len(*cs) - 1]
 	*cs = (*cs)[:len(*cs)]
-	return nil, frame.Caller, frame.Current
+	return nil, frame
 }
 
 // String returns the string representation of the stack. Useful for when errors occur within the VM. Stack frames are

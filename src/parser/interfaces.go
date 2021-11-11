@@ -10,8 +10,8 @@ type ASTNode interface {
 
 // VM acts as an interface for the overarching state of the VM used for evaluation of programs.
 type VM interface {
-	Eval(filename, s string) (result *eval.Symbol, err error)
-	GetHeap() *eval.Heap
+	Eval(filename, s string) (err error, result *eval.Symbol)
+	GetSymbols() *eval.Heap
 	GetScope() *int
 	GetParentStatement() interface{}
 	GetCallStack() CallStack
@@ -20,5 +20,13 @@ type VM interface {
 // CallStack is implemented by the call stack that is used within the VM.
 type CallStack interface {
 	Call(caller *FunctionCall, current *FunctionDefinition) error
-	Return() (err error, caller *FunctionCall, current *FunctionDefinition)
+	Return() (err error, frame Frame)
+}
+
+// Frame is an entry on the call stack.
+type Frame interface {
+	GetCaller()  *FunctionCall
+	GetCurrent() *FunctionDefinition
+	GetHeap()    *eval.Heap
+	GetReturn()  *eval.Symbol
 }

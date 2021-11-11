@@ -7,11 +7,11 @@ import (
 
 // VM represents the current state of the sttp virtual machines.
 type VM struct {
-	// Heap contains the variables currently on the heap
-	Heap            *eval.Heap
-	// Scope is the current scope that the VM is in
+	// Symbols contains the symbols for global variables and functions.
+	Symbols         *eval.Heap
+	// Scope is the current scope that the VM is in.
 	Scope           int
-	// ParentStatement is a pointer to the first parent of the currently evaluated node
+	// ParentStatement is a pointer to the first parent of the currently evaluated node.
 	ParentStatement interface{}
 	// CallStack contains the current call stack state.
 	CallStack       *CallStack
@@ -19,25 +19,26 @@ type VM struct {
 
 func New() *VM {
 	h := make(eval.Heap)
+	cs := make(CallStack, 0)
 	return &VM{
-		Heap: &h,
+		Symbols: &h,
 		Scope: 0,
 		ParentStatement: nil,
+		CallStack: &cs,
 	}
 }
 
-func (vm *VM) Eval(filename, s string) (result *eval.Symbol, err error) {
+func (vm *VM) Eval(filename, s string) (err error, result *eval.Symbol) {
 	var program *parser.Program
 	err, program = parser.Parse(filename, s)
 	if err != nil {
-		return nil, err
+		return err, nil
 	}
-	result = program.Eval(vm)
-	return result, nil
+	return program.Eval(vm)
 }
 
-func (vm *VM) GetHeap() *eval.Heap {
-	return vm.Heap
+func (vm *VM) GetSymbols() *eval.Heap {
+	return vm.Symbols
 }
 
 func (vm *VM) GetScope() *int {

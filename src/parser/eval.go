@@ -5,9 +5,9 @@ import (
 )
 
 type evalNode interface {
-	Eval(vm VM) *eval.Symbol
+	Eval(vm VM) (err error, result *eval.Symbol)
 }
 
-func (p *Program) Eval(vm VM) *eval.Symbol {
-	return nil
+func (p *Program) Eval(vm VM) (err error, result *eval.Symbol) {
+	return err, result
 }
