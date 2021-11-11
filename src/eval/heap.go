@@ -45,7 +45,7 @@ func (h *Heap) New(name string, value interface{}, t Type, scope int) {
 // will be deleted. Will return an error if it cannot be found.
 func (h *Heap) Delete(name string, scope int) error {
 	if !h.Exists(name) {
-		return errors.HeapEntryDoesNotExist.Errorf(name, scope, name)
+		return errors.HeapEntryDoesNotExist.Errorf("delete", name, scope, name)
 	}
 
 	scopes := len((*h)[name])
@@ -53,7 +53,7 @@ func (h *Heap) Delete(name string, scope int) error {
 	if scope >= 0 {
 		// If the scope exceeds the limits of the list or the element at the scope points to the NullSymbol then we will return an error
 		if scope >= scopes || (*h)[name][scope] == NullSymbol {
-			return errors.HeapScopeDoesNotExist.Errorf(name, scope, scope, name)
+			return errors.HeapScopeDoesNotExist.Errorf("delete", name, scope, scope, name)
 		}
 	} else {
 		// Remove the last element
@@ -72,7 +72,7 @@ func (h *Heap) Delete(name string, scope int) error {
 				break
 			}
 		}
-		(*h)[name] = (*h)[name][:i]
+		(*h)[name] = (*h)[name][:i + 1]
 	}
 
 	// If the scope list is now empty we will remove the entry from the heap
@@ -97,6 +97,15 @@ func (h *Heap) Assign(name string, value interface{}, t Type, scope int) {
 		}
 
 		symbol := (*h)[name][override]
+		if symbol == NullSymbol {
+			// We have to allocate a new symbol to set so that we are not setting the NullSymbol
+			symbol = &Symbol{
+				Value: nil,
+				Type:  NoType,
+				Scope: -1,
+			}
+			(*h)[name][override] = symbol
+		}
 		symbol.Value = value
 		symbol.Scope = override
 		if t != NoType {
@@ -109,7 +118,7 @@ func (h *Heap) Assign(name string, value interface{}, t Type, scope int) {
 // will be fetched. Will return an error if it cannot be found.
 func (h *Heap) Get(name string, scope int) (error, *Symbol) {
 	if !h.Exists(name) {
-		return errors.HeapEntryDoesNotExist.Errorf(name, scope, name), nil
+		return errors.HeapEntryDoesNotExist.Errorf("get", name, scope, name), nil
 	}
 	scopes := len((*h)[name])
 	get := scope
@@ -117,13 +126,13 @@ func (h *Heap) Get(name string, scope int) (error, *Symbol) {
 		scope = scopes - 1
 	} else if scope >= scopes {
 		// Scope exceeds the limits of the scope list for the entry
-		return errors.HeapScopeDoesNotExist.Errorf(name, scope, scope, name), nil
+		return errors.HeapScopeDoesNotExist.Errorf("get", name, scope, scope, name), nil
 	}
 
 	symbol := (*h)[name][get]
 	// If the symbol is the NullSymbol then we will return an error as well as the NullSymbol
 	if symbol == NullSymbol {
-		return errors.HeapScopeDoesNotExist.Errorf(name, scope, scope, name), symbol
+		return errors.HeapScopeDoesNotExist.Errorf("get", name, scope, scope, name), symbol
 	}
 	return nil, symbol
 }
@@ -135,7 +144,7 @@ type Symbol struct {
 }
 
 // NullSymbol is used to fill the empty gaps between symbols of different scopes. This makes symbol getting within the
-// Heap O(1) instead of O(n).
+// Heap O(1) instead of O(n). However, it will make space complexity worse.
 var NullSymbol = &Symbol{
 	Value: nil,
 	Type:  NoType,

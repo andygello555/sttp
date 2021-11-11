@@ -1,6 +1,9 @@
 package eval
 
-import "testing"
+import (
+	"fmt"
+	"testing"
+)
 
 func TestHeap_Assign(t *testing.T) {
 	for testNo, test := range []struct{
@@ -174,7 +177,7 @@ func TestHeap_Delete(t *testing.T) {
 		scope int
 	}
 
-	for _, test := range []struct{
+	for testNo, test := range []struct{
 		startHeap Heap
 		toDelete  []args
 		expected  Heap
@@ -201,6 +204,106 @@ func TestHeap_Delete(t *testing.T) {
 				{"a", 0},
 				{"a", -1},
 			},
+			expected: Heap{},
+			errors: []error{},
+		},
+		{
+			startHeap: Heap{
+				// No Heap should ever end up looking like this as NullSymbol references should only be inserted between
+				// or before non-null symbols. If this does occur for whatever reason the NullSymbols will be removed.
+				"a": {
+					{
+						Value: nil,
+						Type: String,
+						Scope: 0,
+					},
+					NullSymbol,
+					NullSymbol,
+					NullSymbol,
+				},
+			},
+			toDelete: []args{
+				{"a", -1},
+			},
+			expected: Heap{
+				"a": {
+					{
+						Value: nil,
+						Type: String,
+						Scope: 0,
+					},
+				},
+			},
+		},
+		{
+			startHeap: Heap{
+				"a": {
+					{
+						Value: nil,
+						Type: String,
+						Scope: 0,
+					},
+					{
+						Value: nil,
+						Type: Object,
+						Scope: 1,
+					},
+				},
+			},
+			toDelete: []args{
+				{"a", -1},
+			},
+			expected: Heap{
+				"a": {
+					{
+						Value: nil,
+						Type: String,
+						Scope: 0,
+					},
+				},
+			},
+		},
+		{
+			startHeap: Heap{
+				"a": {
+					{
+						Value: nil,
+						Type: String,
+						Scope: 0,
+					},
+					NullSymbol,
+					{
+						Value: nil,
+						Type: Array,
+						Scope: 2,
+					},
+				},
+			},
+			toDelete: []args{
+				{"b", 0},
+				{"a", 1},
+				{"a", 3},
+			},
+			expected: Heap{
+				"a": {
+					{
+						Value: nil,
+						Type: String,
+						Scope: 0,
+					},
+					NullSymbol,
+					{
+						Value: nil,
+						Type: Array,
+						Scope: 2,
+					},
+				},
+			},
+			errors: []error{
+				fmt.Errorf("cannot delete %s (scope: %d), as \"%s\" is not an entry in symbol table", "b", 0, "b"),
+				fmt.Errorf("cannot delete %s (scope: %d), as scope: %d does not exist in the scope list for the symbol \"%s\"", "a", 1, 1, "a"),
+				fmt.Errorf("cannot delete %s (scope: %d), as scope: %d does not exist in the scope list for the symbol \"%s\"", "a", 3, 3, "a"),
+			},
 		},
 	}{
 		for _, del := range test.toDelete {
@@ -218,20 +321,21 @@ func TestHeap_Delete(t *testing.T) {
 				}
 			}
 		}
-		//for k, v := range test.expected {
-		//	if _, ok := h[k]; ok {
-		//		if len(v) == len(h[k]) {
-		//			for i, symbol := range v {
-		//				if symbol.Scope != h[k][i].Scope || symbol.Type != h[k][i].Type || symbol.Value != h[k][i].Value {
-		//					t.Errorf("%d symbol in scope list: %v does not match expected symbol: %v", i, symbol, h[k][i])
-		//				}
-		//			}
-		//		} else {
-		//			t.Errorf("Scope list for variable: \"%s\" is not the same size as the expected scope list for the same variable (%d vs. %d)", k, len(v), len(h[k]))
-		//		}
-		//	} else {
-		//		t.Errorf("Heap for test %d does not include the scope list for the variable \"%s\"", testNo + 1, k)
-		//	}
-		//}
+
+		for k, v := range test.startHeap {
+			if _, ok := test.expected[k]; ok {
+				if len(v) == len(test.expected[k]) {
+					for i, symbol := range v {
+						if symbol.Scope != test.expected[k][i].Scope || symbol.Type != test.expected[k][i].Type || symbol.Value != test.expected[k][i].Value {
+							t.Errorf("%d symbol in scope list: %v does not match expected symbol: %v", i, symbol, test.expected[k][i])
+						}
+					}
+				} else {
+					t.Errorf("Scope list for variable: \"%s\" is not the same size as the expected scope list for the same variable (%d vs. %d)", k, len(v), len(test.expected[k]))
+				}
+			} else {
+				t.Errorf("Heap for test %d does not include the scope list for the variable \"%s\"", testNo + 1, k)
+			}
+		}
 	}
 }
