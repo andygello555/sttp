@@ -1,6 +1,6 @@
 package parser
 
-import "github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/eval"
+import "github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/data"
 
 // ASTNode is implemented by all ASTNodes
 type ASTNode interface {
@@ -10,8 +10,8 @@ type ASTNode interface {
 
 // VM acts as an interface for the overarching state of the VM used for evaluation of programs.
 type VM interface {
-	Eval(filename, s string) (err error, result *eval.Symbol)
-	GetSymbols() *eval.Heap
+	Eval(filename, s string) (err error, result *data.Symbol)
+	GetSymbols() *data.Heap
 	GetScope() *int
 	GetParentStatement() interface{}
 	GetCallStack() CallStack
@@ -27,6 +27,6 @@ type CallStack interface {
 type Frame interface {
 	GetCaller()  *FunctionCall
 	GetCurrent() *FunctionDefinition
-	GetHeap()    *eval.Heap
-	GetReturn()  *eval.Symbol
+	GetHeap()    *data.Heap
+	GetReturn()  *data.Symbol
 }

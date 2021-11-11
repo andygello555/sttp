@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/errors"
-	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/eval"
+	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/data"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/parser"
 	"strings"
 )
@@ -25,9 +25,9 @@ type Frame struct {
 	// Current is the reference to the FunctionDefinition node in the AST.
 	Current *parser.FunctionDefinition
 	// Heap contains the parameters and local variables assigned within the function.
-	Heap    *eval.Heap
+	Heap    *data.Heap
 	// Return is the value/symbol returned by the function.
-	Return  *eval.Symbol
+	Return  *data.Symbol
 }
 
 func (f *Frame) GetCaller() *parser.FunctionCall {
@@ -38,11 +38,11 @@ func (f *Frame) GetCurrent() *parser.FunctionDefinition {
 	return f.Current
 }
 
-func (f *Frame) GetHeap() *eval.Heap {
+func (f *Frame) GetHeap() *data.Heap {
 	return f.Heap
 }
 
-func (f *Frame) GetReturn() *eval.Symbol {
+func (f *Frame) GetReturn() *data.Symbol {
 	return f.Return
 }
 

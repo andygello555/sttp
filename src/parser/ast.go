@@ -79,6 +79,10 @@ func (o *Operator) Capture(s []string) error {
 	return nil
 }
 
+func (o *Operator) String() string {
+	return operatorSymbolMap[*o]
+}
+
 type Method int
 
 const (

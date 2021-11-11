@@ -1,4 +1,4 @@
-package eval
+package data
 
 import (
 	"encoding/json"
@@ -194,11 +194,15 @@ func (t *Type) Get(value interface{}) (err error) {
 	return nil
 }
 
+func (t *Type) String() string {
+	return typeNames[*t]
+}
+
 const (
 	// NoType is used for logic within the Heap referrers.
-	NoType = -1
+	NoType Type = iota
 	// Object is a standard JSON object.
-	Object Type = iota
+	Object
 	// Array is a standard JSON array.
 	Array
 	String
@@ -211,6 +215,7 @@ const (
 )
 
 var Types = map[Type]bool{
+	NoType: true,
 	Object: true,
 	Array: true,
 	String: true,
@@ -218,4 +223,15 @@ var Types = map[Type]bool{
 	Boolean: true,
 	Null: true,
 	Function: true,
+}
+
+var typeNames = map[Type]string{
+	NoType: "<error>",
+	Object: "object",
+	Array: "array",
+	String: "string",
+	Number: "number",
+	Boolean: "bool",
+	Null: "null",
+	Function: "function",
 }

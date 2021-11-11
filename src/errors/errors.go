@@ -13,9 +13,12 @@ func errorf(error string, values... interface{}) error {
 type RuntimeError string
 
 const (
-	StackOverflow  RuntimeError = "exceeded the maximum number of stack frames (%d)"
-	StackUnderFlow RuntimeError = "exceeded the minimum number of stack frames (%d)"
-	CannotFindType RuntimeError = "cannot find type for value \"%v\""
+	StackOverflow    RuntimeError = "exceeded the maximum number of stack frames (%d)"
+	StackUnderFlow   RuntimeError = "exceeded the minimum number of stack frames (%d)"
+	CannotFindType   RuntimeError = "cannot find type for value \"%v\""
+	CannotCast       RuntimeError = "cannot cast type %s to %s"
+	CannotFindLength RuntimeError = "cannot find length of value \"%v\""
+	InvalidOperation RuntimeError = "cannot carry out operation \"s\" for %s and %s"
 )
 
 func (re RuntimeError) Errorf(values... interface{}) error { return errorf(string(re), values...) }
