@@ -2,6 +2,7 @@ package eval
 
 import (
 	"fmt"
+	"reflect"
 	"testing"
 )
 
@@ -14,13 +15,13 @@ func TestHeap_Assign(t *testing.T) {
 		{
 			toAdd: []*Symbol{
 				{
-					Value: nil,
-					Type:  Object,
+					Value: "null",
+					Type:  Null,
 					Scope: 0,
 				},
 				{
-					Value: nil,
-					Type: Boolean,
+					Value: "null",
+					Type: Null,
 					Scope: 3,
 				},
 			},
@@ -29,14 +30,14 @@ func TestHeap_Assign(t *testing.T) {
 				"a": {
 					{
 						Value: nil,
-						Type: Object,
+						Type: Null,
 						Scope: 0,
 					},
 					NullSymbol,
 					NullSymbol,
 					{
 						Value: nil,
-						Type: Boolean,
+						Type: Null,
 						Scope: 3,
 					},
 				},
@@ -45,18 +46,18 @@ func TestHeap_Assign(t *testing.T) {
 		{
 			toAdd: []*Symbol{
 				{
-					Value: nil,
-					Type: Object,
+					Value: "null",
+					Type: Null,
 					Scope: 0,
 				},
 				{
-					Value: nil,
-					Type: String,
+					Value: "null",
+					Type: Null,
 					Scope: 1,
 				},
 				{
-					Value: nil,
-					Type: Array,
+					Value: "null",
+					Type: Null,
 					Scope: 2,
 				},
 			},
@@ -65,7 +66,7 @@ func TestHeap_Assign(t *testing.T) {
 				"a": {
 					{
 						Value: nil,
-						Type: Object,
+						Type: Null,
 						Scope: 0,
 					},
 				},
@@ -73,7 +74,7 @@ func TestHeap_Assign(t *testing.T) {
 					NullSymbol,
 					{
 						Value: nil,
-						Type: String,
+						Type: Null,
 						Scope: 1,
 					},
 				},
@@ -82,7 +83,7 @@ func TestHeap_Assign(t *testing.T) {
 					NullSymbol,
 					{
 						Value: nil,
-						Type: Array,
+						Type: Null,
 						Scope: 2,
 					},
 				},
@@ -91,32 +92,32 @@ func TestHeap_Assign(t *testing.T) {
 		{
 			toAdd: []*Symbol{
 				{
-					Value: nil,
+					Value: "null",
+					Type: Null,
+					Scope: 0,
+				},
+				{
+					Value: "null",
+					Type: Null,
+					Scope: 2,
+				},
+				{
+					Value: "null",
+					Type: Null,
+					Scope: 4,
+				},
+				{
+					Value: "\"overridden\"",
 					Type: String,
 					Scope: 0,
 				},
 				{
-					Value: nil,
-					Type: Object,
-					Scope: 2,
-				},
-				{
-					Value: nil,
-					Type: Number,
-					Scope: 4,
-				},
-				{
-					Value: "overridden",
-					Type: Number,
-					Scope: 0,
-				},
-				{
-					Value: "overridden",
-					Type: Null,
+					Value: "\"overridden\"",
+					Type: String,
 					Scope: 1,
 				},
 				{
-					Value: "overridden",
+					Value: "[\"overridden\"]",
 					Type: Array,
 					Scope: -1,
 				},
@@ -126,22 +127,22 @@ func TestHeap_Assign(t *testing.T) {
 				"a": {
 					{
 						Value: "overridden",
-						Type: Number,
+						Type: String,
 						Scope: 0,
 					},
 					{
 						Value: "overridden",
-						Type: Null,
+						Type: String,
 						Scope: 1,
 					},
 					{
 						Value: nil,
-						Type: Object,
+						Type: Null,
 						Scope: 2,
 					},
 					NullSymbol,
 					{
-						Value: "overridden",
+						Value: []interface{}{"overridden"},
 						Type: Array,
 						Scope: 4,
 					},
@@ -151,13 +152,13 @@ func TestHeap_Assign(t *testing.T) {
 	}{
 		h := make(Heap)
 		for i, add := range test.toAdd {
-			h.Assign(test.names[i], add.Value, add.Type, add.Scope)
+			h.Assign(test.names[i], add.Value, add.Scope)
 		}
 		for k, v := range test.expected {
 			if _, ok := h[k]; ok {
 				if len(v) == len(h[k]) {
 					for i, symbol := range v {
-						if symbol.Scope != h[k][i].Scope || symbol.Type != h[k][i].Type || symbol.Value != h[k][i].Value {
+						if symbol.Scope != h[k][i].Scope || symbol.Type != h[k][i].Type || !reflect.DeepEqual(symbol.Value, h[k][i].Value) {
 							t.Errorf("%d symbol in scope list: %v does not match expected symbol: %v", i, symbol, h[k][i])
 						}
 					}
@@ -187,15 +188,15 @@ func TestHeap_Delete(t *testing.T) {
 			startHeap: Heap{
 				"a": {
 					{
-						Value: nil,
-						Type: String,
+						Value: "null",
+						Type: Null,
 						Scope: 0,
 					},
 					NullSymbol,
 					NullSymbol,
 					{
-						Value: nil,
-						Type: Object,
+						Value: "null",
+						Type: Null,
 						Scope: 3,
 					},
 				},
@@ -213,8 +214,8 @@ func TestHeap_Delete(t *testing.T) {
 				// or before non-null symbols. If this does occur for whatever reason the NullSymbols will be removed.
 				"a": {
 					{
-						Value: nil,
-						Type: String,
+						Value: "null",
+						Type: Null,
 						Scope: 0,
 					},
 					NullSymbol,
@@ -228,8 +229,8 @@ func TestHeap_Delete(t *testing.T) {
 			expected: Heap{
 				"a": {
 					{
-						Value: nil,
-						Type: String,
+						Value: "null",
+						Type: Null,
 						Scope: 0,
 					},
 				},
@@ -239,13 +240,13 @@ func TestHeap_Delete(t *testing.T) {
 			startHeap: Heap{
 				"a": {
 					{
-						Value: nil,
-						Type: String,
+						Value: "null",
+						Type: Null,
 						Scope: 0,
 					},
 					{
-						Value: nil,
-						Type: Object,
+						Value: "null",
+						Type: Null,
 						Scope: 1,
 					},
 				},
@@ -256,8 +257,8 @@ func TestHeap_Delete(t *testing.T) {
 			expected: Heap{
 				"a": {
 					{
-						Value: nil,
-						Type: String,
+						Value: "null",
+						Type: Null,
 						Scope: 0,
 					},
 				},
@@ -267,14 +268,14 @@ func TestHeap_Delete(t *testing.T) {
 			startHeap: Heap{
 				"a": {
 					{
-						Value: nil,
-						Type: String,
+						Value: "null",
+						Type: Null,
 						Scope: 0,
 					},
 					NullSymbol,
 					{
-						Value: nil,
-						Type: Array,
+						Value: "null",
+						Type: Null,
 						Scope: 2,
 					},
 				},
@@ -287,14 +288,14 @@ func TestHeap_Delete(t *testing.T) {
 			expected: Heap{
 				"a": {
 					{
-						Value: nil,
-						Type: String,
+						Value: "null",
+						Type: Null,
 						Scope: 0,
 					},
 					NullSymbol,
 					{
-						Value: nil,
-						Type: Array,
+						Value: "null",
+						Type: Null,
 						Scope: 2,
 					},
 				},

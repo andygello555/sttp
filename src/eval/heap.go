@@ -1,7 +1,7 @@
 package eval
 
 import (
-	"fmt"
+	"encoding/json"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/errors"
 )
 
@@ -13,10 +13,11 @@ func (h *Heap) Exists(name string) bool {
 }
 
 // New creates a new symbol for the given variable name, type and scope.
-func (h *Heap) New(name string, value interface{}, t Type, scope int) {
-	// Check if t is a valid type
-	if !Types[t] {
-		panic(fmt.Sprintf("type: %d, is not a valid type", t))
+func (h *Heap) New(name string, value interface{}, scope int) {
+	var symbol *Symbol
+	var err error
+	if err, symbol = ConstructSymbol(value, scope); err != nil {
+		panic(err)
 	}
 
 	var start int
@@ -34,11 +35,7 @@ func (h *Heap) New(name string, value interface{}, t Type, scope int) {
 	}
 
 	// Append the symbol to the end of the symbol list
-	(*h)[name] = append((*h)[name], &Symbol{
-		Value: value,
-		Type:  t,
-		Scope: scope,
-	})
+	(*h)[name] = append((*h)[name], symbol)
 }
 
 // Delete will delete the symbol of the given name in the given scope. If scope is negative then the most recent symbol
@@ -86,31 +83,22 @@ func (h *Heap) Delete(name string, scope int) error {
 // variable is created if that scoped symbol does not exist. Otherwise, will assign the new value and type to the
 // existing symbol. If scope is negative then the most recent symbol is chosen. If t is NoType then the type will not
 // be overridden.
-func (h *Heap) Assign(name string, value interface{}, t Type, scope int) {
+func (h *Heap) Assign(name string, value interface{}, scope int) {
 	// If the symbol list for the variable doesn't exist or the scope exceeds the limits of the scope list
 	if !h.Exists(name) || scope >= 0 && scope >= len((*h)[name]) {
-		h.New(name, value, t, scope)
+		h.New(name, value, scope)
 	} else {
 		override := scope
 		if scope < 0 {
 			override = len((*h)[name]) - 1
 		}
 
-		symbol := (*h)[name][override]
-		if symbol == NullSymbol {
-			// We have to allocate a new symbol to set so that we are not setting the NullSymbol
-			symbol = &Symbol{
-				Value: nil,
-				Type:  NoType,
-				Scope: -1,
-			}
-			(*h)[name][override] = symbol
+		var symbol *Symbol
+		var err error
+		if err, symbol = ConstructSymbol(value, override); err != nil {
+			panic(err)
 		}
-		symbol.Value = value
-		symbol.Scope = override
-		if t != NoType {
-			symbol.Type = t
-		}
+		(*h)[name][override] = symbol
 	}
 }
 
@@ -143,6 +131,35 @@ type Symbol struct {
 	Scope int
 }
 
+func ConstructSymbol(value interface{}, scope int) (err error, symbol *Symbol) {
+	var jsonVal interface{}
+	var t Type
+
+	switch value.(type) {
+	case string:
+		// If the value is a string we unmarshal it and check the unmarshalled value's type
+		err = json.Unmarshal([]byte(value.(string)), &jsonVal)
+		if err != nil {
+			return err, nil
+		}
+
+		err = t.Get(jsonVal)
+		if err != nil {
+			return err, nil
+		}
+	default:
+		// We assume that the value is a pointer to a FunctionDefinition
+		jsonVal = value
+		t = Function
+	}
+
+	return nil, &Symbol{
+		Value: jsonVal,
+		Type:  t,
+		Scope: scope,
+	}
+}
+
 // NullSymbol is used to fill the empty gaps between symbols of different scopes. This makes symbol getting within the
 // Heap O(1) instead of O(n). However, it will make space complexity worse.
 var NullSymbol = &Symbol{
@@ -152,6 +169,30 @@ var NullSymbol = &Symbol{
 }
 
 type Type int
+
+func (t *Type) Get(value interface{}) (err error) {
+	if value == nil {
+		*t = Null
+		return nil
+	}
+
+	switch value.(type) {
+	case bool:
+		*t = Boolean
+	case float64:
+		*t = Number
+	case string:
+		*t = String
+	case []interface{}:
+		*t = Array
+	case map[string]interface{}:
+		*t = Object
+	default:
+		*t = NoType
+		return errors.CannotFindType.Errorf(value)
+	}
+	return nil
+}
 
 const (
 	// NoType is used for logic within the Heap referrers.
