@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/eval"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/parser"
 )
@@ -29,6 +30,13 @@ func New() *VM {
 }
 
 func (vm *VM) Eval(filename, s string) (err error, result *eval.Symbol) {
+	// We start a panic catcher to give us more helpful error messages
+	defer func() {
+		if p := recover(); p != nil {
+			err = fmt.Errorf("%v", p)
+		}
+	}()
+
 	var program *parser.Program
 	err, program = parser.Parse(filename, s)
 	if err != nil {

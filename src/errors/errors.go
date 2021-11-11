@@ -15,6 +15,7 @@ type RuntimeError string
 const (
 	StackOverflow  RuntimeError = "exceeded the maximum number of stack frames (%d)"
 	StackUnderFlow RuntimeError = "exceeded the minimum number of stack frames (%d)"
+	CannotFindType RuntimeError = "cannot find type for value \"%v\""
 )
 
 func (re RuntimeError) Errorf(values... interface{}) error { return errorf(string(re), values...) }
