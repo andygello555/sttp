@@ -11,6 +11,9 @@
 \usepackage{float}
 \usepackage{array}
 \usepackage{hyperref}
+\usepackage{mathtools}
+\usepackage{csquotes}
+\usepackage[style=ieee]{biblatex}
 
 % Metadata
 \title{Context-free grammars and manual procedures for parsing languages}
@@ -30,6 +33,7 @@
 
 \theoremstyle{definition}
 \newtheorem{definition}{Definition}[subsubsection]
+\addbibresource{ref.bib}
 
 \begin{document}
 
@@ -39,17 +43,19 @@
 
 \subsection{Introduction}
 
-Grammar describes how the strings in a language should be formed according to the language's alphabet and syntax. Grammars contain a set of \textit{production rules}. These inform the parser how to rewrite a string of symbols to give a string that exists within the language.
+Grammar describes how the strings in a language should be formed according to the language's alphabet and syntax. Grammars contain a set of \textit{production rules}. These should inform how syntax analysis should be carried out on any string of words within the language.
+
+In computer science, syntax analysis is carried out primarily by parsers. Parsers analyse an input string, and using the production rules within the grammar, decide whether the string exists within the language. A parser might also produce a tree-like data structure called a \textbf{parse tree}.
 
 \subsection{Production Rules}
 
-A production rule describes a substitution for one symbol with one or many symbols. The production rules for context-free grammars take the form:
+A production rule describes a substitution for one symbol with one or many symbols\textsuperscript{\cite{scott_johnstone_1998}}. The production rules for context-free grammars take the form:
 
 \begin{center}
     $A \rightarrow \alpha$
 \end{center}
 
-Where $A$ is a \textbf{non-terminal} symbol and $\alpha$ is sequence of \textbf{terminal} or \textbf{non-terminal} symbols. Terminal symbols are the tokens or alphabet of the language which the grammar describes. Non-terminals are recursive definitions which use a sequence of terminal or non-terminal symbols. For instance, in the following grammar:
+Where $A$ is a \textbf{non-terminal} symbol and $\alpha$ is sequence of \textbf{terminal} or \textbf{non-terminal} symbols. Terminal symbols are the tokens or alphabet of the language which the grammar describes. Non-terminals are recursive definitions which use a sequence of terminal or non-terminal symbols\textsuperscript{\cite{barbosa_2018}}. For instance, in the following grammar:
 
 % Grammar for numbers
 \begin{figure}[h]
@@ -66,13 +72,14 @@ Where $A$ is a \textbf{non-terminal} symbol and $\alpha$ is sequence of \textbf{
 
 \pagebreak
 
-Both \verb|Digit| and \verb|Natural| are a \textbf{terminal} symbols as they are exactly the tokens matched by the lexical analyser before being passed to the parser. \verb|Number| is a \textbf{non-terminal} as it can be substituted for the two production rules described above.
+Both \verb|Digit| and \verb|Natural| are \textbf{terminal} symbols, as they are exactly the tokens matched by the lexical analyser before being passed to the parser. \verb|Number| is a \textbf{non-terminal} as it can be substituted for the two production rules described above.
 
 \subsection{Features of context-free}
+\label{sec:features-context-free}
 
 A grammar is defined as context free if the non-terminals on the left hand side of each production rule can always be substituted for the right hand side, \textit{regardless of the context of the non-terminal}. Any grammar which does not follow this rule is classified as a \textbf{context-sensitive} grammar.
 
-Most natural languages are defined by a context-sensitive grammar due to things such as the existence of many grammatical cases for the same word that depends on context.
+Most natural languages are defined by a context-sensitive grammar due to things such as the existence of many grammatical cases for the same word that depend on context.
 
 One such example in the English language could be the sub-sentence \textit{``burnt like hell"}. When used in this sentence:
 
@@ -86,9 +93,9 @@ One such example in the English language could be the sub-sentence \textit{``bur
     ``The fire burnt like hell"
 \end{center}
 
-\textit{Burnt} is a \textbf{verb}. The grammar of the word \textit{burnt} would be impossible to describe using a context-free grammar as the \textbf{meaning} of the word depends on the \textbf{context} of the words surrounding it.
+\textit{Burnt} is a \textbf{verb}. The grammar of the word \textit{burnt} would be impossible to describe using a context-free grammar as the \textbf{meaning} of the word depends on the \textbf{context} of the words surrounding it.\textsuperscript{\cite{longley_2016}}
 
-\textbf{Deterministic context-free languages}, a subset of context-free languages, can all be recognised by non-deterministic pushdown automaton. This means that all deterministic context-free languages are admitted by unambiguous grammar. Therefore, the parse tree produced by the parser for a deterministic context-free grammar is always unique for every valid input string. Deterministic context-free languages are revered by computer scientists as they can be parsed in linear time by $LR(k)$ parsers, but producing a grammar for them which \textbf{doesn't} actually accept a \textbf{non}-deterministic language instead, is hard to synthesise. This is usually due to:
+\textbf{Deterministic context-free languages}, a subset of context-free languages, can all be recognised by non-deterministic pushdown automaton. This means that all deterministic context-free languages are admitted by unambiguous grammar\textsuperscript{\cite{rosenkrantz_stearns_1970}}. Therefore, the parse tree produced by the parser for a deterministic context-free grammar is always unique for every valid input string. Deterministic context-free languages are revered by computer scientists as they can be parsed in linear time by $LR(k)$ parsers. Producing a grammar for such languages can be difficult due to some of the following reasons:
 
 \begin{enumerate}
     \item Ambiguous grammar being hard to spot with the untrained eye
@@ -96,9 +103,19 @@ One such example in the English language could be the sub-sentence \textit{``bur
     \item Not implementing precedence rules
 \end{enumerate}
 
+\begin{definition}[Context-Free grammar]
+    A context-free grammar $\Gamma$ is defined as a 4-tuple: $\Gamma = (V, \Sigma, R, S)$, where:
+    \begin{itemize}
+        \item $V$: finite set of all non-terminals.
+        \item $\Sigma$: finite set of all terminals (tokens).
+        \item $R$: relation within $V \times (V \cup \Sigma)*$ (where `$*$' represents the Kleene Closure). Or in other words, the \textbf{production rules}.
+        \item $S$: start non-terminal from which derivations are rooted.\textsuperscript{\cite{sipser_1997}}
+    \end{itemize}
+\end{definition}
+
 \subsection{Tangent: Where do context-free grammars lie in the grand scheme of formal languages?}
 
-An interesting tangent to dive into is the difference between context-free grammars and other types of grammars. The set of all grammars can be described as a hierarchy known as the \textbf{Chomsky hierarchy} or the \textbf{Chomsky–Schützenberger hierarchy}.
+An interesting tangent to dive into is the difference between context-free grammars and other types of grammars. The set of all grammars can be described as a hierarchy known as the \textbf{Chomsky hierarchy} or the \textbf{Chomsky–Schützenberger hierarchy}.\textsuperscript{\cite{chomsky_1956}}
 
 % Chomsky hierarchy
 \begin{figure}[h]
@@ -128,7 +145,7 @@ An interesting tangent to dive into is the difference between context-free gramm
         \end{itemize}
         \item An example of a regular grammar is shown in fig. 1 which is \textbf{right regular}
     \end{enumerate}
-    \item \textbf{Context-free}: discussed in section 1.3
+    \item \textbf{Context-free}: discussed in section \hyperref[sec:features-context-free]{1.3}
     \item \textbf{Context-sensitive}
     \begin{enumerate}
         \item Production rules are in the form:
@@ -139,7 +156,7 @@ An interesting tangent to dive into is the difference between context-free gramm
         \item Where $A$ is a non-terminal and $\alpha$, $\beta$, and $\gamma$ are non-terminals or terminals, $\alpha$ and $\beta$ may be empty, and $\gamma$ must be non-empty.
         \item The English language is an example of a context-sensitive language
     \end{enumerate}
-    \item \textbf{Recursively enumerable}: are all languages that can be recognisable by Turing machines and encompass all formal languages
+    \item \textbf{Recursively enumerable}: are all languages that can be recognisable by Turing machines and encompass all formal languages\textsuperscript{\cite{geuvers_rot_2016}}
 \end{enumerate}
 
 \pagebreak
@@ -148,9 +165,9 @@ An interesting tangent to dive into is the difference between context-free gramm
 
 When it comes to parsing algorithms they are split into two main groups: \textbf{top-down} parsers and \textbf{bottom-up} parsers. This relates to the way that the \textbf{parse tree} is constructed for a given input string.
 
-A \textbf{parse tree} is a rooted tree which represents the syntactic structure of an input string. The grammar accepted by parsers which generate a parse tree must have a non-terminal root symbol which encompasses the entire input string as well as terminal symbols which form the leaf nodes of the tree. In other words, a context-free grammar.
+A \textbf{parse tree} is a rooted tree which represents the syntactic structure of an input string. The grammar accepted by parsers which generate a parse tree must have a non-terminal root/start symbol which encompasses the entire input string as well as terminal symbols which form the leaf nodes of the tree. In other words, a context-free grammar.
 
-Practically, parse trees can be used passed into a semantic analyser to produce an Abstract Symbol Tree (AST), which can then be traversed to produce code in a compiled language or executed directly in an interpreted language.
+Practically, parse trees can be passed into a semantic analyser to produce an Abstract Symbol Tree (AST), which can then be traversed to produce code in a compiled language or executed directly in an interpreted language.
 
 \subsection{A note on derivations}
 
@@ -159,6 +176,7 @@ Given an input string $S$ and a grammar $G$, the derivation of $S$ on grammar $G
 For instance, given the following grammar describes the syntax that could be accepted by a four function calculator:
 
 % Grammar for four function calc
+\label{fig:3}
 \begin{figure}[h]
     \begin{center}
         \begin{verbatim}
@@ -207,18 +225,20 @@ One of the possible derivations for the string \verb|1 + 2 * 3| with the start s
     \cprotect\caption{A possible derivation of \verb|1 + 2 * 3| with start state $S$ on the grammar given in fig. 3}
 \end{figure}
 
-This derivation is performed \textit{top-down} by taking \textit{leftmost derivation}, this means that we start with the start state and produce a parse tree by applying derivation step for the leftmost non-terminal until we end up with the input string. It is also a derivation of an \textbf{ambiguous} grammar which means that this derivation belongs to the set of all possible derivations. Each possible derivation can be treated as different subtree whenever a production rule with no terminals on the right hand side is used.
+This derivation is performed \textit{top-down} by taking \textit{leftmost derivation}, this means that we start with the start state and produce a parse tree by applying derivation step for the leftmost non-terminal until we end up with the input string. The grammar given in \hyperref[fig:3]{fig. 3} is \textbf{ambiguous}, which means that this derivation belongs to the set of all possible derivations. Each possible derivation can be treated as different choice subtree whenever a production rule with no terminals on the right hand side is used. This is the building block for \hyperref[sec:top-down]{recursive descent parsers with backtracking}.
 
 \subsection{Top-down vs. Bottom-up parsing}
 
 \subsubsection{Top-down}
+\label{sec:top-down}
 
 \begin{definition}[Top-down parser]
     A top-down parser produces a parse tree by starting at a given state $S$ by applying derivation steps until the input string is reached. Backtracking might be used in certain grammars to assure a correct derivation is reached.
 \end{definition}
 
-For a human the derivation style shown in fig. 4 seems easier to digest. This is because as humans, we can lookahead in the input expression and decide which derivation step to apply. This makes manual parsing for a given grammar trivial, for example given the grammar:
+For a `human operated' derivation, the style shown in fig. 4 seems easier to digest. This is because as humans, we can lookahead in the input expression and decide which derivation step to apply. This makes manual parsing for a given grammar trivial, for example given the grammar:
 
+\label{fig:5}
 \begin{figure}[h]
     \begin{center}
         \begin{verbatim}
@@ -268,7 +288,11 @@ The top-down parse tree for the input string: \verb|{"a": 0}|, can be constructe
 
 However, when it comes to creating a formal algorithm definition for this technique, it becomes a lot less straightforward. This is because at every non-terminal symbol the parser has to explore each possible derivation step. Effectively building multiple subtrees below it and finally choosing the one which ends up at the correct terminal, or backtracking to the previous derivation step if no match can be found.
 
-There are ways to speed up parsing such as restructuring the grammar to be accepted by an LL(k) parser. The grammar in fig. 7 is the grammar in fig. 6 restructured to remove all left-recursion.
+There are ways to optimise top-down parsing such as restructuring the grammar to be accepted by an LL(1) parser. The grammar in fig. 7 is the grammar in fig. 6 restructured to remove all left-recursion.
+
+\begin{definition}[Left-recursive grammars]
+    A grammar is left-recursive if it has a non-terminal $A$ such that there is a derivation sequence $A \stackrel{\mathclap{\normalfont\mbox{+}}}{\Rightarrow} A \alpha$ for some string $\alpha$. Left recursion causes recursive descent to fall into an infinite loop due to the parse tree being constructed in a depth-first leftmost fashion.\textsuperscript{\cite{scott_johnstone_1998}}
+\end{definition}
 
 \begin{figure}[h]
     \begin{center}
@@ -315,7 +339,7 @@ There are ways to speed up parsing such as restructuring the grammar to be accep
     \caption{First-sets of each terminal and non-terminal}
 \end{figure}
 
-However, this grammar is still not LL(k) due to the first set conflicts within $O$, $M$, $E$, $A$, and $S$. This occurs when the first sets of two different grammar rules for the same non-terminal intersect with each other. After removing left factors the grammar is now acceptable by an LL(k) parser.
+However, this grammar is still not LL(1) due to the first set conflicts within $O$, $M$, $E$, $A$, and $S$. This occurs when the first sets of two different production rules for the same non-terminal intersect with each other. After left factoring the grammar, it is now acceptable by an LL(1) parser.
 
 \begin{figure}[H]
     \begin{center}
@@ -384,8 +408,10 @@ We can now construct a unique top-down derivation of \verb|{"a": 0}|:
               ]
         \end{forest}
     \end{center}
-    \cprotect\caption{The unique derivation of \verb|{"a": 0}| after restructuring the grammar in fig. 5 to be an LL(k) grammar}
+    \cprotect\caption{The unique derivation of \verb|{"a": 0}| after restructuring the grammar in fig. 5 to be an LL(1) grammar}
 \end{figure}
+
+As you can see this is quite an involved process which results in a grammar which is very different to the grammar that was specified in \hyperref[fig:5]{fig. 5}. This confusing grammar and the difficulty of construction is often why top-down parser generators are avoided when defining the grammar for a programming language.
     
 \subsubsection{Bottom-up}
 
@@ -401,12 +427,12 @@ Even though it seems unnatural to construct a derivation tree from the bottom-up
     \begin{center}
         \begin{equation}
             \begin{split}
-                Section &\rightarrow Header\;Property\;|\;Section\;Property\;|\;Section\;Header\\
-                Header &\rightarrow [\;S\;]\\
-                Property &\rightarrow S\;=\;V;\\
-                V &\rightarrow S\;|\;N\\
-                S &\rightarrow a\;|\;b\;|\;c\\
-                N &\rightarrow 0\;|\;1\;|\;2\;|\;3\;|\;4\;|\;5\;|\;6\;|\;7\;|\;8\;|\;9
+                Section &::= Header\;Property\;|\;Section\;Property\;|\;Section\;Header\\
+                Header &::= [\;S\;]\\
+                Property &::= S\;=\;V;\\
+                V &::= S\;|\;N\\
+                S &::= a\;|\;b\;|\;c\\
+                N &::= 0\;|\;1\;|\;2\;|\;3\;|\;4\;|\;5\;|\;6\;|\;7\;|\;8\;|\;9
             \end{split}
             \nonumber
         \end{equation}
@@ -422,12 +448,13 @@ Shift-reduce parsing parses a given input string by applying one of the two acti
     \item \textbf{Shift}: If it's not possible to perform a reduction on the current stack symbol, then the next terminal can be pushed onto the stack from the input.
 \end{itemize}
 
-Along with those actions we also define a \textbf{lookahead} variable which defines the next available token in the input. This is necessary to parse the grammar in fig. 11 to avoid backtracking. For example, if the symbol $S$ was on the stack we might need to use the lookahead to see if the next token is ``$]$" or ``$=$" to avoid reducing $S$ into $V$.
+Along with those actions we also define a \textbf{lookahead} variable which defines the next available token in the input. This is necessary to parse the grammar in fig. 11. For example, if the symbol $S$ was on the stack we might need to use the lookahead to see if the next token is ``$]$" or ``$=$" to avoid reducing $S$ into $V$.\textsuperscript{\cite{johnson_zelenski_2007}\cite{knuth_1965}}
 
-Different amount of lookahead denotes different subsets of grammars. For instance, the grammar defined in fig. 11 is an $LR(k)$ grammar, where $k$ is the number of tokens of lookahead and $k=1$.
+Different amount of lookahead denote different subsets of grammars. For instance, the grammar defined in fig. 11 is an $LR(1)$ grammar, where there is $1$ token of lookahead.
 
 With that in mind here's an example of shift-reduce trace table using the grammar given in fig. 11:
 
+\label{fig:12}
 \begin{figure}[H]
     \begin{center}
         \begin{tabular}{| m{3.5cm} | m{3cm} | m{2cm} | m{5cm} |}
@@ -440,7 +467,7 @@ With that in mind here's an example of shift-reduce trace table using the gramma
             \hline
             \verb|[a| & \verb|]a=0;b=a;$| & \verb|]| & Reduce: $S \rightarrow a$\\
             \hline
-            \verb|[S| & \verb|]a=0;b=a;$| & \verb|]| & Lookahead is \verb|]|. Can reduce to $Header$ after shifting.\\
+            \verb|[S| & \verb|]a=0;b=a;$| & \verb|]| & Lookahead is \verb|]|. Longest match.\\
             \hline
             \verb|[S]| & \verb|a=0;b=a;$| & \verb|a| & Reduce: $Header \rightarrow [\;S\;]$\\
             \hline
@@ -448,7 +475,7 @@ With that in mind here's an example of shift-reduce trace table using the gramma
             \hline
             \verb|Header a| & \verb|=0;b=a;$| & \verb|=| & Reduce: $S \rightarrow a$\\
             \hline
-            \verb|Header S| & \verb|=0;b=a;$| & \verb|=| & Lookahead is \verb|=|. Might be able to reduce later.\\
+            \verb|Header S| & \verb|=0;b=a;$| & \verb|=| & Lookahead is \verb|=|. Longest match.\\
             \hline
             \verb|[Header S=| & \verb|0;b=a;$| & \verb|0| & Shift\\
             \hline
@@ -466,7 +493,7 @@ With that in mind here's an example of shift-reduce trace table using the gramma
             \hline
             \verb|Section b| & \verb|=c$;| & \verb|=| & Reduce: $S \rightarrow b$\\
             \hline
-            \verb|Section S| & \verb|=c;$| & \verb|=| & Lookahead is \verb|=|. Might be able to reduce later.\\
+            \verb|Section S| & \verb|=c;$| & \verb|=| & Lookahead is \verb|=|. Longest match.\\
             \hline
             \verb|Section S=| & \verb|c;$| & \verb|c| & Shift\\
             \hline
@@ -487,22 +514,28 @@ With that in mind here's an example of shift-reduce trace table using the gramma
     \cprotect\caption{Trace table for a shift-reduce parser with the input \verb|[a]a=0;b=a;| with the grammar shown in fig. 11}
 \end{figure}
 
-As you can see if the grammar is LR(k), a shift-reduce method can easily be carried out manually.
+As you can see if the grammar is LR(1), a shift-reduce method can easily be carried out manually. This is because, as a human, you can look back at the production rules given in the grammar and apply the reductions/shifts appropriately.
+
+Algorithms for shift-reduce parsing involve \textbf{lookup tables} which contain the action to carry out for each symbol that can lie at the top of the stack, as well as the next input symbol which can be read in. Most LR based parsers involve constructing a deterministic finite state automaton which is then converted to a parse table for efficiency.\textsuperscript{\cite{hopcroft_motwani_ullman_2006}}
+
+It is also worth noting that in \hyperref[fig:12]{fig. 12}, when the action taken includes the `longest match' phrase. This means that the shift will be taken over the reduction that can be made in the parser's current state. This functionality is included in many parser generators/compiler compilers such as YACC.
 
 \section{Parser generators}
 
-The parser generator that I will be using for my interpreter is the \href{https://github.com/alecthomas/participle#overview}{participle parser by Alec Thomas}. Participle will generate a recursive descent parser with backtracking for a given grammar. This means that the grammar you need to write can be, but is not limited to LL(k). However, if the grammar is not LL(k) the parser is not guaranteed to terminate. This means that grammar will need to be restructured to remove any left-recursion (if it exists).
+The parser generator that I will be using for my interpreter is the \href{https://github.com/alecthomas/participle#overview}{participle parser by Alec Thomas}. Participle will generate a recursive descent parser with backtracking for a given grammar. This means that the grammar you need to write can be, but is not limited to LL(1). However, if the grammar is not LL(1) the parser is not earanteed to terminate. This means that grammar will need to be restructured to remove any left-recursion (if it exists).
 
-If a grammar that is LL(k) can be constructed it will mean that the parser generated will be a \textit{predictive parser} which means that there will be no backtracking.
+If a grammar that is LL(1) can be constructed it will mean that the parser generated will be a \textit{predictive parser} which means that there will be no backtracking.
 
 % Bibliography
+\pagebreak
+\medskip
+\printbibliography
 
 % https://www.inf.ed.ac.uk/teaching/courses/inf2a/slides2016/inf2a_L29_slides.pdf
 % https://homepages.dcc.ufmg.br/~hbarbosa/teaching/uiowa/toc/notes/10-dcfl.pdf
 % https://web.archive.org/web/20160305041504/http://dragonbook.stanford.edu/lecture-notes/Stanford-CS143/08-Bottom-Up-Parsing.pdf
-% https://en.wikipedia.org/wiki/Chomsky_hierarchy
-% https://chomsky.info/wp-content/uploads/195609-.pdf
 % https://www.cs.ru.nl/~herman/onderwijs/2016TnA/lecture7.pdf
+% https://chomsky.info/wp-content/uploads/195609-.pdf
 % CS3470 Lecture notes
 % https://archive.org/details/recursiveprogram0000burg
 % https://archive.org/details/compilers00ahoa
