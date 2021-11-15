@@ -12,13 +12,15 @@
 \usepackage{array}
 \usepackage{hyperref}
 \usepackage{makecell}
+\usepackage{csquotes}
+\usepackage[style=ieee]{biblatex}
 
 % Metadata
 \title{The use derivation rules, and grammar idioms to capture notions of associativity and precedence in arithmetic expressions}
 
 \author{Jakab Zeller}
 
-\date{October 2021}
+\date{November 2021}
 
 % Environments
 \newenvironment{tightcenter}{%
@@ -32,6 +34,7 @@
 
 \theoremstyle{definition}
 \newtheorem{definition}{Definition}[subsubsection]
+\addbibresource{ref.bib}
 
 \begin{document}
 
@@ -103,7 +106,7 @@ To `encode' associativity within a grammar you need to make sure that the produc
     \caption{Simple example showing how to encode left and right associativity within a grammar}
 \end{figure}
 
-A production rule in the form $\gamma \rightarrow \alpha \gamma$ means that the non-terminal $\gamma$ is right recursive, whereas a production rule in the form $\gamma \rightarrow \gamma \alpha$ means that the non-terminal $\gamma$ is left recursive. In practice, this means that the either the left or the right hand rule will be expanded and evaluated which encodes the precedence of the operator.
+A production rule in the form $\gamma \rightarrow \alpha \gamma$ means that the non-terminal $\gamma$ is right recursive, whereas a production rule in the form $\gamma \rightarrow \gamma \alpha$ means that the non-terminal $\gamma$ is left recursive. In practice, this means that the either the left or the right hand rule will be expanded and evaluated which encodes the precedence of the operator.\textsuperscript{\cite{abrahamson_2021}\cite{lam_2019}}
 
 \subsection{Coping with parser generators}
 
@@ -115,7 +118,7 @@ The grammar given in fig. 2 contains left recursion so a generated LL(1) or recu
     \textbf{How do you get around this?}
 \end{center}
 
-One of the easiest ways to encode left associative operators within a grammar is to use \textbf{iteration rather than recursion}. Many parser generators, such as ANTLR, support the `\verb|*|' or `\verb|{ ... }|' iteration/repetition operators (supported by EBNF) to define a string of terminals/non-terminals that can be repeated zero or many times. Rewriting the grammar shown in fig. 2 using the `\verb|{ ... }|' EBNF operator to remove left recursion would result in the following grammar.
+One of the easiest ways to encode left associative operators within a grammar is to use \textbf{iteration rather than recursion}. Many parser generators, such as ANTLR, support the `\verb|*|' or `\verb|{ ... }|' iteration/repetition operators (supported by EBNF) to define a string of terminals/non-terminals that can be repeated zero or many times. Rewriting the grammar shown in fig. 2 using the `\verb|{ ... }|' EBNF operator to remove left recursion would result in the following grammar.\textsuperscript{\cite{pattis_2021}}
 
 \begin{figure}[H]
     \begin{center}
@@ -151,7 +154,7 @@ An LL(1) or recursive descent parser generator might produce the following code 
     \item \verb|gnt()| \textit{consumes and returns the next token}
 \end{itemize}
 
-In terms of the parse tree this will create a child for each repetition that is found in the input string. For example, for the given input string: \verb|1 + 2 + 3 ** 4|, the following derivation tree is created.
+In terms of the parse tree this will create a child for each repetition that is found in the input string. For example, for the given input string: \verb|1 + 2 + 3 ** 4|, the following derivation tree is created.\textsuperscript{\cite{scott_johnstone_1998}}
 
 \begin{center}
     \begin{forest}
@@ -192,7 +195,7 @@ As you can see this results in a fairly `unintuitive' parse tree that can benefi
 
 \subsubsection{Modifying the parse tree on the fly}
 
-Some parser generators such as rdp allow you to modify the parse tree on the fly using what are called \textbf{promotion operators}. These operators allow you to promote any terminal/non-terminal to above, below or under its parent node in the parse tree. This allows you to construct parts of the tree in a somewhat bottom-up manner.
+Some parser generators such as rdp\textsuperscript{\cite{johnstone_scott_1997}} allow you to modify the parse tree on the fly using what are called \textbf{promotion operators}. These operators allow you to promote any terminal/non-terminal to above, below or under its parent node in the parse tree. This allows you to construct parts of the tree in a somewhat bottom-up manner.
 
 \begin{figure}[H]
     \begin{center}
@@ -265,7 +268,7 @@ Operator precedence determines the order in which operators are applied in an ex
     \end{enumerate}
 \end{center}
 
-In programming languages we have to take into account many more operators than usual, such as the bitwise operators and comparison operators. Usually this is solved by defining multiple precedence levels where multiple operators can share a level. On the other hand, this problem can also be solved by removing operator precedence altogether. This is evident in programming languages such as APL and Smalltalk, which just evaluate expressions `as they come in' from left to right or vice versa.
+In programming languages we have to take into account many more operators than usual, such as the bitwise operators and comparison operators. Usually this is solved by defining multiple precedence levels where multiple operators can share a level. On the other hand, this problem can also be solved by removing operator precedence altogether. This is evident in programming languages such as APL and Smalltalk, which just evaluate expressions `as they come in' from left to right or vice versa.\textsuperscript{\cite{winkle_2021}}
 
 \subsection{How do we encode precedence?}
 
@@ -301,8 +304,9 @@ The following grammar shows how one might encode the precedence for multiplicati
         \item $T$ derives only multiplication and division expressions. In the parse tree, $T$ nodes will always exist underneath an $E$ node or a $T$ node. This that $T$ has the \textbf{second highest precedence} in our language.
         \item $F$ derives either numbers or another sub-expression (within parentheses). Which means that numbers and parenthesised expressions will have the \textbf{highest precedence} in our language.
     \end{itemize}
+    \vspace{1em}
+    Formally, we call this \textbf{precedence climbing}.\textsuperscript{\cite{abrahamson_2021}\cite{norvell_1999}}
 \end{center}
-
 
 \begin{center}
     Given the input string: \verb|1 + 2 * (3 + 4) + 5|, the following derivation tree can be produced:\\
@@ -361,7 +365,7 @@ The following grammar shows how one might encode the precedence for multiplicati
     \end{forest}
 \end{center}
 
-If the derivation tree was navigated depth-first left to right: then the first operand of the first addition is evaluated first, then the first operand of the multiply, then the sub-expression, and finally the second operand of the second addition. Thus, both associativity and precedence are encoded into our derivation tree.
+If the derivation tree was navigated depth-first left to right: then the first operand of the first addition is evaluated first, then the first operand of the multiply, then the sub-expression, and finally the second operand of the second addition. Thus, both associativity and precedence are encoded into our derivation tree.\textsuperscript{\cite{lam_2019}}
 
 \subsubsection{After parsing}
 
@@ -467,7 +471,7 @@ To carry out this technique you need to define an operator precedence and associ
 
 This derivation tree can then be traversed in-order to produce the infix expression. This expression can then be input into the Shunting-Yard algorithm in order to parse the operator precedence of an expression.
 
-It's important to note that in the case of the grammar shown in fig. 6, parsing the expression is fairly redundant as the accepted language is already an infix expression. However, when the accepted language includes other constructs along with expressions, such as how a conventional programming language might, this process makes a lot more sense. Below is the execution of the Shunting-Yard algorithm for the input: \verb|7 + 4 * 2 / ( 3 - 5 ) ^ 2 ^ 3|.
+It's important to note that in the case of the grammar shown in fig. 6, parsing the expression is fairly redundant as the accepted language is already an infix expression. However, when the accepted language includes other constructs along with expressions, such as how a conventional programming language might, this process makes a lot more sense. Below is the execution of the Shunting-Yard algorithm for the input: \verb|7 + 4 * 2 / ( 3 - 5 ) ^ 2 ^ 3|.\textsuperscript{\cite{shunting-yard}}
 
 \begin{figure}[H]
     \begin{center}
@@ -518,7 +522,12 @@ It's important to note that in the case of the grammar shown in fig. 6, parsing 
     \end{center}
 \end{figure}
 
-At this point the expression can be evaluated without the ambiguity of precedence or associativity. The expression can also be reconstructed into a tree during Shunting-Yard in the correct precedence heirarchy. This parse tree below the relevant \verb|exp| node could then be replaced by this new tree, and evaluated along with the entire tree.
+At this point the expression can be evaluated without the ambiguity of precedence or associativity. The expression can also be reconstructed into a tree during Shunting-Yard in the correct precedence heirarchy. The parse tree below the relevant \verb|exp| node could then be replaced by this new tree, and evaluated along with the entire tree.
+
+\pagebreak
+
+\nocite{*}
+\printbibliography
 
 % Bibliography
 % http://www.cs.rhul.ac.uk/research/languages/publications/rdp_user.pdf
