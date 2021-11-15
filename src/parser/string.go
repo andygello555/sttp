@@ -2,6 +2,7 @@ package parser
 
 import (
 	"fmt"
+	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/eval"
 	"strings"
 )
 
@@ -197,8 +198,8 @@ func termString(indent int, factor indentString, next []indentString) string {
 	return expression
 }
 
-func precString(operator Operator, factor indentString) string {
-	return fmt.Sprintf("%s %s", operatorSymbolMap[operator], factor.String(0))
+func precString(operator eval.Operator, factor indentString) string {
+	return fmt.Sprintf("%s %s", operator.String(), factor.String(0))
 }
 
 func (e *Expression) String(indent int) string {

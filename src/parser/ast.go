@@ -2,6 +2,7 @@ package parser
 
 import (
 	"fmt"
+	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/eval"
 	"github.com/alecthomas/participle/v2"
 	"github.com/alecthomas/participle/v2/lexer"
 )
@@ -18,69 +19,6 @@ type Boolean bool
 func (b *Boolean) Capture(values []string) error {
 	*b = values[0] == "true"
 	return nil
-}
-
-type Operator int
-
-const (
-	Mul Operator = iota
-	Div
-	Mod
-	Add
-	Sub
-	Lt
-	Gt
-	Lte
-	Gte
-	Eq
-	Ne
-	And
-	Or
-)
-
-var operatorMap = map[string]Operator{
-	"*": Mul,
-	"/": Div,
-	"%": Mod,
-	"+": Add,
-	"-": Sub,
-	"<": Lt,
-	">": Gt,
-	"<=": Lte,
-	">=": Gte,
-	"==": Eq,
-	"!=": Ne,
-	"&&": And,
-	"||": Or,
-}
-
-var operatorSymbolMap = map[Operator]string{
-	Mul: "*",
-	Div: "/",
-	Mod: "%",
-	Add: "+",
-	Sub: "-",
-	Lt: "<",
-	Gt: ">",
-	Lte: "<=",
-	Gte: ">=",
-	Eq: "==",
-	Ne: "!=",
-	And: "&&",
-	Or: "||",
-}
-
-func (o *Operator) Capture(s []string) error {
-	var ok bool
-	*o, ok = operatorMap[s[0]]
-	if !ok {
-		panic(fmt.Sprintf("Unsupported operator: %s", s[0]))
-	}
-	return nil
-}
-
-func (o *Operator) String() string {
-	return operatorSymbolMap[*o]
 }
 
 type Method int
@@ -186,8 +124,8 @@ type Prec1Term struct {
 type Prec0 struct {
 	Pos lexer.Position
 
-	Operator Operator `@("*" | "/" | "%")`
-	Factor   *Factor  `@@`
+	Operator eval.Operator `@("*" | "/" | "%")`
+	Factor   *Factor       `@@`
 }
 
 type Prec2Term struct {
@@ -201,8 +139,8 @@ type Prec2Term struct {
 type Prec1 struct {
 	Pos lexer.Position
 
-	Operator Operator   `@("+" | "-")`
-	Factor   *Prec1Term `@@`
+	Operator eval.Operator `@("+" | "-")`
+	Factor   *Prec1Term    `@@`
 }
 
 type Prec3Term struct {
@@ -216,8 +154,8 @@ type Prec3Term struct {
 type Prec2 struct {
 	Pos lexer.Position
 
-	Operator Operator   `@("<" | ">" | "<=" | ">=")`
-	Factor   *Prec2Term `@@`
+	Operator eval.Operator `@("<" | ">" | "<=" | ">=")`
+	Factor   *Prec2Term    `@@`
 }
 
 type Prec4Term struct {
@@ -231,8 +169,8 @@ type Prec4Term struct {
 type Prec3 struct {
 	Pos lexer.Position
 
-	Operator Operator   `@("!=" | "==")`
-	Factor   *Prec3Term `@@`
+	Operator eval.Operator `@("!=" | "==")`
+	Factor   *Prec3Term    `@@`
 }
 
 type Prec5Term struct {
@@ -246,8 +184,8 @@ type Prec5Term struct {
 type Prec4 struct {
 	Pos lexer.Position
 
-	Operator Operator   `@"&&"`
-	Factor   *Prec4Term `@@`
+	Operator eval.Operator `@"&&"`
+	Factor   *Prec4Term    `@@`
 }
 
 type Expression struct {
@@ -261,8 +199,8 @@ type Expression struct {
 type Prec5 struct {
 	Pos lexer.Position
 
-	Operator Operator   `@"||"`
-	Factor   *Prec5Term `@@`
+	Operator eval.Operator `@"||"`
+	Factor   *Prec5Term    `@@`
 }
 
 // FunctionBody describes what follows a function identifier.
