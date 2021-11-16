@@ -1,7 +1,41 @@
 \documentclass[]{interim}
+\usepackage[x11names, svgnames, rgb]{xcolor}
 \usepackage{graphicx}
 \usepackage{hyperref}
 \usepackage{bookmark}
+\usepackage[utf8]{inputenc}
+\usepackage{tikz}
+\usepackage{amsmath}
+\usepackage{cprotect}
+\usepackage[english]{babel}
+\usepackage{amsthm}
+\usepackage[linguistics]{forest}
+\usepackage{float}
+\usepackage{array}
+\usepackage{hyperref}
+\usepackage{mathtools}
+\usepackage{csquotes}
+\usepackage{minted}
+\usepackage[style=ieee]{biblatex}
+\usepackage{caption}
+\usepackage{subcaption}
+\usetikzlibrary{snakes,arrows,shapes}
+\usepackage{fancyvrb}
+\usepackage{import}
+\usepackage{mdframed}
+
+% Environments
+\newenvironment{tightcenter}{%
+  \setlength\topsep{0pt}
+  \setlength\parskip{0pt}
+  \begin{center}
+}{%
+  \end{center}
+}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}[subsubsection]
+\addbibresource{ref.bib}
 
 
 %%%%%%%%%%%%%%%%%%%%%%
@@ -63,7 +97,7 @@ Although there exists many tools for testing and developing web-based APIs, ther
 \chapter*{Project Specification}
 \addcontentsline{toc}{chapter}{Project Specification}
 
-The \verb|sttp| (amalgamation of \textit{scripting} and \textit{HTTP}) is a dynamically typed, interpreted, scripting language written in Go using the \href{https://github.com/alecthomas/participle#overview}{participle parser generator} by Alec Thomas.
+The \verb|sttp| (amalgamation of \textit{scripting} and \textit{HTTP}) is a dynamically typed, interpreted, scripting language written in Go using the participle parser generator by Alec Thomas\textsuperscript{\cite{thomas_2021}}.
 
 %%%%%%%%%%%%%%%%%%%%%%
 %%% Introduction
@@ -85,81 +119,27 @@ Along with these test programs, the interim report also includes the reports tha
 
 Also included is the progress that has been made towards implementing the final product and the journey of the \verb|sttp| programming language thus far. This includes any important engineering decisions that were made as well as any research or theory which influenced said decision.
 
-\section{How to use this template}
+\chapter{Test programs}
 
-The simplest way to get started with your report is to save a copy of this document. 
-First change the values for the initial document definitions such as \verb|studentname| and \verb|reportyear| to match your details.
-Delete the unneeded sections and start adding your own sections using the styles provided.
-Before submission, remember to fill in the Declaration section fields.
+\import{./}{interim-chap2.tex}
 
-\chapter{Page Layout \& Size}
+\chapter{Report - Context-free grammars and manual procedures for parsing languages}
 
-The page size and margins have been set in this document. These should not be changed or adjusted. 
+\import{./}{interim-chap3.tex}
 
-In addition, page headers and footers have been included. They will be automatically filled in, so do not attempt to change their contents.
+\chapter{Report - The use derivation rules, and grammar idioms to capture notions of associativity and precedence in arithmetic expressions}
 
-\chapter{Headings}
+\import{./}{interim-chap4.tex}
 
-Your report will be structured as a collection of numbered sections at different levels of detail. For example, the heading to this section is a first-level heading and has been defined with a particular set of font and spacing characteristics. At the start of a new section, you need to select the appropriate \LaTeX{} command, \verb|\chapter| in this case.
-\section{Second Level Headings}
-Second level headings, like this one, are created by using the command \verb|\section|.
-\subsection{Third Level Headings}
-The heading for this subsection is a third level heading, which is obtained by using command \verb|\subsection|. In general, it is unlikely that fourth of fifth level headings will be required in your final report. Indeed it is more likely that if you do find yourself needing them, then your document structure is probably not ideal. So, try to stick to these three levels.
-\section{A Word on Numbering}
-You will notice that the main section headings in this document are all numbered in a hierarchical fashion. You don't have to worry about the numbering. It is all automatic as it has been built into the heading styles. Each time you create a new heading by selecting the appropriate style, the correct number will be assigned. 
+\chapter{Development of sttp}
 
-
-\chapter{Presentation Issues}
-
-\section{Figures, Charts and Tables}
-
-Most final reports will contain a mixture of figures and charts along with the main body of text. The figure caption should appear directly after the figure as seen in Figure~\ref{fig:logo} whereas a table caption should appear directly above the table. Figures, charts and tables should always be centered horizontally. 
-
-\begin{figure}[h]
-\centering
-\fboxsep 2mm
-\framebox{
-	\includegraphics[width=6cm]{logo} 
-}
-\caption{\label{fig:logo} Logo of RHUL.}
-\end{figure} 
-
-\section{Source Code}
-
-If you wish to print a short excerpt of your source code,  ensure that you are using a fixed-width sans-serif font such as the Courier font. By using the \verb|verbatim| environment your code will be properly indented and will appear as follows:
-
-\begin{verbatim}
-static public void main(String[] args) {
-  try  {
-    UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-  }
-  catch(Exception e) {
-    e.printStackTrace();
-  }
-  new WelcomeApp();
-} 
-\end{verbatim}
-
-\chapter{References}
-
-Use one consistent system for citing works in the body of your report. Several such systems are in common use in textbooks and in conference and journal papers. Ensure that any works you cite are listed in the references section, and vice versa. 
-
-\chapter{Project Information and Rules}
-
-The details about how your project will be assessed, as well as the rules you must follow for this final project report, are detailed in the project booklet~\cite{COHEN:2013}.
-
-\textbf{You must read that document and strictly follow it.}
-
+Development of \verb|sttp| begun in mid-October. I started by writing a formal definition of the grammar. Much of the grammar was inspired directly by Lua's grammar\textsuperscript{\cite{ierusalimschy_henrique-de-figueiredo_celes_2020}}.
 
 %%%% ADD YOUR BIBLIOGRAPHY HERE
 \newpage
-\begin{thebibliography}{99}
-\addcontentsline{toc}{chapter}{Bibliography}
-\bibitem{COHEN:2013} Dave Cohen and Carlos Matos. \emph{Third Year Projects -- Rules and Guidelines}. Royal Holloway, University of London, 2013.
-\end{thebibliography}
 \label{endpage}
-
-
+% \nocite{*}
+\printbibliography
 
 \end{document}
 

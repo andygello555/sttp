@@ -42,6 +42,7 @@ The following are all the tokens, along with their regular expressions, that the
         Elif      = `elif\s'
         Else      = `else\s'
         Catch     = `catch\s'
+        Test      = `test\s'
         In        = `\sin\s'
         As        = `\sas\s'
         True      = `true'
@@ -69,6 +70,7 @@ All capitalised symbols are tokens that are passed from the lexical analyser to 
                  FuncCall |
                  MethCall |
                  Break |
+                 Test Exp |
                  While Exp Do Block End |
                  For Ass ";" Exp [ ";" Ass ] Do Block End |
                  For Ident [ "," Ident ] In Exp Do Block End |
