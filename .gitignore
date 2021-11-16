@@ -1,5 +1,6 @@
 # We ignore any generated PDF
 *.pdf
+!logo.pdf
 
 .idea/
 .vscode/
@@ -21,3 +22,4 @@
 *.bcf
 *.blg
 *.run.xml
+*.toc
