@@ -1,0 +1,166 @@
+\documentclass[]{interim}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{bookmark}
+
+
+%%%%%%%%%%%%%%%%%%%%%%
+%%% Input project details
+\def\studentname{Jakab Zeller}
+\def\reportyear{2021}
+\def\projecttitle{Computer Language Design and Engineering}
+\def\supervisorname{Adrian Johnstone}
+\def\degree{BSc (Hons) in Computer Science}
+\def\fullOrHalfUnit{Full Unit} % indicate if you are doing the project as a Full Unit or Half Unit
+\def\finalOrInterim{Interim} % indicate if this document is your Final Report or Interim Report
+
+\begin{document}
+
+\maketitle
+
+%%%%%%%%%%%%%%%%%%%%%%
+%%% Declaration
+
+\chapter*{Declaration}
+
+This report has been prepared on the basis of my own work. Where other published and unpublished source materials have been used, these have been acknowledged.
+
+\vskip3em
+
+Word Count: 
+
+\vskip3em
+
+Student Name: \studentname
+
+\vskip3em
+
+Date of Submission: 
+
+\vskip3em
+
+Signature:
+
+\newpage
+
+%%%%%%%%%%%%%%%%%%%%%%
+%%% Table of Contents
+\tableofcontents\pdfbookmark[0]{Table of Contents}{toc}\newpage
+
+%%%%%%%%%%%%%%%%%%%%%%
+%%% Your Abstract here
+
+\begin{abstract}
+
+Although there exists many tools for testing and developing web-based APIs, there are not many solutions which provide full user freedom when it comes to control-flow. This project proposes a solution in the form of a dynamically typed, interpreted, scripting language with features enabling the use of web-based APIs `out-of-the-box', as well as other helpful tooling.
+
+\end{abstract}
+\newpage
+
+%%%%%%%%%%%%%%%%%%%%%%
+%%% Project Spec
+
+\chapter*{Project Specification}
+\addcontentsline{toc}{chapter}{Project Specification}
+
+The \verb|sttp| (amalgamation of \textit{scripting} and \textit{HTTP}) is a dynamically typed, interpreted, scripting language written in Go using the \href{https://github.com/alecthomas/participle#overview}{participle parser generator} by Alec Thomas.
+
+%%%%%%%%%%%%%%%%%%%%%%
+%%% Introduction
+\chapter{Introduction}
+
+This interim report includes the explanation and reasoning behind the test programs I have written in the first term, along with instructions on how to run and use them.
+
+\begin{center}
+    The test programs that were written and will be explained:
+    \vspace{-1em}
+    \begin{enumerate}
+        \item A simple four function calculator
+        \item Regex parser that generates a minimised DFA
+        \item A simple web-API designed to aid in the production of the \verb|sttp| programming language
+    \end{enumerate}
+\end{center}
+
+Along with these test programs, the interim report also includes the reports that I wrote during the first term.
+
+Also included is the progress that has been made towards implementing the final product and the journey of the \verb|sttp| programming language thus far. This includes any important engineering decisions that were made as well as any research or theory which influenced said decision.
+
+\section{How to use this template}
+
+The simplest way to get started with your report is to save a copy of this document. 
+First change the values for the initial document definitions such as \verb|studentname| and \verb|reportyear| to match your details.
+Delete the unneeded sections and start adding your own sections using the styles provided.
+Before submission, remember to fill in the Declaration section fields.
+
+\chapter{Page Layout \& Size}
+
+The page size and margins have been set in this document. These should not be changed or adjusted. 
+
+In addition, page headers and footers have been included. They will be automatically filled in, so do not attempt to change their contents.
+
+\chapter{Headings}
+
+Your report will be structured as a collection of numbered sections at different levels of detail. For example, the heading to this section is a first-level heading and has been defined with a particular set of font and spacing characteristics. At the start of a new section, you need to select the appropriate \LaTeX{} command, \verb|\chapter| in this case.
+\section{Second Level Headings}
+Second level headings, like this one, are created by using the command \verb|\section|.
+\subsection{Third Level Headings}
+The heading for this subsection is a third level heading, which is obtained by using command \verb|\subsection|. In general, it is unlikely that fourth of fifth level headings will be required in your final report. Indeed it is more likely that if you do find yourself needing them, then your document structure is probably not ideal. So, try to stick to these three levels.
+\section{A Word on Numbering}
+You will notice that the main section headings in this document are all numbered in a hierarchical fashion. You don't have to worry about the numbering. It is all automatic as it has been built into the heading styles. Each time you create a new heading by selecting the appropriate style, the correct number will be assigned. 
+
+
+\chapter{Presentation Issues}
+
+\section{Figures, Charts and Tables}
+
+Most final reports will contain a mixture of figures and charts along with the main body of text. The figure caption should appear directly after the figure as seen in Figure~\ref{fig:logo} whereas a table caption should appear directly above the table. Figures, charts and tables should always be centered horizontally. 
+
+\begin{figure}[h]
+\centering
+\fboxsep 2mm
+\framebox{
+	\includegraphics[width=6cm]{logo} 
+}
+\caption{\label{fig:logo} Logo of RHUL.}
+\end{figure} 
+
+\section{Source Code}
+
+If you wish to print a short excerpt of your source code,  ensure that you are using a fixed-width sans-serif font such as the Courier font. By using the \verb|verbatim| environment your code will be properly indented and will appear as follows:
+
+\begin{verbatim}
+static public void main(String[] args) {
+  try  {
+    UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+  }
+  catch(Exception e) {
+    e.printStackTrace();
+  }
+  new WelcomeApp();
+} 
+\end{verbatim}
+
+\chapter{References}
+
+Use one consistent system for citing works in the body of your report. Several such systems are in common use in textbooks and in conference and journal papers. Ensure that any works you cite are listed in the references section, and vice versa. 
+
+\chapter{Project Information and Rules}
+
+The details about how your project will be assessed, as well as the rules you must follow for this final project report, are detailed in the project booklet~\cite{COHEN:2013}.
+
+\textbf{You must read that document and strictly follow it.}
+
+
+%%%% ADD YOUR BIBLIOGRAPHY HERE
+\newpage
+\begin{thebibliography}{99}
+\addcontentsline{toc}{chapter}{Bibliography}
+\bibitem{COHEN:2013} Dave Cohen and Carlos Matos. \emph{Third Year Projects -- Rules and Guidelines}. Royal Holloway, University of London, 2013.
+\end{thebibliography}
+\label{endpage}
+
+
+
+\end{document}
+
+\end{article}
