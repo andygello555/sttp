@@ -288,3 +288,9 @@ POST 127.0.0.1:3000/helloworld {"hello": "world"}
     \end{subfigure}
     \cprotect\caption{\label{fig:1.2}Examples of requests and responses to and from the Simple Web-API. \textit{Note this assumes that the server is running on }\verb|127.0.0.1:3000|\textit{.}}
 \end{figure}
+
+\section{sttp grammar within participle}
+
+This test program is now directly embedded within the \verb|sttp| source code. This is because it defines \verb|sttp|'s AST nodes and grammar. I thought my understanding of how to implement \verb|sttp| would benefit from beginning the grammar of \verb|sttp| before officially starting development.
+
+I began by creating a formal specification which was similar to the one outlined in the project specification section.
