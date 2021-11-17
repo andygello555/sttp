@@ -58,6 +58,7 @@ The four function calculator can be run in an interactive line-by-line mode, as 
 See the README on instructions on how to run the four function calculator interpreter.
 
 \section{Regex parser}
+\label{sec:regex-parser}
 
 After implementing the \hyperref[sec:four-func-calculator]{four function calculator interpreter} I was a week ahead of my project plan. At the start of October, I was covering content related to the construction of minimal DFA from regular expressions in CS3470. I found the algorithms involved in constructing these DFAs interesting, so I decided to write my own implementation of them.
 
@@ -227,7 +228,15 @@ I wrote a grammar which accepts a language for simple regular expressions (conca
     \cprotect\caption{\label{fig:1.1}This produces the following graphs for the given input: \verb+aa|ba(e|c)+. \textit{Note that the }\verb|e|\textit{ represents $\epsilon$ (epsilon)}.}
 \end{figure}
 
+\section{sttp grammar within participle}
+\label{sec:sttp-grammar-within-participle}
+
+This test program is now directly embedded within the \verb|sttp| source code. This is because it defines \verb|sttp|'s AST nodes and grammar. I thought my understanding of how to implement \verb|sttp| would benefit from beginning the grammar of \verb|sttp| before officially starting development.
+
+I began by creating a formal specification which was similar to the one outlined in the project specification section.
+
 \section{Simple Web-API}
+\label{sec:simple-web-api}
 
 I decided whilst writing the project plan, that writing a simple web-API server would come in useful when testing \verb|sttp|. The web server is written using \href{https://nodejs.org/en/}{node.js} as it was well suited for this task and I have had some experience with it. I implemented a very simple echo-chamber web-API server which responds to each HTTP request with information about the incoming request. The following are some example requests and responses:
 
@@ -288,9 +297,3 @@ POST 127.0.0.1:3000/helloworld {"hello": "world"}
     \end{subfigure}
     \cprotect\caption{\label{fig:1.2}Examples of requests and responses to and from the Simple Web-API. \textit{Note this assumes that the server is running on }\verb|127.0.0.1:3000|\textit{.}}
 \end{figure}
-
-\section{sttp grammar within participle}
-
-This test program is now directly embedded within the \verb|sttp| source code. This is because it defines \verb|sttp|'s AST nodes and grammar. I thought my understanding of how to implement \verb|sttp| would benefit from beginning the grammar of \verb|sttp| before officially starting development.
-
-I began by creating a formal specification which was similar to the one outlined in the project specification section.
