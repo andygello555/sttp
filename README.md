@@ -7,9 +7,7 @@ The language will include variable declaration/definition, control-flow (if and 
 
 ## Test Programs
 
-All programs are written using Go so the Go executable will need to be installed for these programs to be run/compiled. There are instructions on how to run each program in their respective sections. These instructions require you to be in the test program's respective directory.<br/>
-
-Note that the execution instructions use the `run` subcommand of the Go executable. This will compile and run the `main` package of the current directory.
+There are instructions on how to run each program in their respective sections. These instructions require you to be in the test program's respective directory.
 
 ### Four Function Calculator
 
@@ -27,6 +25,10 @@ a+b
 
 The output to this example would be a list of numbers representing the output of each statement. To run the interpreter you can use the following options:
 
+#### Prerequisites
+
+You must have `go 1.17` installed.
+
 #### Executing a file/input
 
 `go run . [<FILE> | <INPUT>]`
@@ -43,6 +45,10 @@ A parser for simple regular expressions which outputs minimised DFAs. The parser
 
 Behind the scenes this uses [participle](https://github.com/alecthomas/participle) to parse the regular expression and the [go-graphviz](https://github.com/goccy/go-graphviz) library to render the graphs to PNG files.
 
+#### Prerequisites
+
+You must have `go 1.17` installed.
+
 #### How to use
 
 `go run . <REGEX>`
@@ -52,3 +58,66 @@ This will parse the given input regex and produce the following files (in the cu
 - `thompsons.png`: the graph after parsing the regular expression to an NFA using Thompson's construction
 - `subset.png`: the graph after carrying out the Subset construction on the NFA
 - `deadstate.png`: the graph after minimising the DFA using Dead State minimisation
+
+### Echo-chamber Web API
+
+*Located in: `test_programs/test-web-api/`*<br/>
+
+A simple node.js based web API server which echoes back information about any HTTP request made to it. This was created in order to have a web-API for testing `sttp` with.<br/>
+
+The following are examples of some requests and responses:
+
+```
+GET 127.0.0.1:3000?hello=world
+
+{
+    "code": null,
+    "headers": {
+        "accept": "*/*",
+        "accept-encoding": "gzip, deflate",
+        "connection": "keep-alive",
+        "host": "127.0.0.1:3000",
+        "user-agent": "HTTPie/2.6.0"
+    },
+    "method": "GET",
+    "query_params": {
+        "hello": "world"
+    },
+    "url": "http://127.0.0.1:3000/?hello=world",
+    "version": "1.1"
+}
+```
+
+```
+POST 127.0.0.1:3000/helloworld {"hello": "world"}
+
+{
+    "body": {
+        "hello": "world"
+    },
+    "code": null,
+    "headers": {
+        "accept": "application/json, */*;q=0.5",
+        "accept-encoding": "gzip, deflate",
+        "connection": "keep-alive",
+        "content-length": "18",
+        "content-type": "application/json",
+        "host": "127.0.0.1:3000",
+        "user-agent": "HTTPie/2.6.0"
+    },
+    "method": "POST",
+    "query_params": {},
+    "url": "http://127.0.0.1:3000/helloworld",
+    "version": "1.1"
+}
+```
+
+#### Prerequisites
+
+Have node.js installed. No packages need to be installed.
+
+#### How to use
+
+`node main.js`
+
+This will start the web server on `127.0.0.1:3000`.
