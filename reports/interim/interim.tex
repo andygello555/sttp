@@ -559,7 +559,7 @@ Also included is the progress that has been made towards implementing the final 
 
 \section{Mid-October}
 
-Development of \verb|sttp| begun in mid-October. I started by writing a formal definition of the grammar. Much of the grammar was inspired directly by Lua's grammar\textsuperscript{\cite{ierusalimschy_henrique-de-figueiredo_celes_2020}}. I chose to encode operator precedence within the grammar and keep every operator left associative within the grammar (due to participle generating a recursive descent parser). I then implemented this grammar within Go using participle by defining the AST node \verb|struct| types. I then also added a way of printing back out the AST as \verb|sttp| source code in order to test if programs were being parsed correctly.
+Development of \verb|sttp| begun in mid-October. I started by writing a formal definition of the grammar. Much of the grammar was inspired directly by Lua's grammar\textsuperscript{\cite{ierusalimschy_henrique-de-figueiredo_celes_2020}}. I chose to encode operator precedence within the grammar and keep every operator left associative within the grammar. I then implemented this grammar within Go using participle by defining the AST node \verb|struct| types. I then also added a way of printing back out the AST as \verb|sttp| source code in order to test if programs were being parsed correctly.
 
 \section{End of October}
 
