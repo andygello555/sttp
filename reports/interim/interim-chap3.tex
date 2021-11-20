@@ -480,6 +480,6 @@ It is also worth noting that in \hyperref[fig:3.12]{fig. 3.12}, when the action 
 
 \section{Parser generators}
 
-The parser generator that I will be using for my interpreter is the \href{https://github.com/alecthomas/participle#overview}{participle parser by Alec Thomas}. Participle will generate a recursive descent parser with backtracking for a given grammar. This means that the grammar you need to write can be, but is not limited to LL(1). However, if the grammar is not LL(1) the parser is not earanteed to terminate. This means that grammar will need to be restructured to remove any left-recursion (if it exists).
+The parser generator that I will be using for my interpreter is the \href{https://github.com/alecthomas/participle#overview}{participle parser by Alec Thomas}. Participle will generate a recursive descent parser with backtracking for a given grammar. This means that the grammar you need to write can be, but is not limited to LL(1). However, if the grammar is not LL(1) the parser is not guaranteed to terminate. This means that grammar will need to be restructured to remove any left-recursion (if it exists). If the grammar is \textbf{not} left recursive then backtracking still might need to be used by the parser if the grammar is not left-factored or not follow determined.
 
 If a grammar that is LL(1) can be constructed it will mean that the parser generated will be a \textit{predictive parser} which means that there will be no backtracking.

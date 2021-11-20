@@ -4,6 +4,7 @@
 \usepackage{cprotect}
 \usepackage{array}
 \usepackage{hyperref}
+\usepackage{minted}
 
 % Metadata
 \title{Specification for Web API testing language}
@@ -63,89 +64,89 @@ All capitalised symbols are tokens that are passed from the lexical analyser to 
 \section{Grammar}
 
 \begin{center}
-    \begin{verbatim}
-        Program  ::= Block
-        Block    ::= { [ Stmt ] ";" } [ RetStmt | ThrwStmt ]
-        Stmt ::= Ass |
-                 FuncCall |
-                 MethCall |
-                 Break |
-                 Test Exp |
-                 While Exp Do Block End |
-                 For Ass ";" Exp [ ";" Ass ] Do Block End |
-                 For Ident [ "," Ident ] In Exp Do Block End |
-                 Batch This Block End |
-                 Try This Block Catch As Ident Then End |
-                 Function JSONPath FuncBody |
-                 If Exp Then Block { ElifSeg } [ ElseSeg ] End
+    \begin{minted}{ebnf}
+        Program  = Block ;
+        Block    = { [ Stmt ] ";" } [ RetStmt | ThrwStmt ] ;
+        Stmt     = Ass
+                 | FuncCall
+                 | MethCall
+                 | Break
+                 | Test Exp
+                 | While Exp Do Block End
+                 | For Ass ";" Exp [ ";" Ass ] Do Block End
+                 | For Ident [ "," Ident ] In Exp Do Block End
+                 | Batch This Block End
+                 | Try This Block Catch As Ident Then End
+                 | Function JSONPath FuncBody
+                 | If Exp Then Block { ElifSeg } [ ElseSeg ] End ;
 
-        Ass      ::= Set JSONPath "=" Exp
-        ElifSeg  ::= Elif Exp Then Block
-        ElseSeg  ::= Else Block
+        Ass      = Set JSONPath "=" Exp ;
+        ElifSeg  = Elif Exp Then Block ;
+        ElseSeg  = Else Block ;
 
-        # JSON Path
-        JSONPath ::= Part { "." Part }
-        Part     ::= Ident { "[" Exp "]" }
+        (* JSON Path *)
+        JSONPath = Part { "." Part } ;
+        Part     = Ident { "[" Exp "]" } ;
 
-        RetStmt  ::= Return [ Exp ] ";"
-        ThrwStmt ::= Throw [ Exp ] ";"
-        FuncCall ::= JSONPath Args
-        MethCall ::= Method Args
-        FuncBody ::= "(" [Params] ")" Block End
-        Params   ::= JSONPath { "," JSONPath }
-        Args     ::= "(" [ExpList] ")"
-        ExpList  ::= Exp { "," Exp }
+        RetStmt  = Return [ Exp ] ";" ;
+        ThrwStmt = Throw [ Exp ] ";" ;
+        FuncCall = JSONPath Args ;
+        MethCall = Method Args ;
+        FuncBody = "(" [Params] ")" Block End ;
+        Params   = JSONPath { "," JSONPath } ;
+        Args     = "(" [ExpList] ")" ;
+        ExpList  = Exp { "," Exp } ;
 
-        # Our "arithmetic expressions" have 5 levels of precedence
-        # "||": lowest precedence
-        Exp      ::= Prec5T { Prec5 }
-        Prec5    ::= Prec5Op Prec5T
-        Prec5Op  ::= "||"
+        (* Our "arithmetic expressions" have 5 levels of precedence *)
+        (* "||": lowest precedence *)
+        Exp      = Prec5T { Prec5 } ;
+        Prec5    = Prec5Op Prec5T ;
+        Prec5Op  = "||" ;
 
-        # "&&": 2nd lowest precedence
-        Prec5T   ::= Prec4T { Prec4 }
-        Prec4    ::= Prec4Op Prec4T
-        Prec4Op  ::= "&&"
+        (* "&&": 2nd lowest precedence *)
+        Prec5T   = Prec4T { Prec4 } ;
+        Prec4    = Prec4Op Prec4T ;
+        Prec4Op  = "&&" ;
 
-        # "==" and "!=": 3rd lowest precedence
-        Prec4T   ::= Prec3T { Prec3 }
-        Prec3    ::= Prec3Op Prec3T
-        Prec3Op  ::= "==" | "!="
+        (* "==" and "!=": 3rd lowest precedence *)
+        Prec4T   = Prec3T { Prec3 } ;
+        Prec3    = Prec3Op Prec3T ;
+        Prec3Op  = "==" | "!=" ;
 
-        # "<", ">", "<=", and ">=": 4th lowest precedence
-        Prec3T   ::= Prec2T { Prec2 }
-        Prec2    ::= Prec2Op Prec2T
-        Prec2Op  ::= "<" | ">" | "<=" | ">="
+        (* "<", ">", "<=", and ">=": 4th lowest precedence *)
+        Prec3T   = Prec2T { Prec2 } ;
+        Prec2    = Prec2Op Prec2T ;
+        Prec2Op  = "<" | ">" | "<=" | ">=" ;
 
-        # "+" and "-": 5th lowest precedence
-        Prec2T   ::= Prec1T { Prec1 }
-        Prec1    ::= Prec1Op Prec1T
-        Prec1Op  ::= "+" | "-"
+        (* "+" and "-": 5th lowest precedence *)
+        Prec2T   = Prec1T { Prec1 } ;
+        Prec1    = Prec1Op Prec1T ;
+        Prec1Op  = "+" | "-" ;
 
-        # "*", "/", and "%": Highest precedence
-        Prec1T   ::= Factor { Prec0 }
-        Prec0    ::= Prec0Op Factor
-        Prec0Op  ::= "*" | "/" | "%"
+        (* "*", "/", and "%": Highest precedence *)
+        Prec1T   = Factor { Prec0 } ;
+        Prec0    = Prec0Op Factor ;
+        Prec0Op  = "*" | "/" | "%" ;
 
-        # The factors are our base values
-        Factor   ::= Null |
-                     False |
-                     True |
-                     Number |
-                     StringLit |
-                     JSONPath |
-                     JSON |
-                     FuncCall |
-                     MethodCall |
-                     "(" Exp ")"
+        (* The factors are our base values *)
+        Factor   = Null
+                 | False
+                 | True
+                 | Number
+                 | StringLit
+                 | JSONPath
+                 | JSON
+                 | FuncCall
+                 | MethodCall
+                 | "(" Exp ")" ;
 
-        # JSON literal
-        JSON     ::= Object | Array
-        Object   ::= "{" [ Members ] "}"
-        Members  ::= Pair { "," Pair }
-        Pair     ::= Exp ":" Exp
-        Array    ::= "[" [ ExpList ] "]"
-    \end{verbatim}
+        (* JSON literal *)
+        JSON     = Object | Array ;
+        Object   = "{" [ Members ] "}" ;
+        Members  = Pair { "," Pair } ;
+        Pair     = Exp ":" Exp ;
+        Array    = "[" [ ExpList ] "]" ;
+    \end{minted}
 \end{center}
 
 \subsection{Takeaways}
