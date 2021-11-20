@@ -70,6 +70,48 @@ end;
 object.execute("sttp");
 ```
 
+## Slide 6 - Four function calculator
+
+Below is a code snippet from the four function calculator which explains how the participle parser generator works.
+
+```go
+// Statement can either be an expression, variable assignment or variable clear.
+// The EBNF for this non-terminal:
+//  ( Clear | Assignment | Expression ) ( EOL | ";" | EOF )
+type Statement struct {
+    // Pointer to Clear statement node. Can be nil.
+    Clear      *Clear      `(   @@`  // "@@" denotes the capture of the type 
+                                     // of the field. In this case the Clear
+                                     // non-terminal.
+
+    // Pointer to Assignment statement node. Can be nil.
+    Assignment *Assignment `  | @@`
+
+    // Pointer to Expression statement node. Can be nil.
+    // EOL and EOF are passed into the parser from lexer.
+    // Each statement can be finished by either an EOL, semicolon or EOF.
+    Expression *Expression `  | @@ ) (EOL | ";" | EOF)`
+}
+
+// Each node implements the same Eval function signature.
+// This means each node implements an interface which defines
+// such a signature.
+// The Memory type is a map containing the current values of each defined
+// variable and is passed to each Eval function.
+func (s *Statement) Eval(ctx Memory) (float64, *Memory) {
+    // Nil switch as we have three alternates.
+    switch {
+    case s.Clear != nil:
+        s.Clear.Eval(ctx)
+        return 0, &ctx
+    case s.Assignment != nil:
+        s.Assignment.Eval(ctx)
+        return 0, &ctx
+    }
+    return s.Expression.Eval(ctx), &ctx
+}
+```
+
 ## Slide 7 - Regex parser
 
 **Some example inputs.**
