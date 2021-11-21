@@ -122,35 +122,33 @@ func (s *Statement) Eval(ctx Memory) (float64, *Memory) {
 
 ![NFA, DFA, and minimised DFA for `aa*`](assets/regex-parser-aa*.png)
 
+<div style="page-break-after: always"></div>
+
 ### `(a|b)a(b|e)*`
 
 *Note that "e" stands for epsilon.*
 
-#### NFA
+<p float="left">
+    NFA
+    <img src="assets/regex-parser-example-2-thompsons.png" width="100" />
+    DFA
+    <img src="assets/regex-parser-example-2-subset.png" width="145" /> 
+    Min. DFA
+    <img src="assets/regex-parser-example-2-deadstate.png" width="100" />
+</p>
 
-![NFA for `(a|b)a(b|e)*`](assets/regex-parser-example-2-thompsons.png)
-
-#### DFA
-
-![DFA for `(a|b)a(b|e)*`](assets/regex-parser-example-2-subset.png)
-
-#### Minimised DFA
-
-![Minimised DFA for `(a|b)a(b|e)*`](assets/regex-parser-example-2-deadstate.png)
+<div style="page-break-after: always"></div>
 
 ### `(a|b)*a`
 
-#### NFA
-
-![NFA for `(a|b)*a`](assets/regex-parser-example-3-thompsons.png)
-
-#### DFA
-
-![DFA for `(a|b)*a`](assets/regex-parser-example-3-subset.png)
-
-#### Minimised DFA
-
-![Minimised DFA for `(a|b)*a`](assets/regex-parser-example-3-deadstate.png)
+<p float="left">
+    NFA
+    <img src="assets/regex-parser-example-3-thompsons.png" width="100" />
+    DFA
+    <img src="assets/regex-parser-example-3-subset.png" width="145" /> 
+    Min. DFA
+    <img src="assets/regex-parser-example-3-deadstate.png" width="100" />
+</p>
 
 ## Slide 8 - `sttp` grammar
 

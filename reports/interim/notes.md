@@ -115,7 +115,3 @@ Now I'll talk a bit about the development that has been done so far on `sttp`.
   - Also implemented the operator action lookup table as well as a few operator actions
   - As well as the cast function lookup table which defines the available cast actions from one type to another
     - Used in operator actions
-
-## Slide 15 - Any Questions?
-
-Any questions?
