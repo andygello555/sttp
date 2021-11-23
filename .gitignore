@@ -11,6 +11,7 @@
 .smommit/
 
 *.png
+!**/assets/**/*.png
 *.dot
 
 *.cpt
