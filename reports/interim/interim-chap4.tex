@@ -260,10 +260,8 @@ The following grammar shows how one might encode the precedence for multiplicati
     \begin{itemize}
         \item $E$ derives any expression and thus defines the \textbf{lowest precedence within the language}. I.e. $E$ nodes within the parse tree will be the parent of all expressions and will exist higher up in the tree.
         \item $T$ derives only multiplication and division expressions. In the parse tree, $T$ nodes will always exist underneath an $E$ node or a $T$ node. This that $T$ has the \textbf{second highest precedence} in our language.
-        \item $F$ derives either numbers or another sub-expression (within parentheses). Which means that numbers and parenthesised expressions will have the \textbf{highest precedence} in our language.
+        \item $F$ derives either numbers or another sub-expression (within parentheses). Which means that numbers and parenthesised expressions will have the \textbf{highest precedence} in our language.\textsuperscript{\cite{abrahamson_2021}\cite{norvell_1999}}
     \end{itemize}
-    \vspace{1em}
-    Formally, we call this \textbf{precedence climbing}.\textsuperscript{\cite{abrahamson_2021}\cite{norvell_1999}}
 \end{center}
 
 \begin{center}
@@ -327,7 +325,7 @@ If the derivation tree was navigated depth-first left to right: then the first o
 
 \subsubsection{After parsing}
 
-This technique is evident in programming languages where there can be user defined operators with their own precedence, such as Haskell and Prolog. One way to do this might be to have a non-terminal containing all the operator tokens and then defining a simple expression non-terminal. Then an algorithm such as Shunting-Yard can be applied whilst traversing the produced parse tree to convert the expression to RPN. This can then be easily evaluated.
+This technique is evident in programming languages where there can be user defined operators with their own precedence, such as Haskell and Prolog. One way to do this might be to have a non-terminal containing all the operator tokens and then defining a simple expression non-terminal. Then a precedence climbing algorithm such as Shunting-Yard, Pratt parsing or the regular precedence climbing algorithm\textsuperscript{\cite{operator-precedence-parser-wikipedia}} can be applied whilst traversing the produced parse tree to convert the expression to RPN or evaluate the expression on the fly.
 
 To carry out this technique you need to define an operator precedence and associativity lookup table along with your grammar. This is because, of course, precedence and associativity are not available within the grammar itself.
 
@@ -358,10 +356,10 @@ To carry out this technique you need to define an operator precedence and associ
     \caption{\label{fig:4.6}Expression grammar and operator precedence and associativity table}
 \end{figure}
 
-\textbf{As the Shunting-Yard algorithm is fairly well documented and simple to understand, pseudocode and explanation will be skipped.}
+\textbf{As all these precedence climbing algorithms are fairly well documented and simple to understand, pseudocode and explanation will be skipped. Here I will be using Shunting-Yard but the data-structures, code structure, and parenthesis handling are all fairly similar from algorithm to algorithm.\textsuperscript{\cite{chu_2016}\cite{chu_2017}}}
 
 \begin{center}
-    Given the input string: \verb|3 + 4 * 2 / ( 1 - 5 ) ^ 2 ^ 3|, the following derivation tree can be produced. \textit{Note: due to the ambiguity of the grammar multiple derivations may be produced from this expression. This will not affect Shunting-Yard. Here we are producing the left-most derivation.}\\
+    Given the input string: \verb|3 + 4 * 2 / ( 1 - 5 ) ^ 2 ^ 3|, the following derivation tree can be produced. \textit{Note: due to the ambiguity of the grammar multiple derivations may be produced from this expression. This will not affect precedence climbing. Here we are producing the left-most derivation.}\\
     \vspace{0.5em}
     \begin{forest}
         for tree={
@@ -477,8 +475,10 @@ It's important to note that in the case of the grammar shown in \hyperref[fig:4.
             \end{verbatim} & & \\
             \hline
         \end{tabular}
-    \cprotect\caption{\label{fig:4.7}Shunting-Yard algorithm execution for the input: \verb|7 + 4 * 2 / ( 3 - 5 ) ^ 2 ^ 3|}
+    \cprotect\caption{\label{fig:4.7}Precedence climbing algorithm execution for the input: \verb|7 + 4 * 2 / ( 3 - 5 ) ^ 2 ^ 3|}
     \end{center}
 \end{figure}
 
-At this point the expression can be evaluated without the ambiguity of precedence or associativity. The expression can also be reconstructed into a tree during Shunting-Yard in the correct precedence heirarchy. The parse tree below the relevant \verb|exp| node could then be replaced by this new tree, and evaluated along with the entire tree.
+At this point the expression can be evaluated without the ambiguity of precedence or associativity. The parse tree below the relevant \verb|exp| node could then be replaced by this new tree, and evaluated along with the entire tree.
+
+As mentioned earlier each precedence climbing algorithm can be run so that it evaluates the expression on the fly whilst walking the parse tree. This is more computationally efficient than the method described above, but harder to show in execution succinctly.
