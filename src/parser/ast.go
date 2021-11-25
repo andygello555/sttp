@@ -241,6 +241,13 @@ type ThrowStatement struct {
 	Value *Expression `Throw @@? ";"`
 }
 
+// TestStatement describes an expression that will be evaluated and tested by the interpreter and returned to user.
+type TestStatement struct {
+	Pos lexer.Position
+
+	Expression *Expression `Test @@`
+}
+
 // JSONPath describes a path to a property within a variable.
 type JSONPath struct {
 	Pos lexer.Position
@@ -264,6 +271,7 @@ type Statement struct {
 	FunctionCall       *FunctionCall       `| @@`
 	MethodCall         *MethodCall         `| @@`
 	Break              *string             `| @Break`
+	Test               *TestStatement      `| @@`
 	While              *While              `| @@`
 	For                *For                `| @@`
 	ForEach            *ForEach            `| @@`
@@ -390,6 +398,7 @@ var lex = lexer.MustSimple([]lexer.Rule{
 	{"Elif", `elif\s`, nil},
 	{"Else", `else\s`, nil},
 	{"Catch", `catch\s`, nil},
+	{"Test", `test\s`, nil},
 	{"In", `\sin\s`, nil},
 	{"As", `as\s`, nil},
 	{"True", `true`, nil},

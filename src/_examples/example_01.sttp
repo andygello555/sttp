@@ -29,6 +29,7 @@ function object.execute(self.ifvar, self.var_ifwithin_self, party_variable.wow[0
                 print("still true");
             else
                 print("hello");print("hello 2");print("hello 3");
+                test "hello" == "hel" + "lo";
             end;
         elif i % 5 == 0 then
             set self.results = self.results + GET("https://twitter.com");
@@ -76,3 +77,5 @@ set this_boy = "to be this boy";
 try this batch this for url in ["https://a.com","https://b.com","https://c.com"] do set result = GET(url);print(result);end;set oops_forgot_this = GET("https://d.com");print(oops_forgot_this);end;throw {"error": "time", "ohno": true};catch as err then print(err);end;
 
 object.execute();
+
+test object.results == 1 + 1 + 2;
