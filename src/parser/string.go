@@ -83,6 +83,10 @@ func (w *While) String(indent int) string {
 	return fmt.Sprintf("%swhile %s do\n%s\n%send", tabs(indent), w.Condition.String(0), w.Block.String(indent + 1), tabs(indent))
 }
 
+func (t *TestStatement) String(indent int) string {
+	return fmt.Sprintf("%stest %s", tabs(indent), t.Expression.String(0))
+}
+
 func (a *Assignment) String(indent int) string {
 	return fmt.Sprintf("%sset %s = %s", tabs(indent), a.JSONPath.String(0), a.Value.String(0))
 }
@@ -98,6 +102,8 @@ func (s *Statement) String(indent int) string {
 		stmt = s.MethodCall.String(indent)
 	case s.Break != nil:
 		stmt = "break"
+	case s.Test != nil:
+		stmt = s.Test.String(indent)
 	case s.While != nil:
 		stmt = s.While.String(indent)
 	case s.For != nil:
