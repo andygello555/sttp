@@ -88,7 +88,7 @@ func obSing(symbol *data.Symbol) (err error, cast *data.Symbol) {
 // arSing constructs a singleton array where the first and only element is the symbol value.
 func arSing(symbol *data.Symbol) (err error, cast *data.Symbol) {
 	array := make([]interface{}, 1)
-	array[1] = symbol.Value
+	array[0] = symbol.Value
 	return nil, &data.Symbol{
 		Value: array,
 		Type:  data.Array,
@@ -105,6 +105,7 @@ func obArray(symbol *data.Symbol) (err error, cast *data.Symbol) {
 		array[i] = v
 		i ++
 	}
+
 	return nil, &data.Symbol{
 		Value: array,
 		Type:  data.Array,
@@ -130,7 +131,7 @@ func arObject(symbol *data.Symbol) (err error, cast *data.Symbol) {
 // symbol is of type t.
 func stringTo(symbol *data.Symbol, to data.Type) (err error, cast *data.Symbol) {
 	err, cast = data.ConstructSymbol(symbol.Value.(string), symbol.Scope)
-	if cast.Type != to {
+	if err != nil || cast.Type != to {
 		return errors.CannotCast.Errorf(symbol.Type.String(), to.String()), nil
 	}
 	return nil, cast
