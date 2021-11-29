@@ -131,6 +131,14 @@ type Symbol struct {
 	Scope int
 }
 
+func (s *Symbol) String() string {
+	ss, err := json.Marshal(s.Value)
+	if err != nil {
+		panic(err)
+	}
+	return string(ss)
+}
+
 func ConstructSymbol(value interface{}, scope int) (err error, symbol *Symbol) {
 	var jsonVal interface{}
 	var t Type

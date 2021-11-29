@@ -3,6 +3,7 @@ package eval
 import (
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/data"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/errors"
+	"reflect"
 )
 
 // e is the "ID" for eFunc. This needs to be created so that there is an identity that can be checked for equivalence.
@@ -26,7 +27,7 @@ var castTable = [8][8]func(symbol *data.Symbol) (err error, cast *data.Symbol) {
 // cell in castTable against e. Therefore, this function does not carry out the cast function itself so will not report
 // back on any errors that may happen. Returns true if the entry in the castTable is not e, false otherwise.
 func Castable(symbol *data.Symbol, to data.Type) bool {
-	return &castTable[symbol.Type][to] != &e
+	return reflect.ValueOf(castTable[symbol.Type][to]).Pointer() != reflect.ValueOf(e).Pointer()
 }
 
 // Cast will cast the given Symbol to the given type using the castTable matrix. If you cannot cast from the given
