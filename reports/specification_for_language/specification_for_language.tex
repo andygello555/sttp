@@ -4,6 +4,7 @@
 \usepackage{cprotect}
 \usepackage{array}
 \usepackage{hyperref}
+\usepackage{minted}
 
 % Metadata
 \title{Specification for Web API testing language}
@@ -42,6 +43,7 @@ The following are all the tokens, along with their regular expressions, that the
         Elif      = `elif\s'
         Else      = `else\s'
         Catch     = `catch\s'
+        Test      = `test\s'
         In        = `\sin\s'
         As        = `\sas\s'
         True      = `true'
@@ -62,89 +64,98 @@ All capitalised symbols are tokens that are passed from the lexical analyser to 
 \section{Grammar}
 
 \begin{center}
-    \begin{verbatim}
-        Program  ::= Block
-        Block    ::= { [ Stmt ] ";" } [ RetStmt | ThrwStmt ]
-        Stmt ::= Ass |
-                 FuncCall |
-                 MethCall |
-                 Break |
-                 While Exp Do Block End |
-                 For Ass ";" Exp [ ";" Ass ] Do Block End |
-                 For Ident [ "," Ident ] In Exp Do Block End |
-                 Batch This Block End |
-                 Try This Block Catch As Ident Then End |
-                 Function JSONPath FuncBody |
-                 If Exp Then Block { ElifSeg } [ ElseSeg ] End
+    \begin{minted}{ebnf}
+        Program  = Block ;
+        Block    = { [ Stmt ] ";" } [ RetStmt | ThrwStmt ] ;
+        Stmt     = Ass
+                 | FuncCall
+                 | MethCall
+                 | Break
+                 | Test Exp
+                 | While Exp Do Block End
+                 | For Ass ";" Exp [ ";" Ass ] Do Block End
+                 | For Ident [ "," Ident ] In Exp Do Block End
+                 | Batch This Block End
+                 | Try This Block Catch As Ident Then End
+                 | Function JSONPath FuncBody
+                 | If Exp Then Block { ElifSeg } [ ElseSeg ] End ;
 
-        Ass      ::= Set JSONPath "=" Exp
-        ElifSeg  ::= Elif Exp Then Block
-        ElseSeg  ::= Else Block
+        Ass      = Set JSONPath "=" Exp ;
+        ElifSeg  = Elif Exp Then Block ;
+        ElseSeg  = Else Block ;
 
-        # JSON Path
-        JSONPath ::= Part { "." Part }
-        Part     ::= Ident { "[" Exp "]" }
+        (* JSON Path *)
+        JSONPath = Part { "." Part } ;
+        Part     = Ident { "[" Exp "]" } ;
 
-        RetStmt  ::= Return [ Exp ] ";"
-        ThrwStmt ::= Throw [ Exp ] ";"
-        FuncCall ::= JSONPath Args
-        MethCall ::= Method Args
-        FuncBody ::= "(" [Params] ")" Block End
-        Params   ::= JSONPath { "," JSONPath }
-        Args     ::= "(" [ExpList] ")"
-        ExpList  ::= Exp { "," Exp }
+        RetStmt  = Return [ Exp ] ";" ;
+        ThrwStmt = Throw [ Exp ] ";" ;
+        FuncCall = JSONPath Args ;
+        MethCall = Method Args ;
+        FuncBody = "(" [Params] ")" Block End ;
+        Params   = JSONPath { "," JSONPath } ;
+        Args     = "(" [ExpList] ")" ;
+        ExpList  = Exp { "," Exp } ;
 
-        # Our "arithmetic expressions" have 5 levels of precedence
-        # "||": lowest precedence
-        Exp      ::= Prec5T { Prec5 }
-        Prec5    ::= Prec5Op Prec5T
-        Prec5Op  ::= "||"
+        (* Our "arithmetic expressions" have 5 levels of precedence *)
+        (* "||": lowest precedence *)
+        Exp      = Prec5T { Prec5 } ;
+        Prec5    = Prec5Op Prec5T ;
+        Prec5Op  = "||" ;
 
-        # "&&": 2nd lowest precedence
-        Prec5T   ::= Prec4T { Prec4 }
-        Prec4    ::= Prec4Op Prec4T
-        Prec4Op  ::= "&&"
+        (* "&&": 2nd lowest precedence *)
+        Prec5T   = Prec4T { Prec4 } ;
+        Prec4    = Prec4Op Prec4T ;
+        Prec4Op  = "&&" ;
 
-        # "==" and "!=": 3rd lowest precedence
-        Prec4T   ::= Prec3T { Prec3 }
-        Prec3    ::= Prec3Op Prec3T
-        Prec3Op  ::= "==" | "!="
+        (* "==" and "!=": 3rd lowest precedence *)
+        Prec4T   = Prec3T { Prec3 } ;
+        Prec3    = Prec3Op Prec3T ;
+        Prec3Op  = "==" | "!=" ;
 
-        # "<", ">", "<=", and ">=": 4th lowest precedence
-        Prec3T   ::= Prec2T { Prec2 }
-        Prec2    ::= Prec2Op Prec2T
-        Prec2Op  ::= "<" | ">" | "<=" | ">="
+        (* "<", ">", "<=", and ">=": 4th lowest precedence *)
+        Prec3T   = Prec2T { Prec2 } ;
+        Prec2    = Prec2Op Prec2T ;
+        Prec2Op  = "<" | ">" | "<=" | ">=" ;
 
-        # "+" and "-": 5th lowest precedence
-        Prec2T   ::= Prec1T { Prec1 }
-        Prec1    ::= Prec1Op Prec1T
-        Prec1Op  ::= "+" | "-"
+        (* "+" and "-": 5th lowest precedence *)
+        Prec2T   = Prec1T { Prec1 } ;
+        Prec1    = Prec1Op Prec1T ;
+        Prec1Op  = "+" | "-" ;
 
-        # "*", "/", and "%": Highest precedence
-        Prec1T   ::= Factor { Prec0 }
-        Prec0    ::= Prec0Op Factor
-        Prec0Op  ::= "*" | "/" | "%"
+        (* "*", "/", and "%": Highest precedence *)
+        Prec1T   = Factor { Prec0 } ;
+        Prec0    = Prec0Op Factor ;
+        Prec0Op  = "*" | "/" | "%" ;
 
-        # The factors are our base values
-        Factor   ::= Null |
-                     False |
-                     True |
-                     Number |
-                     StringLit |
-                     JSONPath |
-                     JSON |
-                     FuncCall |
-                     MethodCall |
-                     "(" Exp ")"
+        (* The factors are our base values *)
+        Factor   = Null
+                 | False
+                 | True
+                 | Number
+                 | StringLit
+                 | JSONPath
+                 | JSON
+                 | FuncCall
+                 | MethodCall
+                 | "(" Exp ")" ;
 
-        # JSON literal
-        JSON     ::= Object | Array
-        Object   ::= "{" [ Members ] "}"
-        Members  ::= Pair { "," Pair }
-        Pair     ::= Exp ":" Exp
-        Array    ::= "[" [ ExpList ] "]"
-    \end{verbatim}
+        (* JSON literal *)
+        JSON     = Object | Array ;
+        Object   = "{" [ Members ] "}" ;
+        Members  = Pair { "," Pair } ;
+        Pair     = Exp ":" Exp ;
+        Array    = "[" [ ExpList ] "]" ;
+    \end{minted}
 \end{center}
+
+\subsection{Takeaways}
+
+\begin{enumerate}
+    \item Operator precedence is directly encoded into the grammar in 6 different precedence levels.
+    \item Both boolean and arithmetic operators share the same expressions. The interpreter will automatically cast the right hand side of an expression to the correct type if possible.
+    \item The grammar supports JSON literals as well as simple JSONPath accessors in both assignment and retrieval.
+\end{enumerate}
 
 \section{Semantics}
 
@@ -156,9 +167,12 @@ Statements can be one of the following:
     \begin{enumerate}
         \item An assignment. Only one assignment operator is supported: `='.
         \item A function call.
+        \item A HTTP method call.
         \item The break keyword.
+        \item Test an expression for a truthy value. Useful in testing.
         \item A `while' loop. The condition of which is an expression. This is explained more in the \hyperref[sec:expressions]{`Expressions'} subsection.
         \item A `for' loop. Supports either the ``traditional" C-style format or the iterator style format. The iterator style `for' loop has an optional additional iterator assignment for key-value pair iteration or index-value iteration.
+        \item The batch statement which will execute HTTP method calls nested within it in parallel.
         \item A function definition.
         \item An `if-elif-else' block.
         \item A `NOP'. Defined by a statement followed by a singular semi-colon.
@@ -167,13 +181,13 @@ Statements can be one of the following:
 
 \subsection{Variables and values}
 
-All values are stored internally as JSON parsable strings. This means that the supported ``data types" are strings, floats, integers, arrays, objects, `true'/`false' and `null'. Some other semantics:
+The possible value types are strings, floats, integers, arrays, objects, `true'/`false' and `null'. This matches the types available in JSON. In fact the type of each value will be determined by using the Golang JSON parser on the string representation of the value. Some other semantics:
 
 \begin{center}
     \begin{itemize} 
         \item Variables can be modified using `JSON path'.
         \item Variable assignment will carry out a \textbf{deep copy}.
-        \item \textbf{Variables are always passed by reference}{Variables are always passed by reference} and expressions are passed by value.
+        \item \textbf{Variables are always passed by reference} and expressions are passed by value.
         \item \textbf{Variables are declared and defined} when a new \textbf{root identifier} is used in a JSONPath assignment that \textbf{doesn't exist} in the \textbf{current scope}.
         \item \textbf{Variables are set} when the root identifier \textbf{exists} in the \textbf{current scope}.
         \item \textbf{Variables are filled sparsely} when a \textbf{JSONPath accessing a non-existent sublevel} of the JSON is assigned to. For instance:
@@ -192,8 +206,7 @@ All values are stored internally as JSON parsable strings. This means that the s
             }
             */
         \end{verbatim}
-        \item The resulting values of boolean operators are converted to the integers `0' or `1' when they are a part of a larger arithmetic expression.
-        \item JSON literals can be directly assigned to variables.
+        \item As mentioned earlier, right hand values of operations are cast to the appropriate type if they can be. 
     \end{itemize}
 \end{center}
 
