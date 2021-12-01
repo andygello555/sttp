@@ -1,0 +1,484 @@
+\section{Associativity}
+
+Formally, a binary operation $\star$, is associative if the \textbf{associative property} will hold for all $x$, $y$, and $z$.
+
+\begin{figure}[H]
+    \begin{equation}
+        (x \star y) \star z = x \star (y \star z)
+        \nonumber
+    \end{equation}
+    \caption{\label{fig:4.1}The associative property}
+\end{figure}
+
+Informally the associative property says that any given expression which uses solely associative binary operators can have any number of parentheses within it. The result will not be any different if all parentheses were removed/rearranged. Examples of associative binary operations include:
+
+\begin{enumerate}
+    \item String concatentation
+    \item Addition of complex and real numbers
+    \item Multiplication of complex and real numbers
+\end{enumerate}
+
+Non-associative operations are ones that do not hold the associative property. Such as...
+
+\begin{enumerate}
+    \item Subtraction
+    \item Division
+    \item Exponentiation
+\end{enumerate}
+
+Conventionally, we have derived notions to evaluate expressions containing non-associative operations without parentheses. This is done by deciding on an order to carry out said operations. There two notational conventions for this:
+
+\begin{itemize}
+    \item \textbf{Left-associative} operators are conventionally evaluated from left to right. This is the case for \textbf{subtraction} and \textbf{division}.
+    \begin{equation}
+        \begin{split}
+            x - y - z &= (x - y) - z\\
+            x / y / z &= (x / y) / z
+        \end{split}
+        \nonumber
+    \end{equation}
+    \item \textbf{Right-associative} operators are conventionally evaluated from right to left. This is the case for \textbf{exponentiation}.
+    \begin{equation}
+        x^{y^z} = x^{(y^z)}
+        \nonumber
+    \end{equation}
+\end{itemize}
+
+\subsection{Grammars}
+
+In programming language grammars expressions and operators contained within these expressions tend to follow the formal rules of associativity as defined in mathematics. This means programming language designers need to take into account these rules whilst designing grammars in order to not alienate users.
+
+To `encode' associativity within a grammar you need to make sure that the production rules for the operators are left or right recursive depending on whether the operator is left or right associative. For example, the grammar below defines an exponent operator (\verb|**|) with right associativity and an addition operator (\verb|+|) with left associativity.
+
+\textit{Note that the grammar also gives the exponent operator higher precedence than the addition operator. This will be explained later on in the \hyperref[sec:precedence]{precedence section}}
+
+\begin{figure}[H]
+    \begin{center}
+        \begin{verbatim}
+                        E ::= T | E "+" T
+                        T ::= F | F "**" T
+                        F ::= Num | "(" E ")"
+        \end{verbatim}
+    \end{center}
+    \vspace{-1.5em}
+    \caption{\label{fig:4.2}Simple example showing how to encode left and right associativity within a grammar}
+\end{figure}
+
+A production rule in the form $\gamma \rightarrow \alpha \gamma$ means that the non-terminal $\gamma$ is right recursive, whereas a production rule in the form $\gamma \rightarrow \gamma \alpha$ means that the non-terminal $\gamma$ is left recursive. In practice, this means that the either the left or the right hand rule will be expanded and evaluated which encodes the precedence of the operator.\textsuperscript{\cite{abrahamson_2021}\cite{lam_2019}}
+
+\subsection{Coping with parser generators}
+
+\subsubsection{Parser generators which do not accept grammars with left recursion}
+
+The grammar given in \hyperref[fig:4.2]{fig. 4.2} contains left recursion so a generated LL(1) or recursive descent parser will not terminate. This means that recursive descent and LL(1) parser cannot be generated if you wanted to parse a language with left associative operators.
+
+\begin{center}
+    \textbf{How do you get around this?}
+\end{center}
+
+One of the easiest ways to encode left associative operators within a grammar is to use \textbf{iteration rather than recursion}. Many parser generators, such as ANTLR, support the `\verb|*|' or `\verb|{ ... }|' iteration/repetition operators (supported by EBNF) to define a string of terminals/non-terminals that can be repeated zero or many times. Rewriting the grammar shown in \hyperref[fig:4.2]{fig. 4.2} using the `\verb|{ ... }|' EBNF operator to remove left recursion would result in the following grammar.\textsuperscript{\cite{pattis_2021}}
+
+\begin{figure}[H]
+    \begin{center}
+        \begin{verbatim}
+                        E ::= T { "+" T }
+                        T ::= F [ "**" T ]
+                        F ::= Num | "(" E ")"
+        \end{verbatim}
+    \end{center}
+    \vspace{-1.5em}
+    \caption{\label{fig:4.3}The grammar in \hyperref[fig:4.2]{fig. 4.2} rewritten with the EBNF to remove left recursion}
+\end{figure}
+
+\pagebreak
+
+An LL(1) or recursive descent parser generator might produce the following code for the non-terminal \verb|E|.
+
+\begin{verbatim}
+    function E() {
+        T();
+        while (x == "+") {
+            x == gnt();
+            T();
+        }
+    }
+\end{verbatim}
+
+\textit{It must be noted that in the example the following assumptions are made...}
+
+\begin{itemize}
+    \item \textit{Error handling has been omitted}
+    \item \verb|x| \textit{is a global variable containing the current token}
+    \item \verb|gnt()| \textit{consumes and returns the next token}
+\end{itemize}
+
+In terms of the parse tree this will create a child for each repetition that is found in the input string. For example, for the given input string: \verb|1 + 2 + 3 ** 4|, the following derivation tree is created.\textsuperscript{\cite{scott_johnstone_1998}}
+
+\begin{center}
+    \begin{forest}
+        for tree={
+            if n children=0{
+                font=\itshape,
+            }{},
+            }
+            [$E$
+                [$T$
+                    [$F$
+                        [Num: $1$]
+                    ]
+                ]
+                [$+$]
+                [$T$
+                    [$F$
+                        [Num: $2$]
+                    ]
+                ]
+                [$+$]
+                [$T$
+                    [$F$
+                        [Num: $3$]
+                    ]
+                    [{$**$}]
+                    [$T$
+                        [$F$
+                            [Num: $4$]
+                        ]
+                    ]
+                ]
+            ]
+    \end{forest}
+\end{center}
+
+As you can see this results in a fairly `unintuitive' parse tree that can benefit from some restructuring. This can be done on the fly in some parser generators as explained in the next section.
+
+\subsubsection{Modifying the parse tree on the fly}
+
+Some parser generators such as rdp allow you to modify the parse tree on the fly using what are called \textbf{promotion operators}\textsuperscript{\cite{johnstone_scott_1997}}. These operators allow you to promote any terminal/non-terminal to above, below or under its parent node in the parse tree. This allows you to construct parts of the tree in a somewhat bottom-up manner.
+
+\begin{figure}[H]
+    \begin{center}
+        \begin{verbatim}
+                    E ::= T^^ { "+"^^^ T }
+                    T ::= F [ "**"^^ T ]:^^
+                    F ::= Num^^ | "("^ E^^ ")"^
+        \end{verbatim}
+    \end{center}
+    \vspace{-1.5em}
+    \caption{\label{fig:4.4}The grammar in \hyperref[fig:4.3]{fig. 4.3} rewritten to use promotion operators}
+\end{figure}
+
+\begin{center}
+    \textbf{Here are the semantics behind the promotion operators:}
+    \begin{itemize}
+        \item \verb|^|: \textbf{Promote underneath parent} - the node is promoted to the parent and is also overwritten by its parent node. This effectively discards the promoted node.
+        \item \verb|^^|: \textbf{Promote on top of parent} - the node is promoted to the parent node and overwrites the parents node.
+        \item \verb|^^^|: \textbf{Promote above parent} - the node is promoted to the parent of the parent node and overwrites it.
+    \end{itemize}
+\end{center}
+
+Looking back at the grammar there are a couple of takeaways before discussing an input string.
+
+\begin{enumerate}
+    \item The \textbf{parentheses are obfuscated using the promote underneath operator} (\verb|^|). This is because semantically, parentheses are not required for the evaluation of a arithmetic expression.
+    \item \verb|:^^| promotes $\epsilon$ to on top of its parent.
+\end{enumerate}
+
+
+\begin{center}
+    Here is the parse tree for the input string: \verb|1 + 2 + 3 + (4 + 5 ** 6)|.
+    \begin{forest}
+        for tree={
+            if n children=0{
+                font=\itshape,
+            }{},
+            }
+            [$+$
+                [$+$
+                    [$+$
+                        [Num: $1$]
+                        [Num: $2$]
+                    ]
+                    [Num: $3$]
+                ]
+                [$+$
+                    [Num: $4$]
+                    [$**$
+                        [Num: $5$]
+                        [Num: $6$]
+                    ]
+                ]
+            ]
+    \end{forest}
+\end{center}
+
+As you can see this updated grammar produces a more conventional arithmetic tree which can be traversed easily in pre, post and infix orders, depending on requirement.
+
+\section{Precedence}
+\label{sec:precedence}
+
+Operator precedence determines the order in which operators are applied in an expression. In both computer programming and mathematics it is important to give operators precedence in order to remove ambiguity when evaluating expressions. The order of operations in mathematics and many computer sciences is as defined below:
+
+\begin{center}
+    \begin{enumerate}
+        \item \textbf{Exponentiation} and \textbf{roots}
+        \item \textbf{Multiplication} and \textbf{division}
+        \item \textbf{Addition} and \textbf{subtraction}
+    \end{enumerate}
+\end{center}
+
+In programming languages we have to take into account many more operators than usual, such as the bitwise operators and comparison operators. Usually this is solved by defining multiple precedence levels where multiple operators can share a level. On the other hand, this problem can also be solved by removing operator precedence altogether. This is evident in programming languages such as APL and Smalltalk, which just evaluate expressions `as they come in' from left to right or vice versa.\textsuperscript{\cite{winkle_2021}}
+
+\subsection{How do we encode precedence?}
+
+Precedence is encoded into programming language compilers/interpreters in one of two ways:
+
+\begin{itemize}
+    \item \textbf{Within the grammar itself}: using nested production rules where each level of precedence is split up into multiple non-terminals. This produces a parse tree where precedence is naturally structured within it.
+    \item \textbf{After parsing}: it could also be encoded after the parse tree is created by traversing it in a way which encodes the precedence of operators naturally.
+\end{itemize}
+
+These two schools of thought each have their pros and cons. Encoding the precedence within the grammar leads to verbose yet complete grammar specifications - \textit{what you see is what you get}. Whereas, encoding the grammar after the fact leads to a cleaner and more readable grammar, but might lead to confusion into how the parse tree is constructed and traversed.
+
+\subsubsection{Within the grammar itself}
+
+The following grammar shows how one might encode the precedence for multiplication and addition. Where multiplication has the highest precedence and addition has the lowest precedence.
+
+\begin{figure}[H]
+    \begin{center}
+        \begin{verbatim}            
+                        E ::= T | E + T
+                        T ::= F | T * F
+                        F ::= Num | ( E )
+        \end{verbatim}
+    \end{center}
+    \vspace{-1.5em}
+    \caption{\label{fig:4.5}Simple example showing how to encode precedence within a grammar}
+\end{figure}
+
+\begin{center}
+    \textit{The grammar defines three non-terminals for each level of precedence.}
+    \begin{itemize}
+        \item $E$ derives any expression and thus defines the \textbf{lowest precedence within the language}. I.e. $E$ nodes within the parse tree will be the parent of all expressions and will exist higher up in the tree.
+        \item $T$ derives only multiplication and division expressions. In the parse tree, $T$ nodes will always exist underneath an $E$ node or a $T$ node. This that $T$ has the \textbf{second highest precedence} in our language.
+        \item $F$ derives either numbers or another sub-expression (within parentheses). Which means that numbers and parenthesised expressions will have the \textbf{highest precedence} in our language.\textsuperscript{\cite{abrahamson_2021}\cite{norvell_1999}}
+    \end{itemize}
+\end{center}
+
+\begin{center}
+    Given the input string: \verb|1 + 2 * (3 + 4) + 5|, the following derivation tree can be produced:\\
+    \vspace{0.5em}
+    \begin{forest}
+        for tree={
+            if n children=0{
+                font=\itshape,
+            }{},
+            }
+            [$E$
+                [$E$
+                    [$E$
+                        [$T$
+                            [$F$
+                                [Num: $1$]
+                            ]
+                        ]
+                    ]
+                    [$+$]
+                    [$T$
+                        [$T$
+                            [$F$
+                                [Num: $2$]
+                            ]
+                        ]
+                        [$*$]
+                        [$F$
+                            [$($]
+                            [$E$
+                                [$E$
+                                    [$T$
+                                        [$F$
+                                            [Num: $3$]
+                                        ]
+                                    ]
+                                ]
+                                [$+$]
+                                [$T$
+                                    [$F$
+                                        [Num: $4$]
+                                    ]
+                                ]
+                            ]
+                            [$)$]
+                        ]
+                    ]
+                ]
+                [$+$]
+                [$T$
+                    [$F$
+                        [Num: $5$]
+                    ]
+                ]
+            ]
+    \end{forest}
+\end{center}
+
+If the derivation tree was navigated depth-first left to right: then the first operand of the first addition is evaluated first, then the first operand of the multiply, then the sub-expression, and finally the second operand of the second addition. Thus, both associativity and precedence are encoded into our derivation tree.\textsuperscript{\cite{lam_2019}}
+
+\subsubsection{After parsing}
+
+This technique is evident in programming languages where there can be user defined operators with their own precedence, such as Haskell and Prolog. One way to do this might be to have a non-terminal containing all the operator tokens and then defining a simple expression non-terminal. Then a precedence climbing algorithm such as Shunting-Yard, Pratt parsing or the regular precedence climbing algorithm\textsuperscript{\cite{operator-precedence-parser-wikipedia}} can be applied whilst traversing the produced parse tree to convert the expression to RPN or evaluate the expression on the fly.
+
+To carry out this technique you need to define an operator precedence and associativity lookup table along with your grammar. This is because, of course, precedence and associativity are not available within the grammar itself.
+
+\begin{figure}[H]
+    \begin{center}
+        \begin{verbatim}
+            exp   ::= Num | exp binop exp | "(" exp ")"
+            binop ::= "+" | "-" | "*" | "/" | "^"
+        \end{verbatim}
+        \vspace{1em}
+        \begin{tabular}{| c | c | c |}
+            \hline
+            Operator & Precedence & Associativity\\
+            \hline
+            \verb|^| & 4 & Right\\
+            \hline
+            \verb|*| & 3 & Left\\
+            \hline
+            \verb|/| & 3 & Left\\
+            \hline
+            \verb|+| & 2 & Left\\
+            \hline
+            \verb|-| & 2 & Left\\
+            \hline
+        \end{tabular}
+    \end{center}
+    \vspace{-1em}
+    \caption{\label{fig:4.6}Expression grammar and operator precedence and associativity table}
+\end{figure}
+
+\textbf{As all these precedence climbing algorithms are fairly well documented and simple to understand, pseudocode and explanation will be skipped. Here I will be using Shunting-Yard but the data-structures, code structure, and parenthesis handling are all fairly similar from algorithm to algorithm.\textsuperscript{\cite{chu_2016}\cite{chu_2017}}}
+
+\begin{center}
+    Given the input string: \verb|3 + 4 * 2 / ( 1 - 5 ) ^ 2 ^ 3|, the following derivation tree can be produced. \textit{Note: due to the ambiguity of the grammar multiple derivations may be produced from this expression. This will not affect precedence climbing. Here we are producing the left-most derivation.}\\
+    \vspace{0.5em}
+    \begin{forest}
+        for tree={
+            if n children=0{
+                font=\itshape,
+            }{},
+            }
+            [$exp$
+                [$exp$
+                    [$exp$
+                        [$exp$
+                            [$exp$
+                                [$exp$
+                                    [Num: $3$]
+                                ]
+                                [$binop$
+                                    [$+$]
+                                ]
+                                [$exp$
+                                    [Num: $4$]
+                                ]
+                            ]
+                            [$binop$
+                                [$*$]
+                            ]
+                            [$exp$
+                                [Num: $2$]
+                            ]
+                        ]
+                        [$binop$
+                            [$/$]
+                        ]
+                        [$exp$
+                            [$($]
+                            [$exp$
+                                [$exp$
+                                    [Num: $1$]
+                                ]
+                                [$binop$
+                                    [$-$]
+                                ]
+                                [$exp$
+                                    [Num: $5$]
+                                ]
+                            ]
+                            [$)$]
+                        ]
+                    ]
+                    [$binop$
+                        [$\hat{}$]
+                    ]
+                    [$exp$
+                        [Num: $2$]
+                    ]
+                ]
+                [$binop$
+                    [$\hat{}$]
+                ]
+                [$exp$
+                    [Num: $3$]
+                ]
+            ]
+    \end{forest}
+\end{center}
+
+This derivation tree can then be traversed in-order to produce the infix expression. This expression can then be input into the Shunting-Yard algorithm in order to parse the operator precedence of an expression.
+
+It's important to note that in the case of the grammar shown in \hyperref[fig:4.6]{fig. 4.6}, parsing the expression is fairly redundant as the accepted language is already an infix expression. However, when the accepted language includes other constructs along with expressions, such as how a conventional programming language might, this process makes a lot more sense. Below is the execution of the Shunting-Yard algorithm for the input: \verb|7 + 4 * 2 / ( 3 - 5 ) ^ 2 ^ 3|.\textsuperscript{\cite{shunting-yard}}
+
+\begin{figure}[H]
+    \begin{center}
+        \begin{tabular}{| m{1.2cm} | m{3.1cm} | m{3.6cm} | m{2.3cm} | m{3.5cm} |}
+            \hline
+            \textbf{Token} & \textbf{Action} & \textbf{Output} & \textbf{Operators} & \textbf{Note}\\
+            \hline
+            $7$ & Add to output & \verb|7| & &\\
+            \hline
+            $+$ & Push to stack & \verb|7| & \verb|+| &\\
+            \hline
+            $4$ & Add to output & \verb|7 4| & \verb|+| &\\
+            \hline
+            $*$ & Push to stack & \verb|7 4| & \verb|* +| & * has higher precedence than +\\
+            \hline
+            $2$ & Add to output & \verb|7 4 2| & \verb|*| + &\\
+            \hline
+            $/$ & Pop stack to output & \verb|7 4 2| * & \verb|+| & / and * have same precedence\\
+            \hline
+            $/$ & Push to stack & \verb|7 4 2| & \verb|/ +| & / has higher precedence than +\\
+            \hline
+            $($ & Push to stack & \verb|7 4 2 *| & \verb|( / +| &\\
+            \hline
+            $3$ & Add to output & \verb|7 4 2 * 3| & \verb|( / +| &\\
+            \hline
+            $-$ & Push to stack & \verb|7 4 2 * 3| & \verb|- ( / +| &\\
+            \hline
+            $5$ & Add to output & \verb|7 4 2 * 3 5| & \verb|- ( / +| &\\
+            \hline
+            $)$ & Pop to output & \verb|7 4 2 * 3 5 -| & \verb|( / +| & Repeated until ( found\\
+            \hline
+            $)$ & Pop stack & \verb|7 4 2 * 3 5 -| & \verb|/ +| & Discard matching parenthesis\\
+            \hline
+            $\hat{}$ & Push to stack & \verb|7 4 2 * 3 5 -| & \verb|^ / +| & \verb|^| has higher precedence than \verb|/|\\
+            \hline
+            $2$ & Add to output & \verb|7 4 2 * 3 5 - 2| & \verb|^ / +| &\\
+            \hline
+            $\hat{}$ & Push to stack & \verb|7 4 2 * 3 5 - 2| & \verb|^ ^ / +| & \verb|^| is evaluated right-to-left\\
+            \hline
+            $3$ & Add to output & \verb|7 4 2 * 3 5 - 2 3| & \verb|^ ^ / +| &\\
+            \hline
+            \verb|end| & Pop stack to output & \begin{verbatim}
+7 4 2 * 3 5 - 2 3
+^ ^ / +
+            \end{verbatim} & & \\
+            \hline
+        \end{tabular}
+    \cprotect\caption{\label{fig:4.7}Precedence climbing algorithm execution for the input: \verb|7 + 4 * 2 / ( 3 - 5 ) ^ 2 ^ 3|}
+    \end{center}
+\end{figure}
+
+At this point the expression can be evaluated without the ambiguity of precedence or associativity. The parse tree below the relevant \verb|exp| node could then be replaced by this new tree, and evaluated along with the entire tree.
+
+As mentioned earlier each precedence climbing algorithm can be run so that it evaluates the expression on the fly whilst walking the parse tree. This is more computationally efficient than the method described above, but harder to show in execution succinctly.

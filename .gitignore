@@ -1,5 +1,8 @@
+.DS_Store
+
 # We ignore any generated PDF
 *.pdf
+!logo.pdf
 
 .idea/
 .vscode/
@@ -8,6 +11,7 @@
 .smommit/
 
 *.png
+!**/assets/**/*.png
 *.dot
 
 *.cpt
@@ -21,3 +25,5 @@
 *.bcf
 *.blg
 *.run.xml
+*.toc
+_minted*/
