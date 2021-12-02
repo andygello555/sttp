@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/errors"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/data"
+	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/errors"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/parser"
 	"strings"
 )
@@ -56,11 +56,23 @@ func (cs *CallStack) Call(caller *parser.FunctionCall, current *parser.FunctionD
 		return errors.StackOverflow.Errorf(MaxStackFrames)
 	}
 
+	heap := make(data.Heap)
 	*cs = append(*cs, &Frame{
 		Caller:  caller,
 		Current: current,
+		Heap: &heap,
+		Return: &data.Symbol{
+			Value: nil,
+			Type:  data.NoType,
+			Scope: 0,
+		},
 	})
 	return nil
+}
+
+// Current returns the currently "running" Frame and doesn't pop it.
+func (cs *CallStack) Current() parser.Frame {
+	return (*cs)[len(*cs) - 1]
 }
 
 // Return pops off the topmost stack Frame and returns it. Also returns an error if there is a stack underflow.
@@ -71,7 +83,7 @@ func (cs *CallStack) Return() (err error, frame parser.Frame) {
 
 	// Pop off the topmost frame
 	frame = (*cs)[len(*cs) - 1]
-	*cs = (*cs)[:len(*cs)]
+	*cs = (*cs)[:len(*cs) - 1]
 	return nil, frame
 }
 
