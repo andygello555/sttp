@@ -21,6 +21,7 @@ type VM interface {
 type CallStack interface {
 	Call(caller *FunctionCall, current *FunctionDefinition) error
 	Return() (err error, frame Frame)
+	Current() Frame
 }
 
 // Frame is an entry on the call stack.

@@ -20,6 +20,8 @@ const (
 	CannotFindLength        RuntimeError = "cannot find length of value \"%v\""
 	InvalidOperation        RuntimeError = "cannot carry out operation \"%s\" for %s and %s"
 	StringManipulationError RuntimeError = "error whilst manipulating \"%s\": %s"
+	Exception               RuntimeError = "exception: %s, was thrown on %s"
+	JSONPathError           RuntimeError = "cannot access %s with %s"
 )
 
 func (re RuntimeError) Errorf(values... interface{}) error { return errorf(string(re), values...) }
