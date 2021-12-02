@@ -13,7 +13,7 @@ Formally, a binary operation $\star$, is associative if the \textbf{associative 
 Informally the associative property says that any given expression which uses solely associative binary operators can have any number of parentheses within it. The result will not be any different if all parentheses were removed/rearranged. Examples of associative binary operations include:
 
 \begin{enumerate}
-    \item String concatentation
+    \item String concatenation
     \item Addition of complex and real numbers
     \item Multiplication of complex and real numbers
 \end{enumerate}
@@ -26,7 +26,7 @@ Non-associative operations are ones that do not hold the associative property. S
     \item Exponentiation
 \end{enumerate}
 
-Conventionally, we have derived notions to evaluate expressions containing non-associative operations without parentheses. This is done by deciding on an order to carry out said operations. There two notational conventions for this:
+Conventionally, we have derived notions to evaluate expressions containing non-associative operations without parentheses. This is done by deciding on an order to carry out said operations. There are two notational conventions for this:
 
 \begin{itemize}
     \item \textbf{Left-associative} operators are conventionally evaluated from left to right. This is the case for \textbf{subtraction} and \textbf{division}.
@@ -64,19 +64,19 @@ To `encode' associativity within a grammar you need to make sure that the produc
     \caption{\label{fig:4.2}Simple example showing how to encode left and right associativity within a grammar}
 \end{figure}
 
-A production rule in the form $\gamma \rightarrow \alpha \gamma$ means that the non-terminal $\gamma$ is right recursive, whereas a production rule in the form $\gamma \rightarrow \gamma \alpha$ means that the non-terminal $\gamma$ is left recursive. In practice, this means that the either the left or the right hand rule will be expanded and evaluated which encodes the precedence of the operator.\textsuperscript{\cite{abrahamson_2021}\cite{lam_2019}}
+A production rule in the form $\gamma \rightarrow \alpha \gamma$ means that the non-terminal $\gamma$ is right recursive, whereas a production rule in the form $\gamma \rightarrow \gamma \alpha$ means that the non-terminal $\gamma$ is left recursive. In practice, this means that either the left or the right-hand rule will be expanded and evaluated which encodes the precedence of the operator.\textsuperscript{\cite{abrahamson_2021}\cite{lam_2019}}
 
 \subsection{Coping with parser generators}
 
-\subsubsection{Parser generators which do not accept grammars with left recursion}
+\subsubsection{That do not accept grammars with left recursion}
 
-The grammar given in \hyperref[fig:4.2]{fig. 4.2} contains left recursion so a generated LL(1) or recursive descent parser will not terminate. This means that recursive descent and LL(1) parser cannot be generated if you wanted to parse a language with left associative operators.
+The grammar given in \hyperref[fig:4.2]{fig. 4.2} contains left recursion so a generated LL(1) or recursive descent parser will not terminate. This means that recursive descent and LL(1) parser cannot be generated if you wanted to parse a language with left-associative operators.
 
 \begin{center}
     \textbf{How do you get around this?}
 \end{center}
 
-One of the easiest ways to encode left associative operators within a grammar is to use \textbf{iteration rather than recursion}. Many parser generators, such as ANTLR, support the `\verb|*|' or `\verb|{ ... }|' iteration/repetition operators (supported by EBNF) to define a string of terminals/non-terminals that can be repeated zero or many times. Rewriting the grammar shown in \hyperref[fig:4.2]{fig. 4.2} using the `\verb|{ ... }|' EBNF operator to remove left recursion would result in the following grammar.\textsuperscript{\cite{pattis_2021}}
+One of the easiest ways to encode left-associative operators within a grammar is to use \textbf{iteration rather than recursion}. Many parser generators, such as ANTLR, support the `\verb|*|' or `\verb|{ ... }|' iteration/repetition operators (supported by EBNF) to define a string of terminals/non-terminals that can be repeated zero or many times. Rewriting the grammar shown in \hyperref[fig:4.2]{fig. 4.2} using the `\verb|{ ... }|' EBNF operator to remove left recursion would result in the following grammar.\textsuperscript{\cite{pattis_2021}}
 
 \begin{figure}[H]
     \begin{center}
@@ -171,7 +171,7 @@ Some parser generators such as rdp allow you to modify the parse tree on the fly
     \textbf{Here are the semantics behind the promotion operators:}
     \begin{itemize}
         \item \verb|^|: \textbf{Promote underneath parent} - the node is promoted to the parent and is also overwritten by its parent node. This effectively discards the promoted node.
-        \item \verb|^^|: \textbf{Promote on top of parent} - the node is promoted to the parent node and overwrites the parents node.
+        \item \verb|^^|: \textbf{Promote on top of parent} - the node is promoted to the parent node and overwrites the parent's node.
         \item \verb|^^^|: \textbf{Promote above parent} - the node is promoted to the parent of the parent node and overwrites it.
     \end{itemize}
 \end{center}
@@ -179,7 +179,7 @@ Some parser generators such as rdp allow you to modify the parse tree on the fly
 Looking back at the grammar there are a couple of takeaways before discussing an input string.
 
 \begin{enumerate}
-    \item The \textbf{parentheses are obfuscated using the promote underneath operator} (\verb|^|). This is because semantically, parentheses are not required for the evaluation of a arithmetic expression.
+    \item The \textbf{parentheses are obfuscated using the promote underneath operator} (\verb|^|). This is because semantically, parentheses are not required for the evaluation of arithmetic expressions.
     \item \verb|:^^| promotes $\epsilon$ to on top of its parent.
 \end{enumerate}
 
@@ -211,12 +211,12 @@ Looking back at the grammar there are a couple of takeaways before discussing an
     \end{forest}
 \end{center}
 
-As you can see this updated grammar produces a more conventional arithmetic tree which can be traversed easily in pre, post and infix orders, depending on requirement.
+As you can see this updated grammar produces a more conventional arithmetic tree which can be traversed easily in pre, post and infix orders, depending on the requirement.
 
 \section{Precedence}
 \label{sec:precedence}
 
-Operator precedence determines the order in which operators are applied in an expression. In both computer programming and mathematics it is important to give operators precedence in order to remove ambiguity when evaluating expressions. The order of operations in mathematics and many computer sciences is as defined below:
+Operator precedence determines the order in which operators are applied in an expression. In both computer programming and mathematics, it is important to give operators precedence in order to remove ambiguity when evaluating expressions. The order of operations in mathematics and many computer sciences is as defined below:
 
 \begin{center}
     \begin{enumerate}
@@ -226,7 +226,7 @@ Operator precedence determines the order in which operators are applied in an ex
     \end{enumerate}
 \end{center}
 
-In programming languages we have to take into account many more operators than usual, such as the bitwise operators and comparison operators. Usually this is solved by defining multiple precedence levels where multiple operators can share a level. On the other hand, this problem can also be solved by removing operator precedence altogether. This is evident in programming languages such as APL and Smalltalk, which just evaluate expressions `as they come in' from left to right or vice versa.\textsuperscript{\cite{winkle_2021}}
+In programming languages we have to take into account many more operators than usual, such as the bitwise operators and comparison operators. Usually, this is solved by defining multiple precedence levels where multiple operators can share a level. On the other hand, this problem can also be solved by removing operator precedence altogether. This is evident in programming languages such as APL and Smalltalk, which just evaluate expressions `as they come in' from left to right or vice versa.\textsuperscript{\cite{winkle_2021}}
 
 \subsection{How do we encode precedence?}
 
@@ -234,7 +234,7 @@ Precedence is encoded into programming language compilers/interpreters in one of
 
 \begin{itemize}
     \item \textbf{Within the grammar itself}: using nested production rules where each level of precedence is split up into multiple non-terminals. This produces a parse tree where precedence is naturally structured within it.
-    \item \textbf{After parsing}: it could also be encoded after the parse tree is created by traversing it in a way which encodes the precedence of operators naturally.
+    \item \textbf{After parsing}: it could also be encoded after the parse tree is created by traversing it in a way that encodes the precedence of operators naturally.
 \end{itemize}
 
 These two schools of thought each have their pros and cons. Encoding the precedence within the grammar leads to verbose yet complete grammar specifications - \textit{what you see is what you get}. Whereas, encoding the grammar after the fact leads to a cleaner and more readable grammar, but might lead to confusion into how the parse tree is constructed and traversed.
@@ -259,8 +259,8 @@ The following grammar shows how one might encode the precedence for multiplicati
     \textit{The grammar defines three non-terminals for each level of precedence.}
     \begin{itemize}
         \item $E$ derives any expression and thus defines the \textbf{lowest precedence within the language}. I.e. $E$ nodes within the parse tree will be the parent of all expressions and will exist higher up in the tree.
-        \item $T$ derives only multiplication and division expressions. In the parse tree, $T$ nodes will always exist underneath an $E$ node or a $T$ node. This that $T$ has the \textbf{second highest precedence} in our language.
-        \item $F$ derives either numbers or another sub-expression (within parentheses). Which means that numbers and parenthesised expressions will have the \textbf{highest precedence} in our language.\textsuperscript{\cite{abrahamson_2021}\cite{norvell_1999}}
+        \item $T$ derives only multiplication and division expressions. In the parse tree, $T$ nodes will always exist underneath an $E$ node or a $T$ node. This that $T$ has the \textbf{second-highest precedence} in our language.
+        \item $F$ derives either numbers or another sub-expression (within parentheses). This means that numbers and parenthesised expressions will have the \textbf{highest precedence} in our language.\textsuperscript{\cite{abrahamson_2021}\cite{norvell_1999}}
     \end{itemize}
 \end{center}
 
@@ -325,7 +325,7 @@ If the derivation tree was navigated depth-first left to right: then the first o
 
 \subsubsection{After parsing}
 
-This technique is evident in programming languages where there can be user defined operators with their own precedence, such as Haskell and Prolog. One way to do this might be to have a non-terminal containing all the operator tokens and then defining a simple expression non-terminal. Then a precedence climbing algorithm such as Shunting-Yard, Pratt parsing or the regular precedence climbing algorithm\textsuperscript{\cite{operator-precedence-parser-wikipedia}} can be applied whilst traversing the produced parse tree to convert the expression to RPN or evaluate the expression on the fly.
+This technique is evident in programming languages where there can be user-defined operators with their own precedences, such as Haskell and Prolog. One way to do this might be to have a non-terminal containing all the operator tokens and then defining a simple expression non-terminal. Then a precedence climbing algorithm such as Shunting-Yard, Pratt parsing or the regular precedence climbing algorithm\textsuperscript{\cite{operator-precedence-parser-wikipedia}} can be applied whilst traversing the produced parse tree to convert the expression to RPN or evaluate the expression on the fly.
 
 To carry out this technique you need to define an operator precedence and associativity lookup table along with your grammar. This is because, of course, precedence and associativity are not available within the grammar itself.
 
@@ -356,7 +356,7 @@ To carry out this technique you need to define an operator precedence and associ
     \caption{\label{fig:4.6}Expression grammar and operator precedence and associativity table}
 \end{figure}
 
-\textbf{As all these precedence climbing algorithms are fairly well documented and simple to understand, pseudocode and explanation will be skipped. Here I will be using Shunting-Yard but the data-structures, code structure, and parenthesis handling are all fairly similar from algorithm to algorithm.\textsuperscript{\cite{chu_2016}\cite{chu_2017}}}
+\textbf{As all these precedence climbing algorithms are fairly well documented and simple to understand, pseudocode and explanation will be skipped. Here I will be using Shunting-Yard but the data structures, code structure, and parenthesis handling are all fairly similar from algorithm to algorithm.\textsuperscript{\cite{chu_2016}\cite{chu_2017}}}
 
 \begin{center}
     Given the input string: \verb|3 + 4 * 2 / ( 1 - 5 ) ^ 2 ^ 3|, the following derivation tree can be produced. \textit{Note: due to the ambiguity of the grammar multiple derivations may be produced from this expression. This will not affect precedence climbing. Here we are producing the left-most derivation.}\\

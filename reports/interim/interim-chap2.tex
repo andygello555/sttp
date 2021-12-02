@@ -1,9 +1,9 @@
-\section{Four Function Calculator}
+\section{Four-Function Calculator}
 \label{sec:four-func-calculator}
 
 In order to get used to the Go and the participle parser generator, I created a simple four function calculator interpreter. The interpreter supports addition, subtraction, multiplication, division and variable assignment.
 
-The interpreter was straightforward in implementation. Participle allows you to embed your language grammar within the nodes that your AST will be constructed from via Go \verb|struct| field annotations. This makes your grammar and AST structure quite readable and easily modifiable. Using Go referral functions, you can then easily define evaluation functions for each node which effectively `walks' the produced AST. For instance here is the AST node and evaluation function for a statement within the four function language.
+The interpreter was straightforward in implementation. Participle allows you to embed your language grammar within the nodes that your AST will be constructed from via Go \verb|struct| field annotations. This makes your grammar and AST structure quite readable and easily modifiable. Using Go referral functions, you can then easily define evaluation functions for each node that effectively `walks' the produced AST. For instance here is the AST node and evaluation function for a statement within the four function language.
 
 \begin{minted}{go}
 // Statement can either be an expression, variable assignment or variable clear.
@@ -25,7 +25,7 @@ type Statement struct {
 }
 
 // Each node implements the same Eval function signature.
-// This means each node implements an interface which defines
+// This means each node implements an interface that defines
 // such a signature.
 // The Memory type is a map containing the current values of each defined
 // variable and is passed to each Eval function.
@@ -43,7 +43,7 @@ func (s *Statement) Eval(ctx Memory) (float64, *Memory) {
 }
 \end{minted}
 
-The four function calculator can be run in an interactive line-by-line mode, as well as executing scripts directly. The following is an example script:
+The four-function calculator can be run in an interactive line-by-line mode, as well as executing scripts directly. The following is an example script:
 
 \begin{center}
     \begin{verbatim}
@@ -55,14 +55,14 @@ The four function calculator can be run in an interactive line-by-line mode, as 
     \end{verbatim}
 \end{center}
 
-See the README on instructions on how to run the four function calculator interpreter.
+See the README on instructions on how to run the four-function calculator interpreter.
 
 \section{Regex parser}
 \label{sec:regex-parser}
 
 After implementing the \hyperref[sec:four-func-calculator]{four function calculator interpreter} I was a week ahead of my project plan. At the start of October, I was covering content related to the construction of minimal DFA from regular expressions in CS3470. I found the algorithms involved in constructing these DFAs interesting, so I decided to write my own implementation of them.
 
-I wrote a grammar which accepts a language for simple regular expressions (concatentation, alternation, grouping, and Kleene Closure), which I then implemented within Go and participle. The produced parser constructs an AST which is then walked to construct an NFA using Thompson's construction. The subset construction is then applied to this NFA to produce a DFA. Finally, this DFA is run through the Dead State Minimisation algorithm to produce a minimal DFA. Each step of this construction produces a \href{https://graphviz.org/}{graphviz} dot file and a bitmap of the rendered graph.
+I wrote a grammar that accepts a language for simple regular expressions (concatenation, alternation, grouping, and Kleene Closure), which I then implemented within Go and participle. The produced parser constructs an AST which is then walked to construct an NFA using Thompson's construction. The subset construction is then applied to this NFA to produce a DFA. Finally, this DFA is run through the Dead State Minimisation algorithm to produce a minimal DFA. Each step of this construction produces a \href{https://graphviz.org/}{graphviz} dot file and a bitmap of the rendered graph.
 
 \begin{figure}[H]
     \centering
@@ -233,12 +233,12 @@ I wrote a grammar which accepts a language for simple regular expressions (conca
 
 This test program is now directly embedded within the \verb|sttp| source code. This is because it defines \verb|sttp|'s AST nodes and grammar. I thought my understanding of how to implement \verb|sttp| would benefit from beginning the grammar of \verb|sttp| before officially starting development.
 
-I began by creating a formal specification which was similar to the one outlined in the project specification section.
+I began by creating a formal specification that was similar to the one outlined in the project specification section.
 
 \section{Simple Web-API}
 \label{sec:simple-web-api}
 
-I decided whilst writing the project plan, that writing a simple web-API server would come in useful when testing \verb|sttp|. The web server is written using \href{https://nodejs.org/en/}{node.js} as it was well suited for this task and I have had some experience with it. I implemented a very simple echo-chamber web-API server which responds to each HTTP request with information about the incoming request. The following are some example requests and responses:
+I decided whilst writing the project plan, that writing a simple web-API server would come in useful when testing \verb|sttp|. The web server is written using \href{https://nodejs.org/en/}{node.js} as it was well suited for this task and I have had some experience with it. I implemented a very simple echo-chamber web-API server that responds to each HTTP request with information about the incoming request. The following are some example requests and responses:
 
 \begin{figure}[H]
     \centering
