@@ -61,7 +61,7 @@ This report has been prepared on the basis of my own work. Where other published
 
 \vskip3em
 
-Word Count: 6244 words with 24 floats
+Word Count: 6243 words with 24 floats
 
 \vskip3em
 
@@ -251,12 +251,12 @@ Statements can be one of the following:
     \begin{enumerate}
         \item An assignment. Only one assignment operator is supported: `='.
         \item A function call.
-        \item A HTTP method call.
+        \item An HTTP method call.
         \item The break keyword.
         \item Test an expression for a truthy value. Useful in testing.
         \item A `while' loop. The condition of which is an expression. This is explained more in the \hyperref[sec:expressions]{`Expressions'} subsection.
         \item A `for' loop. Supports either the ``traditional" C-style format or the iterator style format. The iterator style `for' loop has an optional additional iterator assignment for key-value pair iteration or index-value iteration.
-        \item The batch statement which will execute HTTP method calls nested within it in parallel.
+        \item The batch statement which will execute the HTTP method calls nested within it in parallel.
         \item A function definition.
         \item An `if-elif-else' block.
         \item A `NOP'. Defined by a statement followed by a singular semi-colon.
@@ -265,7 +265,7 @@ Statements can be one of the following:
 
 \subsection{Variables and values}
 
-The possible value types are strings, floats, integers, arrays, objects, `true'/`false' and `null'. This matches the types available in JSON. In fact the type of each value will be determined by using the Golang JSON parser on the string representation of the value. Some other semantics:
+The possible value types are strings, floats, integers, arrays, objects, `true'/`false' and `null'. This matches the types available in JSON. In fact, the type of each value will be determined by using the Golang JSON parser on the string representation of the value. Some other semantics:
 
 \begin{center}
     \begin{itemize} 
@@ -274,7 +274,7 @@ The possible value types are strings, floats, integers, arrays, objects, `true'/
         \item \textbf{Variables are always passed by reference} and expressions are passed by value.
         \item \textbf{Variables are declared and defined} when a new \textbf{root identifier} is used in a JSONPath assignment that \textbf{doesn't exist} in the \textbf{current scope}.
         \item \textbf{Variables are set} when the root identifier \textbf{exists} in the \textbf{current scope}.
-        \item \textbf{Variables are filled sparsely} when a \textbf{JSONPath accessing a non-existent sublevel} of the JSON is assigned to. For instance:
+        \item \textbf{Variables are filled sparsely} when a \textbf{JSONPath accessing a non-existent sub-level} of the JSON is assigned to. For instance:
         \begin{verbatim}
             set hello_world = {
                 "hello": "world"
@@ -532,10 +532,10 @@ This interim report includes the explanation and reasoning behind the test progr
     The test programs that were written and will be explained:
     \vspace{-1em}
     \begin{enumerate}
-        \item A simple four function calculator.
+        \item A simple four-function calculator.
         \item Regex parser that generates a minimised DFA.
         \item Creating and implementing the \verb|sttp| grammar within Go using participle. This will form a part of the `end product' of the project.
-        \item A simple web-API designed to aid in the production of the \verb|sttp| programming language.
+        \item A simple web API designed to aid in the production of the \verb|sttp| programming language.
     \end{enumerate}
 \end{center}
 
@@ -568,12 +568,12 @@ Also included is the progress that has been made towards implementing the final 
     \tiny{3:33 pm on October 24, 2021}
 \end{center}
 
-Development of \verb|sttp| begun in mid-October. I started by writing a formal definition of the grammar. Much of the grammar was inspired directly by Lua's grammar\textsuperscript{\cite{ierusalimschy_henrique-de-figueiredo_celes_2020}}. I chose to encode operator precedence within the grammar and keep every operator left associative within the grammar. I then implemented this grammar within Go using participle by defining the AST node \verb|struct| types. I then also added a way of printing back out the AST as \verb|sttp| source code in order to test if programs were being parsed correctly.
+Development of \verb|sttp| began in mid-October. I started by writing a formal definition of the grammar. Much of the grammar was inspired directly by Lua's grammar\textsuperscript{\cite{ierusalimschy_henrique-de-figueiredo_celes_2020}}. I chose to encode operator precedence within the grammar and keep every operator left-associative within the grammar. I then implemented this grammar within Go using participle by defining the AST node \verb|struct| types. I then also added a way of printing back out the AST as \verb|sttp| source code in order to test if programs were being parsed correctly.
 
 \section{End of October}
 
 \begin{center}
-    \textit{``...I then added a parallelism construct and a try-catch statement to the grammar of language as well as adding some more information about these to the spec..."}\\[0.5em]
+    \textit{``...I then added a parallelism construct and a try-catch statement to the grammar of [the] language as well as adding some more information about these to the spec..."}\\[0.5em]
     \tiny{8:21 am on October 31, 2021}
 \end{center}
 
@@ -600,7 +600,7 @@ Also added around this period of time was the `batch' statement. This will allow
 
 A \verb|batch| block is \textbf{always evaluated twice}. This means that it is important to \textbf{keep all non-HTTP-method-call statements and expressions to a minimum} as these will only slow down the interpreter.
 
-Before the first pass begins, the contents of the variables in memory are deep copied so that they can be reverted to after the first pass. In the first pass the interpreter enqueues every single HTTP method call as a job within a work queue. Each job has a unique ID and the order of this work queue is saved (more on this later). In the example the HTTP method on line 7 will be added to the work queue 3 separate times with different arguments. Whereas, the HTTP method on line 10 is only enqueued once.
+Before the first pass begins, the contents of the variables in memory are deep copied so that they can be reverted to after the first pass. In the first pass, the interpreter enqueues every single HTTP method call as a job within a work queue. Each job has a unique ID and the order of this work queue is saved (more on this later). In the example, the HTTP method on line 7 will be added to the work queue 3 separate times with different arguments. Whereas, the HTTP method on line 10 is only enqueued once.
 
 After this, the jobs in the work queue are executed using a pool of threads. The result of each job is added to a queue along with the executed job's ID. The result queue is then sorted back into the same order in which their respective jobs were added to the work queue. For instance, the result queue of the example above might look like this:
 
@@ -613,7 +613,7 @@ After this, the jobs in the work queue are executed using a pool of threads. The
     \end{verbatim}
 \end{center}
 
-Then, the contents of the variables in memory are set back to what they were before the first pass and the second pass is initiated. In the second pass, each time a HTTP method call is stepped into the next result in the result queue is dequeued and used.
+Then, the contents of the variables in memory are set back to what they were before the first pass and the second pass is initiated. In the second pass, each time an HTTP method call is stepped into the next result in the result queue is dequeued and used.
 
 \subsection{Caveats}
 
@@ -625,18 +625,18 @@ Then, the contents of the variables in memory are set back to what they were bef
 
 \subsection{Performance clarification}
 
-From experience I believe that the performance benefits from the batch statement will outweigh the overhead of the two passes required to execute them. My reasoning behind thinking this comes from my experience of using HTTP request libraries in CPython. CPython threading, which is managed by the CPython interpreter and not the OS, give significant performance boosts to the \href{https://docs.python-requests.org/en/latest/}{requests} library (from experience). This is because, despite having a GIL (global interpreter lock), the GIL is released when I/O operations are happening, such as when making a HTTP request. Given this knowledge, I believe that the two passes done within the batch statement will be outweighed by the performance boosts of making requests in parallel. However, this will be tested later on and if this doesn't prove to have performance benefits, then this method of batch execution will be rethought.
+From experience I believe that the performance benefits from the batch statement will outweigh the overhead of the two passes required to execute them. My reasoning behind thinking this comes from my experience of using HTTP request libraries in CPython. CPython threading, which is managed by the CPython interpreter and not the OS, give significant performance boosts to the \href{https://docs.python-requests.org/en/latest/}{requests} library (from experience). This is because, despite having a GIL (global interpreter lock), the GIL is released when I/O operations are happening, such as when making an HTTP request. Given this knowledge, I believe that the two passes done within the batch statement will be outweighed by the performance boosts of making requests in parallel. However, this will be tested later on and if this doesn't prove to have performance benefits, then this method of batch execution will be rethought.
 
 To make the HTTP requests in parallel, I will be using goroutines. Goroutines are only allocated stack space and are multiplexed onto multiple OS threads, which makes them lightweight and non-blocking when it comes to I/O operations\textsuperscript{\cite{effective-go}}. It is also easy to communicate between them by using channels.
 
 \section{November}
 
 \begin{center}
-    \textit{``This week I worked more on the programming language I am creating. In particular I added a lookup table of cast functions which contains the functions needed for casting each type to another type. Of course you aren’t able to cast any type to any type. Then I moved onto the operator computation lookup table."}\\[0.5em]
+    \textit{``This week I worked more on the programming language I am creating. In particular, I added a lookup table of cast functions which contains the functions needed for casting each type to another type. Of course, you aren’t able to cast any type to any type. Then I moved onto the operator computation lookup table."}\\[0.5em]
     \tiny{6:44 pm on November 14, 2021}
 \end{center}
 
-Starting November, I added some basic data structures such as a variable memory heap, a call stack and a VM object which will be parsed to each evaluation function for each AST node. After this I started work on a casting lookup table as well as an operator action lookup table.
+Starting November, I added some basic data structures such as a variable memory heap, a call stack and a VM object which will be parsed to each evaluation function for each AST node. After this, I started work on a casting lookup table as well as an operator action lookup table.
 
 %%%% ADD YOUR BIBLIOGRAPHY HERE
 \newpage
