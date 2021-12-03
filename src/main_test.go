@@ -33,15 +33,21 @@ func init() {
 func TestParse(t *testing.T) {
 	for testNo, example := range examples {
 		err, p := parser.Parse("", example)
-		if err != nil {
+		if err != nil && t != nil {
 			t.Error("error:", err.Error())
 		}
 
 		actual := strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(p.String(0), " ", ""), "\t", ""), "\n", ""), ";", "")
 		expected := strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(example, " ", ""), "\t", ""), "\n", ""), ";", "")
-		if actual != expected {
+		if actual != expected && t != nil {
 			t.Errorf("%d: parsed output does not match input script", testNo)
 		}
+	}
+}
+
+func BenchmarkParse(b *testing.B) {
+	for n := 0; n < b.N; n++ {
+		TestParse(nil)
 	}
 }
 
@@ -52,12 +58,22 @@ func TestVM_Eval(t *testing.T) {
 		if skipPtr == len(skip) || testNo != skip[skipPtr] {
 			vm := New()
 			err, result := vm.Eval("", example)
-			fmt.Println(err, result)
-			if err != nil {
+
+			if testing.Verbose() {
+				fmt.Println("vm Eval:", err, result)
+			}
+
+			if err != nil && t != nil {
 				t.Error(err.Error())
 			}
 		} else {
 			skipPtr ++
 		}
+	}
+}
+
+func BenchmarkVM_Eval(b *testing.B) {
+	for n := 0; n < b.N; n++ {
+		TestVM_Eval(nil)
 	}
 }

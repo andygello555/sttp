@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/data"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/errors"
+	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/eval"
+	"testing"
 )
 
 type evalNode interface {
@@ -134,10 +136,10 @@ func (a *Assignment) Eval(vm VM) (err error, result *data.Symbol) {
 
 	// Finally, we assign the new value to the variable on the heap
 	vm.GetCallStack().Current().GetHeap().Assign(variableName, val, *vm.GetScope())
-	return nil, nil
-}
 
-func (e *Expression) Eval(vm VM) (err error, result *data.Symbol) {
+	if testing.Verbose() {
+		fmt.Println("after assignment heap is:", vm.GetCallStack().Current().GetHeap())
+	}
 	return nil, nil
 }
 
@@ -179,4 +181,127 @@ func (f *FunctionDefinition) Eval(vm VM) (err error, result *data.Symbol) {
 
 func (i *IfElifElse) Eval(vm VM) (err error, result *data.Symbol) {
 	return nil, nil
+}
+
+// Eval for Null will just return a data.Symbol with a nil value and a data.Null type.
+func (n *Null) Eval(vm VM) (err error, result *data.Symbol) {
+	return nil, &data.Symbol{
+		Value: nil,
+		Type:  data.Null,
+		Scope: 0,
+	}
+}
+
+// Eval for Boolean will return a data.Symbol with the underlying boolean value and a data.Boolean type.
+func (b *Boolean) Eval(vm VM) (err error, result *data.Symbol) {
+	return nil, &data.Symbol{
+		Value: *b,
+		Type:  data.Boolean,
+		Scope: 0,
+	}
+}
+
+// Eval for JSONPath calls Convert and then path.Get, to retrieve the Symbol at the given JSONPath.
+func (j *JSONPath) Eval(vm VM) (err error, result *data.Symbol) {
+	var path Path; err, path = j.Convert(vm)
+	if err != nil {
+		return err, nil
+	}
+	// We get the root identifier of the JSONPath. This is the variable name.
+	variableName := path[0].(string)
+
+	// Then we get the value of the variable from the heap so that we can set its new value appropriately.
+	var variableVal *data.Symbol
+	err, variableVal = vm.GetCallStack().Current().GetHeap().Get(variableName, -1)
+	// If it cannot be found then we will set the value to be null initially.
+	if err != nil {
+		variableVal = &data.Symbol{
+			Value: nil,
+			Type:  data.Null,
+			Scope: *vm.GetScope(),
+		}
+	}
+
+	// We get the value at the path and get the type of the value.
+	var t data.Type
+	val := path.Get(variableVal.Value)
+	err = t.Get(val)
+	if err != nil {
+		return err, nil
+	}
+
+	return nil, &data.Symbol{
+		Value: path.Get(variableVal.Value),
+		Type:  t,
+		Scope: *vm.GetScope(),
+	}
+}
+
+func jsonDeclaration(j interface{}, vm VM) interface{} {
+	var out interface{}
+	switch j.(type) {
+	case *Array:
+		arr := make([]interface{}, len(j.(*Array).Elements))
+		for i, e := range j.(*Array).Elements {
+			arr[i] = jsonDeclaration(e, vm)
+		}
+		out = arr
+	case *Object:
+		obj := make(map[string]interface{})
+		for _, p := range j.(*Object).Pairs {
+			var key, val *data.Symbol; var err error
+			err, key = p.Key.Eval(vm)
+			if err == nil {
+				err, val = p.Value.Eval(vm)
+				if err == nil {
+					err, key = eval.Cast(key, data.String)
+					if err == nil {
+						obj[key.Value.(string)] = val.Value
+						continue
+					}
+				}
+			}
+			panic(err)
+		}
+		out = obj
+	case *Expression:
+		err, result := j.(*Expression).Eval(vm)
+		if err != nil {
+			panic(err)
+		}
+		out = result.Value
+	}
+	return out
+} 
+
+func (j *JSON) Eval(vm VM) (err error, result *data.Symbol) {
+	defer func() {
+		if p := recover(); p != nil {
+			err = fmt.Errorf("%v", p)
+		}
+	}()
+
+	var json interface{}
+	switch {
+	case j.Array != nil:
+		json = jsonDeclaration(j.Array, vm)
+	case j.Object != nil:
+		json = jsonDeclaration(j.Object, vm)
+	}
+
+	var t data.Type
+	switch json.(type) {
+	case map[string]interface{}:
+		t = data.Object
+	case []interface{}:
+		t = data.Array
+	default:
+		t = data.NoType
+	}
+
+	return err, &data.Symbol{
+		Value: json,
+		Type:  t,
+		Scope: *vm.GetScope(),
+	}
 }
