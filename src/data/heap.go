@@ -111,7 +111,7 @@ func (h *Heap) Get(name string, scope int) (error, *Symbol) {
 	scopes := len((*h)[name])
 	get := scope
 	if scope < 0 {
-		scope = scopes - 1
+		get = scopes - 1
 	} else if scope >= scopes {
 		// Scope exceeds the limits of the scope list for the entry
 		return errors.HeapScopeDoesNotExist.Errorf("get", name, scope, scope, name), nil

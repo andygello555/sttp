@@ -13,6 +13,26 @@ const DefaultObjectKey = ""
 
 type Path []interface{}
 
+func firstKey(obj map[string]interface{}, idx int) (key string, ok bool) {
+	// Get all script keys at the current level
+	keyQueue := make(strings.StringHeap, 0)
+	heap.Init(&keyQueue)
+	for k := range obj {
+		heap.Push(&keyQueue, k)
+	}
+
+	// Keep popping until we get to the needed index
+	ok = false
+	for i := 0; i < keyQueue.Len(); i++ {
+		key = heap.Pop(&keyQueue).(string)
+		if i == idx {
+			ok = true
+			break
+		}
+	}
+	return key, ok
+}
+
 func set(current interface{}, to interface{}, path *Path) interface{} {
 	if len(*path) > 0 {
 		p := (*path)[0]
@@ -45,25 +65,9 @@ func set(current interface{}, to interface{}, path *Path) interface{} {
 				if !property {
 					// If the current path is a number index then we will sort the keys of the current value 
 					// lexicographically to find correct key
-					// Get all script keys at the current level
-					keyQueue := make(strings.StringHeap, 0)
-					heap.Init(&keyQueue)
-					for k := range obj {
-						heap.Push(&keyQueue, k)
-					}
-
-					// Keep popping until we get to the needed index
-					found := false
-					for i := 0; i < keyQueue.Len(); i++ {
-						key = heap.Pop(&keyQueue).(string)
-						if i == p.(int) {
-							found = true
-							break
-						}
-					}
-
-					// If we cannot find the needed key we panic
-					if !found {
+					var ok bool
+					if key, ok = firstKey(obj, p.(int)); !ok {
+						// If we cannot find the needed key we panic
 						panic(errors.JSONPathError.Errorf("object", fmt.Sprintf("index %d", p.(int))))
 					}
 				} else {
@@ -142,8 +146,59 @@ func (p *Path) Set(current interface{}, to interface{}) (err error, new interfac
 	return err, new
 }
 
-func (p *Path) Get() (err error, get interface{}) {
-	return nil, nil
+// Get iterates over the referred to Path and descends the given value and returns the value pointed to by the path. 
+// If the path doesn't lead anywhere it will return nil.
+func (p *Path) Get(current interface{}) interface{} {
+	c := make(Path, len(*p) - 1)
+	// Copy everything but the first element (variable name)
+	copy(c, (*p)[1:])
+
+	for _, e := range c {
+		property := false
+		switch e.(type) {
+		case string:
+			property = true
+		}
+
+		if current == nil {
+			break
+		} else {
+			switch current.(type) {
+			case map[string]interface{}:
+				var key string
+				obj := current.(map[string]interface{})
+
+				if !property {
+					// If the current path is a number index then we will sort the keys of the current value 
+					// lexicographically to find correct key
+					var ok bool
+					if key, ok = firstKey(obj, e.(int)); !ok {
+						current = nil
+						continue
+					}
+				} else {
+					key = e.(string)
+				}
+
+				current = obj[key]
+			case []interface{}:
+				if property {
+					current = nil
+				} else {
+					arr := current.([]interface{})
+					idx := e.(int)
+					if idx >= 0 && idx < len(arr) {
+						current = arr[idx]
+					} else {
+						current = nil
+					}
+				}
+			default:
+				current = nil
+			}
+		}
+	}
+    return current
 }
 
 // Pathable defines a structure which can be converted recursively into a path.
