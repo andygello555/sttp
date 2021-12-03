@@ -1,20 +1,21 @@
 package parser
 
 import (
+	"container/heap"
 	"fmt"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/data"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/errors"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/eval"
+	"github.com/andygello555/gotils/strings"
 )
 
-const DefaultObjectKey = " "
+const DefaultObjectKey = ""
 
 type Path []interface{}
 
 func set(current interface{}, to interface{}, path *Path) interface{} {
 	if len(*path) > 0 {
 		p := (*path)[0]
-		*path = (*path)[1:]
 		property := false
 		switch p.(type) {
 		case string:
@@ -24,21 +25,52 @@ func set(current interface{}, to interface{}, path *Path) interface{} {
 		}
 
 		if current == nil {
+			// We don't pop the next element from the path because we need to use this frame to construct a new value 
+			// and interface then we can use the next called frame to set the property of index.
 			if property {
 				// If the path is a property we construct a new object
 				current = set(make(map[string]interface{}), to, path)
+			} else {
+				// Otherwise, we create a new interface array
+				current = set(make([]interface{}, 0), to, path)
 			}
-			// Otherwise, we create a new interface array
-			current = set(make([]interface{}, 0), to, path)
 		} else {
+			// We only remove the current path element if we are currently on a non-nil value.
+			*path = (*path)[1:]
 			switch current.(type) {
 			case map[string]interface{}:
+				obj := current.(map[string]interface{})
+				var key string
+
 				if !property {
-					panic(errors.JSONPathError.Errorf("object", "index"))
+					// If the current path is a number index then we will sort the keys of the current value 
+					// lexicographically to find correct key
+					// Get all script keys at the current level
+					keyQueue := make(strings.StringHeap, 0)
+					heap.Init(&keyQueue)
+					for k := range obj {
+						heap.Push(&keyQueue, k)
+					}
+
+					// Keep popping until we get to the needed index
+					found := false
+					for i := 0; i < keyQueue.Len(); i++ {
+						key = heap.Pop(&keyQueue).(string)
+						if i == p.(int) {
+							found = true
+							break
+						}
+					}
+
+					// If we cannot find the needed key we panic
+					if !found {
+						panic(errors.JSONPathError.Errorf("object", fmt.Sprintf("index %d", p.(int))))
+					}
+				} else {
+					// Otherwise, we assert that the path is a string key
+					key = p.(string)
 				}
 
-				obj := current.(map[string]interface{})
-				key := p.(string)
 				var val interface{} = nil
 				if _, ok := obj[key]; ok {
 					val = obj[key]
@@ -55,13 +87,14 @@ func set(current interface{}, to interface{}, path *Path) interface{} {
 					current.([]interface{})[idx] = set(arr[idx], to, path)
 				} else {
 					// We insert nils up until we get to the index to set at, at which point we recurse.
-					for i := len(arr); i <= idx; i ++ {
+					for i := len(arr); i <= idx; i++ {
 						var val interface{} = nil
 						if i == idx {
 							val = set(nil, to, path)
 						}
 						arr = append(arr, val)
 					}
+					current = arr
 				}
 			default:
 				if property {
@@ -75,9 +108,9 @@ func set(current interface{}, to interface{}, path *Path) interface{} {
 					// If accessing an index then we will create an array with p.(int) + 2 spaces. Recursing down the 
 					// p.(int) space and inserting the existing value in the p.(int) + 1 space.
 					idx := p.(int)
-					arr := make([]interface{}, idx + 2)
+					arr := make([]interface{}, idx+2)
 					arr[idx + 1] = current
-					for i := 0; i < len(arr) - 1; i ++ {
+					for i := 0; i < len(arr)-1; i++ {
 						var val interface{} = nil
 						if i == idx {
 							val = set(nil, to, path)
@@ -88,6 +121,8 @@ func set(current interface{}, to interface{}, path *Path) interface{} {
 				}
 			}
 		}
+	} else {
+		current = to
 	}
 	return current
 }
@@ -96,6 +131,7 @@ func (p *Path) Set(current interface{}, to interface{}) (err error, new interfac
 	defer func() {
 		if p := recover(); p != nil {
 			err = fmt.Errorf("%v", p)
+			new = nil
 		}
 	}()
 
@@ -133,7 +169,7 @@ func (j *JSONPath) Convert(vm VM) (err error, path Path) {
 // Convert will convert a Part AST node into a Path.
 func (p *Part) Convert(vm VM) (err error, path Path) {
 	path = make(Path, 0)
-	path = append(path, p.Property)
+	path = append(path, *p.Property)
 	for _, i := range p.Indices {
 		var idx *data.Symbol
 		err, idx = i.Eval(vm)

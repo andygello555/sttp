@@ -14,26 +14,50 @@ const (
 	ExamplePrefix = "example_"
 )
 
-func TestParse(t *testing.T) {
-	type Example struct {
-		Script string
-		Results []float64
-		Errors []string
-	}
+var examples []string
 
+func init() {
+	examples = make([]string, 0)
 	if files, err := ioutil.ReadDir(ExamplePath); err != nil {
 		panic(err)
 	} else {
 		for _, file := range files {
 			if strings.HasPrefix(file.Name(), ExamplePrefix) {
 				fileBytes, _ := ioutil.ReadFile(filepath.Join(ExamplePath, file.Name()))
-				err, p := parser.Parse("", string(fileBytes))
-				//fmt.Println(p.Tokens)
-				if err != nil {
-					fmt.Println(err.Error())
-				}
-				fmt.Println(p.String(0))
+				examples = append(examples, string(fileBytes))
 			}
+		}
+	}	
+}
+
+func TestParse(t *testing.T) {
+	for testNo, example := range examples {
+		err, p := parser.Parse("", example)
+		if err != nil {
+			t.Error("error:", err.Error())
+		}
+
+		actual := strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(p.String(0), " ", ""), "\t", ""), "\n", ""), ";", "")
+		expected := strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(example, " ", ""), "\t", ""), "\n", ""), ";", "")
+		if actual != expected {
+			t.Errorf("%d: parsed output does not match input script", testNo)
+		}
+	}
+}
+
+func TestVM_Eval(t *testing.T) {
+	skip := []int{0}
+	skipPtr := 0
+	for testNo, example := range examples {
+		if skipPtr == len(skip) || testNo != skip[skipPtr] {
+			vm := New()
+			err, result := vm.Eval("", example)
+			fmt.Println(err, result)
+			if err != nil {
+				t.Error(err.Error())
+			}
+		} else {
+			skipPtr ++
 		}
 	}
 }
