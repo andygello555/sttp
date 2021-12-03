@@ -11,24 +11,24 @@ import (
 	"strings"
 )
 
-// equalInterface will check if the two operands (interface{}) are equal and returns a boolean. Internally this will 
+// EqualInterface will check if the two operands (interface{}) are Equal and returns a boolean. Internally this will 
 // Marshal both operands to JSON and compare the produced strings.
-func equalInterface(op1 interface{}, op2 interface{}) (err error, equal bool) {
+func EqualInterface(op1 interface{}, op2 interface{}) (err error, equal bool) {
 	var a, b []byte
 	a, err = json.Marshal(op1)
 	b, err = json.Marshal(op2)
 	return err, string(a) == string(b)
 }
 
-// equal will check if the two operands are equal and return a boolean.
-func equal(op1 *data.Symbol, op2 *data.Symbol) (err error, equal bool) {
-	return equalInterface(op1.Value, op2.Value)
+// Equal will check if the two operands are Equal and return a boolean.
+func Equal(op1 *data.Symbol, op2 *data.Symbol) (err error, equal bool) {
+	return EqualInterface(op1.Value, op2.Value)
 }
 
-// equalSymbol will check if the two operands are equal and return a boolean Symbol.
+// equalSymbol will check if the two operands are Equal and return a boolean Symbol.
 func equalSymbol(op1 *data.Symbol, op2 *data.Symbol) (err error, result *data.Symbol) {
 	var ok bool
-	err, ok = equal(op1, op2)
+	err, ok = Equal(op1, op2)
 	return nil, &data.Symbol{
 		Value: ok,
 		Type:  data.Boolean,
@@ -36,10 +36,10 @@ func equalSymbol(op1 *data.Symbol, op2 *data.Symbol) (err error, result *data.Sy
 	}
 }
 
-// nequalSymbol will check if the two operands are equal and return a boolean Symbol.
+// nequalSymbol will check if the two operands are Equal and return a boolean Symbol.
 func nequalSymbol(op1 *data.Symbol, op2 *data.Symbol) (err error, result *data.Symbol) {
 	var ok bool
-	err, ok = equal(op1, op2)
+	err, ok = Equal(op1, op2)
 	return nil, &data.Symbol{
 		Value: !ok,
 		Type:  data.Boolean,
@@ -273,7 +273,7 @@ func suObject(op1 *data.Symbol, op2 *data.Symbol) (err error, result *data.Symbo
 	return difference(op1, op2Object)
 }
 
-// suArray: Subtract elements from Array. Casts RHS to Array. All elements on the LHS equal to the elements in the RHS
+// suArray: Subtract elements from Array. Casts RHS to Array. All elements on the LHS Equal to the elements in the RHS
 // will be removed. If the element is null then the head of the Array is removed.
 func suArray(op1 *data.Symbol, op2 *data.Symbol) (err error, result *data.Symbol) {
 	var op2Array *data.Symbol
@@ -296,7 +296,7 @@ func suArray(op1 *data.Symbol, op2 *data.Symbol) (err error, result *data.Symbol
 		} else {
 			for i, w := range a {
 				var ok bool
-				err, ok = equalInterface(v, w)
+				err, ok = EqualInterface(v, w)
 				if err != nil {
 					return err, nil
 				}

@@ -140,3 +140,43 @@ func (a *Assignment) Eval(vm VM) (err error, result *data.Symbol) {
 func (e *Expression) Eval(vm VM) (err error, result *data.Symbol) {
 	return nil, nil
 }
+
+func (f *FunctionCall) Eval(vm VM) (err error, result *data.Symbol) {
+	return nil, nil
+}
+
+func (m *MethodCall) Eval(vm VM) (err error, result *data.Symbol) {
+	return nil, nil
+}
+
+func (t *TestStatement) Eval(vm VM) (err error, result *data.Symbol) {
+	return nil, nil
+}
+
+func (w *While) Eval(vm VM) (err error, result *data.Symbol) {
+	return nil, nil
+}
+
+func (f *For) Eval(vm VM) (err error, result *data.Symbol) {
+	return nil, nil
+}
+
+func (f *ForEach) Eval(vm VM) (err error, result *data.Symbol) {
+	return nil, nil
+}
+
+func (b *Batch) Eval(vm VM) (err error, result *data.Symbol) {
+	return nil, nil
+}
+
+func (tc *TryCatch) Eval(vm VM) (err error, result *data.Symbol) {
+	return nil, nil
+}
+
+func (f *FunctionDefinition) Eval(vm VM) (err error, result *data.Symbol) {
+	return nil, nil
+}
+
+func (i *IfElifElse) Eval(vm VM) (err error, result *data.Symbol) {
+	return nil, nil
+}

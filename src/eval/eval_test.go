@@ -370,21 +370,21 @@ func TestCompute(t *testing.T) {
 	}{
 		var ok bool
 		err, result := Compute(test.operator, test.op1, test.op2)
-		// Check if the actual result is equal to the expected result only if there is no error.
+		// Check if the actual result is Equal to the expected result only if there is no error.
 		if err == nil {
-			err, ok = equal(result, test.result)
+			err, ok = Equal(result, test.result)
 		}
 
 		if testing.Verbose() && result != nil {
-			fmt.Printf("%d: %v %s %v = %v\n", testNo, test.op1.String(), test.operator.String(), test.op2.String(), result.String())
+			fmt.Printf("%d: %v %s %v = %v\n", testNo + 1, test.op1.String(), test.operator.String(), test.op2.String(), result.String())
 		}
 
 		if test.err != nil {
 			if err.Error() != test.err.Error() {
-				t.Errorf("error \"%s\" for testNo: %d does not match the required error: \"%s\"", err.Error(), testNo, test.err.Error())
+				t.Errorf("error \"%s\" for testNo: %d does not match the required error: \"%s\"", err.Error(), testNo + 1, test.err.Error())
 			}
 		} else if !ok {
-			t.Errorf("result \"%v\" for testNo: %d does not match the required result: \"%v\"", result, testNo, test.result)
+			t.Errorf("result \"%v\" for testNo: %d does not match the required result: \"%v\"", result, testNo + 1, test.result)
 		}
 	}
 }
