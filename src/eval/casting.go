@@ -9,9 +9,9 @@ import (
 // e is the "ID" for eFunc. This needs to be created so that there is an identity that can be checked for equivalence.
 var e = eFunc
 
-// castTable contains the functions that are used to cast one Symbol into another type. The rows represent the Type to
+// castTable contains the functions that are used to cast one Value into another type. The rows represent the Type to
 // cast from. Whereas, the columns represent the Type to cast to.
-var castTable = [8][8]func(symbol *data.Symbol) (err error, cast *data.Symbol) {
+var castTable = [8][8]func(symbol *data.Value) (err error, cast *data.Value) {
 	/*                NoType    Object    Array    String    Number    Boolean    Null    Function                    */
 	/* NoType   */ {       e,        e,       e,        e,        e,         e,      e,          e},
 	/* Object   */ {       e,     same, obArray,        s,        l,     lBool,      e,          e},
@@ -26,14 +26,14 @@ var castTable = [8][8]func(symbol *data.Symbol) (err error, cast *data.Symbol) {
 // Castable checks whether the given symbol can be cast to the given type. This just checks the entry in the appropriate
 // cell in castTable against e. Therefore, this function does not carry out the cast function itself so will not report
 // back on any errors that may happen. Returns true if the entry in the castTable is not e, false otherwise.
-func Castable(symbol *data.Symbol, to data.Type) bool {
+func Castable(symbol *data.Value, to data.Type) bool {
 	return reflect.ValueOf(castTable[symbol.Type][to]).Pointer() != reflect.ValueOf(e).Pointer()
 }
 
-// Cast will cast the given Symbol to the given type using the castTable matrix. If you cannot cast from the given
+// Cast will cast the given Value to the given type using the castTable matrix. If you cannot cast from the given
 // symbol to the given type the errors.CannotCast error will be filled and returned. Otherwise, the cast function at the
 // corresponding entry in the castTable will be executed and the result will be returned.
-func Cast(symbol *data.Symbol, to data.Type) (err error, cast *data.Symbol) {
+func Cast(symbol *data.Value, to data.Type) (err error, cast *data.Value) {
 	// If the entry in the matrix points to e then we will return a CannotCast error.
 	if !Castable(symbol, to) {
 		return errors.CannotCast.Errorf(symbol.Type.String(), to.String()), nil

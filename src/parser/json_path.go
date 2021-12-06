@@ -13,6 +13,17 @@ const DefaultObjectKey = ""
 
 type Path []interface{}
 
+func abs(x int) int {
+	if x < 0 {
+		return (-x) - 1
+	}
+	return x
+}
+
+func mod(x, n int) int {
+	return (x % n + n) % n
+}
+
 func firstKey(obj map[string]interface{}, idx int) (key string, ok bool) {
 	// Get all script keys at the current level
 	keyQueue := make(strings.StringHeap, 0)
@@ -87,9 +98,14 @@ func set(current interface{}, to interface{}, path *Path) interface{} {
 
 				arr := current.([]interface{})
 				idx := p.(int)
-				if idx >= 0 && idx < len(arr) {
+				if abs(idx) < len(arr) {
+					idx = mod(idx, len(arr))
 					current.([]interface{})[idx] = set(arr[idx], to, path)
 				} else {
+					if idx < 0 {
+						panic(errors.JSONPathError.Errorf("array", fmt.Sprintf("negative index that is out of array bounds (%d)", idx)))
+					}
+
 					// We insert nils up until we get to the index to set at, at which point we recurse.
 					for i := len(arr); i <= idx; i++ {
 						var val interface{} = nil
@@ -112,16 +128,20 @@ func set(current interface{}, to interface{}, path *Path) interface{} {
 					// If accessing an index then we will create an array with p.(int) + 2 spaces. Recursing down the 
 					// p.(int) space and inserting the existing value in the p.(int) + 1 space.
 					idx := p.(int)
-					arr := make([]interface{}, idx+2)
-					arr[idx + 1] = current
-					for i := 0; i < len(arr)-1; i++ {
-						var val interface{} = nil
-						if i == idx {
-							val = set(nil, to, path)
+					if idx >= 0 {
+						arr := make([]interface{}, idx+2)
+						arr[idx+1] = current
+						for i := 0; i < len(arr)-1; i++ {
+							var val interface{} = nil
+							if i == idx {
+								val = set(nil, to, path)
+							}
+							arr[i] = val
 						}
-						arr[i] = val
+						current = arr
+					} else {
+						panic(errors.JSONPathError.Errorf("non-object/array type", fmt.Sprintf("a negative index (%d)", idx)))
 					}
-					current = arr
 				}
 			}
 		}
@@ -187,10 +207,13 @@ func (p *Path) Get(current interface{}) interface{} {
 				} else {
 					arr := current.([]interface{})
 					idx := e.(int)
-					if idx >= 0 && idx < len(arr) {
-						current = arr[idx]
-					} else {
+					// If the absolute value of the idx is greater than the length of the array then we set current to 
+					// nil
+					if abs(idx) >= len(arr) {
 						current = nil
+					} else {
+						idx = mod(idx, len(arr))
+						current = arr[idx]
 					}
 				}
 			default:
@@ -226,7 +249,7 @@ func (p *Part) Convert(vm VM) (err error, path Path) {
 	path = make(Path, 0)
 	path = append(path, *p.Property)
 	for _, i := range p.Indices {
-		var idx *data.Symbol
+		var idx *data.Value
 		err, idx = i.Eval(vm)
 		switch idx.Type {
 		case data.Number:
@@ -235,7 +258,7 @@ func (p *Part) Convert(vm VM) (err error, path Path) {
 			path = append(path, idx.Value.(string))
 		default:
 			// Otherwise, we try to cast it to a Number then a String
-			var idxCast *data.Symbol
+			var idxCast *data.Value
 			err, idxCast = eval.Cast(idx, data.Number)
 			if err != nil {
 				err, idxCast = eval.Cast(idx, data.String)

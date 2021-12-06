@@ -163,6 +163,58 @@ func TestPath_Set(t *testing.T) {
 			expected: nil,
 			err: fmt.Errorf("cannot access object with index 3"),
 		},
+		{
+			path: Path{"json", 0, -5},
+			current: map[string]interface{}{
+				"b": 2,
+				"a": 1,
+				"c": 3,
+			},
+			to: true,
+			expected: nil,
+			err: fmt.Errorf("cannot access non-object/array type with a negative index (-5)"),
+		},
+		{
+			path: Path{"json", 0, -1},
+			current: map[string]interface{}{
+				"b": 2,
+				"a": []interface{}{1, 2, 3},
+				"c": 3,
+			},
+			to: true,
+			expected: map[string]interface{}{
+				"b": 2,
+				"a": []interface{}{1, 2, true},
+				"c": 3,
+			},
+			err: nil,
+		},
+		{
+			path: Path{"json", 0, -3},
+			current: map[string]interface{}{
+				"b": 2,
+				"a": []interface{}{1, 2, 3},
+				"c": 3,
+			},
+			to: true,
+			expected: map[string]interface{}{
+				"b": 2,
+				"a": []interface{}{true, 2, 3},
+				"c": 3,
+			},
+			err: nil,
+		},
+		{
+			path: Path{"json", 0, -4},
+			current: map[string]interface{}{
+				"b": 2,
+				"a": []interface{}{1, 2, 3},
+				"c": 3,
+			},
+			to: true,
+			expected: nil,
+			err: fmt.Errorf("cannot access array with negative index that is out of array bounds (-4)"),
+		},
 	}{
 		var equal bool
 		err, result := test.path.Set(test.current, test.to)
@@ -180,7 +232,7 @@ func TestPath_Set(t *testing.T) {
 				t.Errorf("error \"%s\" for testNo: %d does not match the required error: \"%s\"", err.Error(), testNo + 1, test.err.Error())
 			}
 		} else if err != nil {
-			t.Errorf("error \"%s\" should not have occurred", err.Error())
+			t.Errorf("error \"%s\" should not have occurred (testNo: %d)", err.Error(), testNo + 1)
 		} else if !equal {
 			t.Errorf("result \"%v\" for testNo: %d does not match the required result: \"%v\"", result, testNo + 1, test.expected)
 		}

@@ -349,7 +349,7 @@ type IfElifElse struct {
 	IfCondition *Expression `If @@ Then`
 	IfBlock     *Block      `@@`
 	Elifs       []*Elif     `@@*`
-	Else        *Block      `Else @@? End`
+	Else        *Block      `(Else @@)? End`
 }
 
 // Elif is used within IfElifElse to match Elif branches.
