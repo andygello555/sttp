@@ -30,16 +30,16 @@ type factor interface {
 // protoEvalNode implements evalNode but has a modifiable evalMethod. This means that a structure implementing 
 // protoEvalNode can be defined anonymously, along with an Eval method defined then as well. This is used in the Factor 
 // left and right referrers so that tokens passed straight from the lexer can be wrapped with an Eval referrer that 
-// returns the token as a data.Symbol.
+// returns the token as a data.Value.
 type protoEvalNode struct {
-	evalMethod func(vm VM) (err error, result *data.Symbol)
+	evalMethod func(vm VM) (err error, result *data.Value)
 }
 
 // Eval calls the stored evalMethod.
-func (p *protoEvalNode) Eval(vm VM) (err error, result *data.Symbol) { return p.evalMethod(vm) }
+func (p *protoEvalNode) Eval(vm VM) (err error, result *data.Value) { return p.evalMethod(vm) }
 
 // tEval evaluates an AST node which implements the term interface.
-func tEval(t term, vm VM) (err error, result *data.Symbol) {
+func tEval(t term, vm VM) (err error, result *data.Value) {
 	err, result = t.left().Eval(vm)
 	if err != nil {
 		return err, nil
@@ -50,7 +50,7 @@ func tEval(t term, vm VM) (err error, result *data.Symbol) {
 	}
 
 	for _, r := range t.right() {
-		var right *data.Symbol
+		var right *data.Value
 		err, right = r.Eval(vm)
 
 		if testing.Verbose() {
@@ -73,7 +73,7 @@ func tEval(t term, vm VM) (err error, result *data.Symbol) {
 }
 
 // fEval evaluates an AST node which implements the factor interface.
-func fEval(f factor, vm VM) (err error, result *data.Symbol) {
+func fEval(f factor, vm VM) (err error, result *data.Value) {
 	return f.inner().Eval(vm)
 }
 
@@ -122,21 +122,21 @@ func (f *Factor) left() evalNode {
 		n = f.Boolean
 	case f.Number != nil:
 		en := struct { protoEvalNode }{}
-		en.evalMethod = func(vm VM) (err error, result *data.Symbol) {
-			return nil, &data.Symbol{
-				Value: *f.Number,
-				Type:  data.Number,
-				Scope: 0,
+		en.evalMethod = func(vm VM) (err error, result *data.Value) {
+			return nil, &data.Value{
+				Value:  *f.Number,
+				Type:   data.Number,
+				Global: *vm.GetScope() == 0,
 			}
 		}
 		n = &en
 	case f.StringLit != nil:
 		en := struct { protoEvalNode }{}
-		en.evalMethod = func(vm VM) (err error, result *data.Symbol) {
-			return nil, &data.Symbol{
-				Value: *f.StringLit,
-				Type:  data.String,
-				Scope: 0,
+		en.evalMethod = func(vm VM) (err error, result *data.Value) {
+			return nil, &data.Value{
+				Value:  *f.StringLit,
+				Type:   data.String,
+				Global: *vm.GetScope() == 0,
 			}
 		}
 		n = &en
@@ -155,16 +155,16 @@ func (f *Factor) left() evalNode {
 }
 func (f *Factor) right() []factor { return make([]factor, 0) }
 
-func (e *Expression) Eval(vm VM) (err error, result *data.Symbol) { return tEval(e, vm) }
-func (p5 *Prec5) Eval(vm VM) (err error, result *data.Symbol) { return fEval(p5, vm) }
-func (p5t *Prec5Term) Eval(vm VM) (err error, result *data.Symbol) { return tEval(p5t, vm) }
-func (p4 *Prec4) Eval(vm VM) (err error, result *data.Symbol) { return fEval(p4, vm) }
-func (p4t *Prec4Term) Eval(vm VM) (err error, result *data.Symbol) { return tEval(p4t, vm) }
-func (p3 *Prec3) Eval(vm VM) (err error, result *data.Symbol) { return fEval(p3, vm) }
-func (p3t *Prec3Term) Eval(vm VM) (err error, result *data.Symbol) { return tEval(p3t, vm) }
-func (p2 *Prec2) Eval(vm VM) (err error, result *data.Symbol) { return fEval(p2, vm) }
-func (p2t *Prec2Term) Eval(vm VM) (err error, result *data.Symbol) { return tEval(p2t, vm) }
-func (p1 *Prec1) Eval(vm VM) (err error, result *data.Symbol) { return fEval(p1, vm) }
-func (p1t *Prec1Term) Eval(vm VM) (err error, result *data.Symbol) { return tEval(p1t, vm) }
-func (p0 *Prec0) Eval(vm VM) (err error, result *data.Symbol) { return fEval(p0, vm) }
-func (f *Factor) Eval(vm VM) (err error, result *data.Symbol) { return tEval(f, vm) }
+func (e *Expression) Eval(vm VM) (err error, result *data.Value)  { return tEval(e, vm) }
+func (p5 *Prec5) Eval(vm VM) (err error, result *data.Value)      { return fEval(p5, vm) }
+func (p5t *Prec5Term) Eval(vm VM) (err error, result *data.Value) { return tEval(p5t, vm) }
+func (p4 *Prec4) Eval(vm VM) (err error, result *data.Value)      { return fEval(p4, vm) }
+func (p4t *Prec4Term) Eval(vm VM) (err error, result *data.Value) { return tEval(p4t, vm) }
+func (p3 *Prec3) Eval(vm VM) (err error, result *data.Value)      { return fEval(p3, vm) }
+func (p3t *Prec3Term) Eval(vm VM) (err error, result *data.Value) { return tEval(p3t, vm) }
+func (p2 *Prec2) Eval(vm VM) (err error, result *data.Value)      { return fEval(p2, vm) }
+func (p2t *Prec2Term) Eval(vm VM) (err error, result *data.Value) { return tEval(p2t, vm) }
+func (p1 *Prec1) Eval(vm VM) (err error, result *data.Value)      { return fEval(p1, vm) }
+func (p1t *Prec1Term) Eval(vm VM) (err error, result *data.Value) { return tEval(p1t, vm) }
+func (p0 *Prec0) Eval(vm VM) (err error, result *data.Value)      { return fEval(p0, vm) }
+func (f *Factor) Eval(vm VM) (err error, result *data.Value)      { return tEval(f, vm) }

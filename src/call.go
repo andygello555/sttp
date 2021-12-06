@@ -27,7 +27,7 @@ type Frame struct {
 	// Heap contains the parameters and local variables assigned within the function.
 	Heap    *data.Heap
 	// Return is the value/symbol returned by the function.
-	Return  *data.Symbol
+	Return  *data.Value
 }
 
 func (f *Frame) GetCaller() *parser.FunctionCall {
@@ -42,7 +42,7 @@ func (f *Frame) GetHeap() *data.Heap {
 	return f.Heap
 }
 
-func (f *Frame) GetReturn() *data.Symbol {
+func (f *Frame) GetReturn() *data.Value {
 	return f.Return
 }
 
@@ -61,10 +61,10 @@ func (cs *CallStack) Call(caller *parser.FunctionCall, current *parser.FunctionD
 		Caller:  caller,
 		Current: current,
 		Heap: &heap,
-		Return: &data.Symbol{
-			Value: nil,
-			Type:  data.NoType,
-			Scope: 0,
+		Return: &data.Value{
+			Value:  nil,
+			Type:   data.NoType,
+			Global: false,
 		},
 	})
 	return nil

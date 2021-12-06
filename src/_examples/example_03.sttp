@@ -1,0 +1,23 @@
+set a = {
+    "hello": "world"
+};
+
+if a then
+    set a.first_if = true;
+end;
+
+if a.first_if == false then
+    set a.second_if = true;
+else
+    set a.second_if = false;
+end;
+
+if a.second_if then
+    set a.done = false;
+elif a.first_if == false then
+    set a.done = false;
+elif 0 + a.hello == 5 then
+    set a.done = true;
+else
+    set a.done = false;
+end;

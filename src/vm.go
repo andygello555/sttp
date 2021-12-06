@@ -29,7 +29,7 @@ func New() *VM {
 	}
 }
 
-func (vm *VM) Eval(filename, s string) (err error, result *data.Symbol) {
+func (vm *VM) Eval(filename, s string) (err error, result *data.Value) {
 	// We start a panic catcher to give us more helpful error messages
 	defer func() {
 		if p := recover(); p != nil {

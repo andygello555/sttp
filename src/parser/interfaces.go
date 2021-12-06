@@ -10,7 +10,7 @@ type ASTNode interface {
 
 // VM acts as an interface for the overarching state of the VM used for evaluation of programs.
 type VM interface {
-	Eval(filename, s string) (err error, result *data.Symbol)
+	Eval(filename, s string) (err error, result *data.Value)
 	GetSymbols() *data.Heap
 	GetScope() *int
 	GetParentStatement() interface{}
@@ -29,5 +29,5 @@ type Frame interface {
 	GetCaller()  *FunctionCall
 	GetCurrent() *FunctionDefinition
 	GetHeap()    *data.Heap
-	GetReturn()  *data.Symbol
+	GetReturn()  *data.Value
 }
