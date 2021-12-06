@@ -1,0 +1,39 @@
+set iterators = {
+    "loop1": "Hello World!",
+    "loop2": ["hello", "world", "!"],
+    "loop3": {
+        "world": 3,
+        "hello": 2,
+        "!": 1
+    }
+};
+
+set loop1out = "[";
+for index, char in iterators.loop1 do
+    set loop1out = loop1out + ("(%v: %v)" % [index, char]);
+    if index != (0 + iterators.loop1) then
+        set loop1out = loop1out + ", ";
+    else
+        set loop1out = loop1out + "]";
+    end;
+end;
+
+set loop2out = "[";
+for index, value in iterators.loop2 do
+    set loop2out = loop2out + ("(%v: %v)" % [index, value]);
+    if index != (0 + iterators.loop2) then
+        set loop2out = loop2out + ", ";
+    else
+        set loop2out = loop2out + "]";
+    end;
+end;
+
+set loop3out = "[";
+for key, value in iterators.loop3 do
+    set loop3out = loop3out + ("(%v: %v)" % [key, value]);
+    if key != "world" then
+        set loop3out = loop3out + ", ";
+    else
+        set loop3out = loop3out + "]";
+    end;
+end;

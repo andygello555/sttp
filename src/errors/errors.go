@@ -29,6 +29,7 @@ func (re RuntimeError) Errorf(values... interface{}) error { return errorf(strin
 type StructureError string
 
 const (
+	ImmutableValue        StructureError = "%s is immutable, cannot write to it"
 	HeapEntryDoesNotExist StructureError = "cannot %s %s (scope: %d), as \"%s\" is not an entry in symbol table"
 	HeapScopeDoesNotExist StructureError = "cannot %s %s (scope: %d), as scope: %d does not exist in the scope list for the symbol \"%s\""
 )

@@ -1,0 +1,19 @@
+set counters = {
+    "a": 0,
+    "b": 0,
+    "c": 0
+};
+
+while counters.a * counters.b * counters.c <= 100 do
+    if counters.a % 3 == 0 then
+        set counters.a = counters.a + 1;
+    elif counters.b % 5 == 0 then
+        set counters.b = counters.b + 1;
+    elif counters.c % 7 == 0 then
+        set counters.c = counters.c + 1;
+    else
+        set counters.a = counters.a + 1;
+        set counters.b = counters.b + 1;
+        set counters.c = counters.c + 1;
+    end;
+end;

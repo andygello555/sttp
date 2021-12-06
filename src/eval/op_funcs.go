@@ -73,7 +73,6 @@ func muString(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) 
 func number(op1 *data.Value, op2 *data.Value, operator Operator) (err error, result *data.Value) {
 	var op2Number *data.Value
 	err, op2Number = Cast(op2, data.Number)
-	fmt.Println("op2 is now", op2Number)
 	if err != nil {
 		return err, nil
 	}
@@ -95,7 +94,6 @@ func number(op1 *data.Value, op2 *data.Value, operator Operator) (err error, res
 	default:
 		return errors.InvalidOperation.Errorf(operator.String(), op1.Type.String(), op2.Type.String()), nil
 	}
-	fmt.Println("result", c)
 	return nil, &data.Value{
 		Value: c,
 		Type:  data.Number,

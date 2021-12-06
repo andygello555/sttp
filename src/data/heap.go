@@ -2,9 +2,7 @@ package data
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/errors"
-	"reflect"
 )
 
 type Heap map[string]*Value
@@ -29,6 +27,12 @@ func (h *Heap) Assign(name string, value interface{}, global bool) (err error) {
 		return err
 	}
 
+	// Check if there is an existing value and whether it's immutable
+	existing := h.Get(name)
+	if existing != nil && existing.ReadOnly {
+		return errors.ImmutableValue.Errorf(name)
+	}
+
 	(*h)[name] = &Value{
 		Value:  value,
 		Type:   t,
@@ -44,9 +48,10 @@ func (h *Heap) Get(name string) *Value {
 }
 
 type Value struct {
-	Value  interface{}
-	Type   Type
-	Global bool
+	Value    interface{}
+	Type     Type
+	Global   bool
+	ReadOnly bool
 }
 
 func (s *Value) String() string {
@@ -93,7 +98,6 @@ func (t *Type) Get(value interface{}) (err error) {
 		*t = Null
 		return nil
 	}
-	fmt.Println(value, reflect.TypeOf(value).String())
 
 	switch value.(type) {
 	case bool:
