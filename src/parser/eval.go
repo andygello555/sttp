@@ -1,10 +1,12 @@
 package parser
 
 import (
+	"container/heap"
 	"fmt"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/data"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/errors"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/eval"
+	"strings"
 	"testing"
 )
 
@@ -130,13 +132,7 @@ func (a *Assignment) Eval(vm VM) (err error, result *data.Value) {
 
 	// Then we set the current value using, the path found previously, to the value on the RHS
 	var val interface{}
-	switch result.Value.(type) {
-	case Boolean:
-		val = bool(result.Value.(Boolean))
-	default:
-		val = result.Value
-	}
-	err, val = path.Set(variableVal.Value, val)
+	err, val = path.Set(variableVal.Value, result.Value)
 	if err != nil {
 		return err, nil
 	}
@@ -166,15 +162,146 @@ func (t *TestStatement) Eval(vm VM) (err error, result *data.Value) {
 }
 
 func (w *While) Eval(vm VM) (err error, result *data.Value) {
-	return nil, nil
+	// Panic recovery makes returning errors a bit easier
+	defer func() {
+		if p := recover(); p != nil {
+			err = fmt.Errorf("%v", p)
+		}
+	}()
+
+	evalCond := func() bool {
+		// Evaluate the condition
+		if err, result = w.Condition.Eval(vm); err != nil {
+			panic(err)
+		}
+
+		// Cast to Boolean if it isn't already
+		if result.Type != data.Boolean {
+			if err, result = eval.Cast(result, data.Boolean); err != nil {
+				panic(err)
+			}
+		}
+		return result.Value.(bool)
+	}
+
+	// Then we execute the while loop
+	for evalCond() {
+		if err, _ = w.Block.Eval(vm); err != nil {
+			panic(err)
+		}
+	}
+	return err, result
 }
 
 func (f *For) Eval(vm VM) (err error, result *data.Value) {
-	return nil, nil
+	// Evaluate the assignment
+	if err, _ = f.Var.Eval(vm); err != nil {
+		return err, nil
+	}
+
+	// Panic recovery makes returning errors a bit easier
+	defer func() {
+		if p := recover(); p != nil {
+			err = fmt.Errorf("%v", p)
+		}
+	}()
+
+	evalCond := func() bool {
+		// Evaluate the condition
+		if err, result = f.Condition.Eval(vm); err != nil {
+			panic(err)
+		}
+
+		// Cast to Boolean if it isn't already
+		if result.Type != data.Boolean {
+			if err, result = eval.Cast(result, data.Boolean); err != nil {
+				panic(err)
+			}
+		}
+		return result.Value.(bool)
+	}
+
+	evalStep := func() {
+		// Evaluate the step
+		if err, _ = f.Step.Eval(vm); err != nil {
+			panic(err)
+		}
+	}
+
+	// Then we do our loop
+	for evalCond() {
+		if err, _ = f.Block.Eval(vm); err != nil {
+			return err, nil
+		}
+		evalStep()
+	}
+
+	return err, result
 }
 
 func (f *ForEach) Eval(vm VM) (err error, result *data.Value) {
-	return nil, nil
+	// Find the value we are iterating over
+	if err, result = f.In.Eval(vm); err != nil {
+		return err, nil
+	}
+
+	// Check if the Value is a string, object or an array. If not then we will check if the value is castable. This is 
+	// done in the order:
+	// - Object
+	// - Array
+	// - String
+	if result.Type != data.String && result.Type != data.Object && result.Type != data.Array {
+		// Find out what we can cast the value to
+		var to data.Type
+		if eval.Castable(result, data.Object) {
+			to = data.Object
+		} else if eval.Castable(result, data.Array) {
+			to = data.Array
+		} else if eval.Castable(result, data.String) {
+			to = data.String
+		} else {
+			object := data.Object; array := data.Array; str := data.String
+			return errors.CannotCast.Errorf(result.Type.String(), strings.Join([]string{object.String(), array.String(), str.String()}, ", ")), nil
+		}
+
+		// Cast the value
+		if err, result = eval.Cast(result, to); err != nil {
+			return err, nil
+		}
+	}
+
+	defer func() {
+		if p := recover(); p != nil {
+			err = fmt.Errorf("%v", p)
+		}
+	}()
+
+	// Construct the data.Iterator for the value
+	var iterator *data.Iterator
+	if err, iterator = data.Iterate(result); err != nil {
+		panic(err)
+	}
+
+	// Anon func to set the key and value iterators on each iteration
+	set := func(elem *data.Element) {
+		if err = vm.GetCallStack().Current().GetHeap().Assign(*f.Key, elem.Key.Value, elem.Key.Global); err != nil {
+			panic(err)
+		}
+		if f.Value != nil {
+			if err = vm.GetCallStack().Current().GetHeap().Assign(*f.Value, elem.Val.Value, elem.Val.Global); err != nil {
+				panic(err)
+			}
+		}
+	}
+
+	// Iterate over the iterator until we have nothing left.
+	for iterator.Len() > 0 {
+		set(heap.Pop(iterator).(*data.Element))
+		if err, result = f.Block.Eval(vm); err != nil {
+			panic(err)
+		}
+	}
+	return err, result
 }
 
 func (b *Batch) Eval(vm VM) (err error, result *data.Value) {
@@ -246,7 +373,7 @@ func (n *Null) Eval(vm VM) (err error, result *data.Value) {
 // Eval for Boolean will return a data.Value with the underlying boolean value and a data.Boolean type.
 func (b *Boolean) Eval(vm VM) (err error, result *data.Value) {
 	return nil, &data.Value{
-		Value:  *b,
+		Value:  bool(*b),
 		Type:   data.Boolean,
 		Global: *vm.GetScope() == 0,
 	}

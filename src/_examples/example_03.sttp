@@ -17,7 +17,13 @@ if a.second_if then
 elif a.first_if == false then
     set a.done = false;
 elif 0 + a.hello == 5 then
-    set a.done = true;
+    if true then
+        if true then
+            set a.done = true;
+        elif a.done then
+            set a.done = false;
+        end;
+    end;
 else
     set a.done = false;
 end;
