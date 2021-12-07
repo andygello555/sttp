@@ -7,6 +7,8 @@ import (
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/errors"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/eval"
 	"github.com/andygello555/gotils/strings"
+	"reflect"
+	str "strings"
 )
 
 const DefaultObjectKey = ""
@@ -221,7 +223,26 @@ func (p *Path) Get(current interface{}) interface{} {
 			}
 		}
 	}
-    return current
+	return current
+}
+
+// String returns the string representation of the Path. Which is in JSONPath format.
+func (p *Path) String() string {
+	var b str.Builder
+	for i, path := range *p {
+		switch path.(type) {
+		case string:
+			if i != 0 {
+				b.WriteString(".")
+			}
+			b.WriteString(path.(string))
+		case int:
+			b.WriteString(fmt.Sprintf("[%d]", path.(int)))
+		default:
+			panic(fmt.Errorf("path element should not be of type %s", reflect.TypeOf(path).String()))
+		}
+	}
+	return b.String()
 }
 
 // Pathable defines a structure which can be converted recursively into a path.

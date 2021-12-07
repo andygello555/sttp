@@ -1,7 +1,6 @@
 package parser
 
 import (
-	"container/heap"
 	"fmt"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/data"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/errors"
@@ -138,7 +137,7 @@ func (a *Assignment) Eval(vm VM) (err error, result *data.Value) {
 	}
 
 	// Finally, we assign the new value to the variable on the heap
-	err = heap.Assign(variableName, val, *vm.GetScope() == 0)
+	err = heap.Assign(variableName, val, *vm.GetScope() == 0, false)
 	if err != nil {
 		return err, nil
 	}
@@ -247,18 +246,18 @@ func (f *ForEach) Eval(vm VM) (err error, result *data.Value) {
 
 	// Check if the Value is a string, object or an array. If not then we will check if the value is castable. This is 
 	// done in the order:
+	// - String
 	// - Object
 	// - Array
-	// - String
 	if result.Type != data.String && result.Type != data.Object && result.Type != data.Array {
 		// Find out what we can cast the value to
 		var to data.Type
-		if eval.Castable(result, data.Object) {
+		if eval.Castable(result, data.String) {
+			to = data.String
+		} else if eval.Castable(result, data.Object) {
 			to = data.Object
 		} else if eval.Castable(result, data.Array) {
 			to = data.Array
-		} else if eval.Castable(result, data.String) {
-			to = data.String
 		} else {
 			object := data.Object; array := data.Array; str := data.String
 			return errors.CannotCast.Errorf(result.Type.String(), strings.Join([]string{object.String(), array.String(), str.String()}, ", ")), nil
@@ -284,11 +283,11 @@ func (f *ForEach) Eval(vm VM) (err error, result *data.Value) {
 
 	// Anon func to set the key and value iterators on each iteration
 	set := func(elem *data.Element) {
-		if err = vm.GetCallStack().Current().GetHeap().Assign(*f.Key, elem.Key.Value, elem.Key.Global); err != nil {
+		if err = vm.GetCallStack().Current().GetHeap().Assign(*f.Key, elem.Key.Value, elem.Key.Global, false); err != nil {
 			panic(err)
 		}
 		if f.Value != nil {
-			if err = vm.GetCallStack().Current().GetHeap().Assign(*f.Value, elem.Val.Value, elem.Val.Global); err != nil {
+			if err = vm.GetCallStack().Current().GetHeap().Assign(*f.Value, elem.Val.Value, elem.Val.Global, false); err != nil {
 				panic(err)
 			}
 		}
@@ -296,7 +295,8 @@ func (f *ForEach) Eval(vm VM) (err error, result *data.Value) {
 
 	// Iterate over the iterator until we have nothing left.
 	for iterator.Len() > 0 {
-		set(heap.Pop(iterator).(*data.Element))
+		//set(heap.Pop(iterator).(*data.Element))
+		set(iterator.Next())
 		if err, result = f.Block.Eval(vm); err != nil {
 			panic(err)
 		}
@@ -313,6 +313,47 @@ func (tc *TryCatch) Eval(vm VM) (err error, result *data.Value) {
 }
 
 func (f *FunctionDefinition) Eval(vm VM) (err error, result *data.Value) {
+	// Then we convert the JSONPath to a Path representation which can be easily iterated over.
+	var path Path
+	err, path = f.JSONPath.Convert(vm)
+	if err != nil {
+		return err, nil
+	}
+	// We get the root identifier of the JSONPath. This is the variable name.
+	variableName := path[0].(string)
+
+	heap := vm.GetCallStack().Current().GetHeap()
+
+	// Then we get value of the variable.
+	variableVal := heap.Get(variableName)
+	// If it cannot be found then we will set the value to be null initially.
+	if variableVal == nil {
+		variableVal = &data.Value{
+			Value:    nil,
+			Type:     data.Function,
+			Global:   true,
+			ReadOnly: true,
+		}
+	}
+
+	// Then we set the current value using, the path found previously, to a value pointing to the FunctionDefinition
+	var val interface{}
+	err, val = path.Set(variableVal.Value, f)
+	if err != nil {
+		return err, nil
+	}
+
+	// Finally, we assign the new value to the variable on the heap.
+	// NOTE: The variable's Global and ReadOnly flags are inherited from the variableVal. This means that either the 
+	// function definition is stored within a fresh new Value of Type Function, or nested within another Value.
+	err = heap.Assign(variableName, val, variableVal.Global, variableVal.ReadOnly)
+	if err != nil {
+		return err, nil
+	}
+
+	if testing.Verbose() {
+		fmt.Println("after function definition heap is:", heap)
+	}
 	return nil, nil
 }
 

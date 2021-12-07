@@ -1,7 +1,6 @@
 package eval
 
 import (
-	"encoding/json"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/data"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/errors"
 	"strconv"
@@ -17,21 +16,13 @@ func same(symbol *data.Value) (err error, cast *data.Value) {
 	return nil, symbol
 }
 
-// str will marshal the JSON value back to a JSON string.
-func str(value interface{}) string {
-	b, err := json.Marshal(value)
-	if err != nil {
-		panic(err)
-	}
-	return string(b)
-}
-
-// s marshals the JSON value and then creates a String symbol.
+// s marshals the JSON value and then creates a String data.Value.
 func s(symbol *data.Value) (err error, cast *data.Value) {
 	return err, &data.Value{
-		Value: str(symbol.Value),
+		Value: symbol.String(),
 		Type:  data.String,
 		Global: symbol.Global,
+		ReadOnly: symbol.ReadOnly,
 	}
 }
 
@@ -60,6 +51,7 @@ func l(symbol *data.Value) (err error, cast *data.Value) {
 		Value: n,
 		Type:  data.Number,
 		Global: symbol.Global,
+		ReadOnly: symbol.ReadOnly,
 	}
 }
 
@@ -71,6 +63,7 @@ func lBool(symbol *data.Value) (err error, cast *data.Value) {
 		Value: n > 0,
 		Type:  data.Boolean,
 		Global: symbol.Global,
+		ReadOnly: symbol.ReadOnly,
 	}
 }
 
@@ -78,11 +71,12 @@ func lBool(symbol *data.Value) (err error, cast *data.Value) {
 // value is null.
 func obSing(symbol *data.Value) (err error, cast *data.Value) {
 	ob := make(map[string]interface{})
-	ob[str(symbol.Value)] = nil
+	ob[symbol.String()] = nil
 	return nil, &data.Value{
 		Value: ob,
 		Type:  data.Object,
 		Global: symbol.Global,
+		ReadOnly: symbol.ReadOnly,
 	}
 }
 
@@ -94,6 +88,7 @@ func arSing(symbol *data.Value) (err error, cast *data.Value) {
 		Value: array,
 		Type:  data.Array,
 		Global: symbol.Global,
+		ReadOnly: symbol.ReadOnly,
 	}
 }
 
@@ -111,6 +106,7 @@ func obArray(symbol *data.Value) (err error, cast *data.Value) {
 		Value: array,
 		Type:  data.Array,
 		Global: symbol.Global,
+		ReadOnly: symbol.ReadOnly,
 	}
 }
 
@@ -125,6 +121,7 @@ func arObject(symbol *data.Value) (err error, cast *data.Value) {
 		Value: ob,
 		Type:  data.Object,
 		Global: symbol.Global,
+		ReadOnly: symbol.ReadOnly,
 	}
 }
 
@@ -154,6 +151,7 @@ func nuBoolean(symbol *data.Value) (err error, cast *data.Value) {
 		Value: symbol.Value.(float64) > 0,
 		Type:  data.Boolean,
 		Global: symbol.Global,
+		ReadOnly: symbol.ReadOnly,
 	}
 }
 
@@ -167,6 +165,7 @@ func boNumber(symbol *data.Value) (err error, cast *data.Value) {
 		Value: n,
 		Type:  data.Number,
 		Global: symbol.Global,
+		ReadOnly: symbol.ReadOnly,
 	}
 }
 
@@ -176,6 +175,7 @@ func nlNumber(symbol *data.Value) (err error, cast *data.Value) {
 		Value: float64(0),
 		Type:  data.Number,
 		Global: symbol.Global,
+		ReadOnly: symbol.ReadOnly,
 	}
 }
 
@@ -185,5 +185,6 @@ func nlBoolean(symbol *data.Value) (err error, cast *data.Value) {
 		Value: false,
 		Type:  data.Boolean,
 		Global: symbol.Global,
+		ReadOnly: symbol.ReadOnly,
 	}
 }

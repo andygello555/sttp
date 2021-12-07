@@ -20,7 +20,7 @@ var castTable = [8][8]func(symbol *data.Value) (err error, cast *data.Value) {
 	/* Number   */ {       e,   obSing,  arSing,        s,     same, nuBoolean,      e,          e},
 	/* Boolean  */ {       e,   obSing,  arSing,        s, boNumber,      same,      e,          e},
 	/* Null     */ {       e,   obSing,  arSing,        s, nlNumber, nlBoolean,   same,          e},
-	/* Function */ {       e,        e,       e,        e,        e,         e,      e,       same},
+	/* Function */ {       e,        e,       e,        s,        e,         e,      e,       same},
 }
 
 // Castable checks whether the given symbol can be cast to the given type. This just checks the entry in the appropriate
