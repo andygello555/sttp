@@ -3,6 +3,8 @@ package data
 import (
 	"encoding/json"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/errors"
+	"reflect"
+	"strings"
 )
 
 type Heap map[string]*Value
@@ -20,7 +22,7 @@ func (h *Heap) Delete(name string) {
 
 // Assign will create a new entry in the heap if the variable does not exist yet. Otherwise, will assign the new value 
 // and type to the existing symbol. The type of the symbol will be decided by Type.Get
-func (h *Heap) Assign(name string, value interface{}, global bool) (err error) {
+func (h *Heap) Assign(name string, value interface{}, global bool, ro bool) (err error) {
 	var t Type
 	err = t.Get(value)
 	if err != nil {
@@ -34,9 +36,10 @@ func (h *Heap) Assign(name string, value interface{}, global bool) (err error) {
 	}
 
 	(*h)[name] = &Value{
-		Value:  value,
-		Type:   t,
-		Global: global,
+		Value:    value,
+		Type:     t,
+		Global:   global,
+		ReadOnly: ro,
 	}
 	return nil
 }
@@ -48,14 +51,14 @@ func (h *Heap) Get(name string) *Value {
 }
 
 type Value struct {
-	Value    interface{}
-	Type     Type
-	Global   bool
-	ReadOnly bool
+	Value    interface{} `json:"value"`
+	Type     Type        `json:"type"`
+	Global   bool        `json:"global"`
+	ReadOnly bool        `json:"readOnly"`
 }
 
-func (s *Value) String() string {
-	ss, err := json.Marshal(s.Value)
+func (v *Value) String() string {
+	ss, err := json.Marshal(v.Value)
 	if err != nil {
 		panic(err)
 	}
@@ -111,8 +114,12 @@ func (t *Type) Get(value interface{}) (err error) {
 	case map[string]interface{}:
 		*t = Object
 	default:
-		*t = NoType
-		return errors.CannotFindType.Errorf(value)
+		if strings.Contains(reflect.TypeOf(value).String(), "FunctionDefinition") {
+			*t = Function
+		} else {
+			*t = NoType
+			return errors.CannotFindType.Errorf(value)
+		}
 	}
 	return nil
 }

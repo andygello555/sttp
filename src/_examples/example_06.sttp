@@ -5,13 +5,14 @@ set iterators = {
         "world": 3,
         "hello": 2,
         "!": 1
-    }
+    },
+    "loop5": 123
 };
 
 set loop1out = "[";
 for index, char in iterators.loop1 do
     set loop1out = loop1out + ("(%v: %v)" % [index, char]);
-    if index != (0 + iterators.loop1) then
+    if index != (0 + iterators.loop1) - 1 then
         set loop1out = loop1out + ", ";
     else
         set loop1out = loop1out + "]";
@@ -21,7 +22,7 @@ end;
 set loop2out = "[";
 for index, value in iterators.loop2 do
     set loop2out = loop2out + ("(%v: %v)" % [index, value]);
-    if index != (0 + iterators.loop2) then
+    if index != (0 + iterators.loop2) - 1 then
         set loop2out = loop2out + ", ";
     else
         set loop2out = loop2out + "]";
@@ -35,5 +36,34 @@ for key, value in iterators.loop3 do
         set loop3out = loop3out + ", ";
     else
         set loop3out = loop3out + "]";
+    end;
+end;
+
+set loop4out = "[";
+for key, value in {
+    "b": 1,
+    "d": 3,
+    "a": 0,
+    "f": 5,
+    "e": 4,
+    "c": 2
+} do
+    set loop4out = loop4out + ("(%v: %v)" % [key, value]);
+    if value != 5 then
+        set loop4out = loop4out + ", ";
+    else
+        set loop4out = loop4out + "]";
+    end;
+end;
+
+for index, value in [] do set ohno = true; end;
+
+set loop5out = "[";
+for index, char in iterators.loop5 do
+    set loop5out = loop5out + ("(%v: %v)" % [index, char]);
+    if index != 0 + ("" + iterators.loop5) - 1 then
+        set loop5out = loop5out + ", ";
+    else
+        set loop5out = loop5out + "]";
     end;
 end;

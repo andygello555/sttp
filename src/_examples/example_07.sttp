@@ -1,0 +1,19 @@
+set a = {"hello": "world"};
+
+function a[0].mutable(self[0].mutable, self[0].bar, foo, bar)
+    set out = "";
+    for set i = 0; i < self[0].mutable; set i = i + 1 do
+        set out = out + self[0].mutable + self[0].bar + foo + bar;
+    end;
+    return out;
+end;
+
+set a[0] = a[0] - {"mutable": null};
+
+function immutable(self, foo, bar)
+    return self + foo * bar;
+end;
+
+set a[0].mutable = immutable;
+set a[0].mutable[0] = null;
+set mutable_str = "" + a[0].mutable[1];

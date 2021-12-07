@@ -36,9 +36,24 @@ func (it *Iterator) Pop() interface{} {
 	old := *it
 	n := len(old)
 	elem := old[n-1]
-	old[n-1] = nil  // avoid memory leak
+	old[n-1] = nil // avoid memory leak
 	*it = old[0 : n-1]
 	return elem
+}
+
+func (it *Iterator) Next() *Element {
+	if it.Len() > 0 {
+		if (*it)[0].Key.Type == String {
+			return heap.Pop(it).(*Element)
+		} else {
+			old := *it
+			elem := old[0]
+			old[0] = nil
+			*it = old[1:]
+			return elem
+		}
+	}
+	return nil
 }
 
 // Iterate will construct an iterator from the given Value. This Value must be of Type: String, Object, or Array.
@@ -61,11 +76,10 @@ func Iterate(result *Value) (err error, it *Iterator) {
 	switch result.Type {
 	case Object:
 		obj := result.Value.(map[string]interface{})
-		iterator = make(Iterator, len(obj))
+		iterator = make(Iterator, 0)
 
-		i := 0
 		for k, v := range obj {
-			iterator[i] = &Element{
+			heap.Push(&iterator, &Element{
 				Key: &Value{
 					Value:    k,
 					Type:     String,
@@ -78,8 +92,7 @@ func Iterate(result *Value) (err error, it *Iterator) {
 					Global:   false,
 					ReadOnly: true,
 				},
-			}
-			i ++
+			})
 		}
 	case Array:
 		arr := result.Value.([]interface{})
@@ -122,6 +135,5 @@ func Iterate(result *Value) (err error, it *Iterator) {
 			}
 		}
 	}
-	heap.Init(&iterator)
 	return nil, &iterator
 }
