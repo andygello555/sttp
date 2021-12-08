@@ -32,9 +32,8 @@ func (p *Program) Eval(vm VM) (err error, result *data.Value) {
 func (b *Block) Eval(vm VM) (err error, result *data.Value) {
 	// We return the last statement or return an error if one occurred in the statement
 	for _, stmt := range b.Statements {
-		err, result = stmt.Eval(vm)
-		if err != nil {
-			return err, nil
+		if err, result = stmt.Eval(vm); err != nil {
+			return err, result
 		}
 	}
 
@@ -45,7 +44,7 @@ func (b *Block) Eval(vm VM) (err error, result *data.Value) {
 		return b.Throw.Eval(vm)
 	}
 
-	return nil, result
+	return err, result
 }
 
 func (r *ReturnStatement) Eval(vm VM) (err error, result *data.Value) {
@@ -55,7 +54,7 @@ func (r *ReturnStatement) Eval(vm VM) (err error, result *data.Value) {
 		return err, nil
 	}
 	*(current.GetReturn()) = *result
-	return err, result
+	return errors.Return, result
 }
 
 func (t *ThrowStatement) Eval(vm VM) (err error, result *data.Value) {
@@ -389,8 +388,19 @@ func (f *FunctionCall) Eval(vm VM) (err error, result *data.Value) {
 
 		// Evaluate the Block within the definition
 		if err, result = result.Value.(*FunctionDefinition).Body.Block.Eval(vm); err != nil {
-			return err, nil
+			switch err.(type) {
+			case errors.PurposefulError:
+				// If we have a purposeful error then we will check if it is Return. If so we will set err to nil.
+				if err.(errors.PurposefulError) == errors.Return {
+					err = nil
+					break
+				}
+				return err, result
+			default:
+				return err, nil
+			}
 		}
+
 
 		// Return the stack frame
 		var frame Frame

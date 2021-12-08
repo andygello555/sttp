@@ -1,4 +1,4 @@
-set object = {
+object = {
     "repeats": 30,
     "null": null,
     "false": false,
@@ -12,28 +12,28 @@ set object = {
             1 + 1 + 1
         ]
     },
-    "methodcall": GET("https://example.com"),
+    "methodcall": $GET("https://example.com"),
     "results": []
 };
 
 function object.execute(self.ifvar, self.var_ifwithin_self, party_variable.wow[0].a_a[0])
-    for set i = 0; i < self.repeats; set i = i + 1 do
+    for i = 0; i < self.repeats; i = i + 1 do
         if i % 3 == 0 then
-            set self.results = self.results + GET("https://google.com");;;;
+            self.results = self.results + $GET("https://google.com");;;;
             if true then
-                print(("hello" + "world")+"!");
+                $print(("hello" + "world")+"!");
             elif true then
-                print("still true");
+                $print("still true");
             else
-                print("hello");print("hello 2");print("hello 3");
+                $print("hello");$print("hello 2");$print("hello 3");
                 test "hello" == "hel" + "lo";
             end;
         elif i % 5 == 0 then
-            set self.results = self.results + GET("https://twitter.com");
+            self.results = self.results + $GET("https://twitter.com");
         elif i % 7 == 0 then
-            set self.results = self.results + GET("https://reddit.com");
+            self.results = self.results + $GET("https://reddit.com");
         else
-            set self.results = self.results + GET("https://facebook.com");
+            self.results = self.results + $GET("https://facebook.com");
         end;
     end;
     return "wow!";
@@ -46,21 +46,21 @@ try this
             "https://b.com",
             "https://c.com"
         ] do
-            set result = GET(url);
-            print(result);
+            result = $GET(url);
+            $print(result);
         end;
-        set oops_forgot_this = GET("https://d.com");
-        print(oops_forgot_this);
+        oops_forgot_this = $GET("https://d.com");
+        $print(oops_forgot_this);
     end;
     throw {"error": "time", "ohno": true};
 catch as err then
-    print(err);
+    $print(err);
 end;
 
-set this_boy = "to be this boy";
+this_boy = "to be this boy";
 
-try this batch this for url in ["https://a.com","https://b.com","https://c.com"] do set result = GET(url);print(result);end;set oops_forgot_this = GET("https://d.com");print(oops_forgot_this);end;throw {"error": "time", "ohno": true};catch as err then print(err);end;
+try this batch this for url in ["https://a.com","https://b.com","https://c.com"] do result = $GET(url);$print(result);end;oops_forgot_this = $GET("https://d.com");$print(oops_forgot_this);end;throw {"error": "time", "ohno": true};catch as err then $print(err);end;
 
-object.execute();
+wow = $object.execute();
 
 test object.results == 1 + 1 + 2;

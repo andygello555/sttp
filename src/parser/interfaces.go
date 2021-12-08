@@ -1,6 +1,9 @@
 package parser
 
-import "github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/data"
+import (
+	"fmt"
+	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/data"
+)
 
 // ASTNode is implemented by all ASTNodes
 type ASTNode interface {
@@ -22,6 +25,7 @@ type CallStack interface {
 	Call(caller *FunctionCall, current *FunctionDefinition, vm VM, args ...*data.Value) error
 	Return(vm VM) (err error, frame Frame)
 	Current() Frame
+	fmt.Stringer
 }
 
 // Frame is an entry on the call stack.

@@ -1,29 +1,29 @@
-set a = {
+a = {
     "hello": "world"
 };
 
 if a then
-    set a.first_if = true;
+    a.first_if = true;
 end;
 
 if a.first_if == false then
-    set a.second_if = true;
+    a.second_if = true;
 else
-    set a.second_if = false;
+    a.second_if = false;
 end;
 
 if a.second_if then
-    set a.done = false;
+    a.done = false;
 elif a.first_if == false then
-    set a.done = false;
+    a.done = false;
 elif 0 + a.hello == 5 then
     if true then
         if true then
-            set a.done = true;
+            a.done = true;
         elif a.done then
-            set a.done = false;
+            a.done = false;
         end;
     end;
 else
-    set a.done = false;
+    a.done = false;
 end;

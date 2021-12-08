@@ -88,7 +88,7 @@ func (t *TestStatement) String(indent int) string {
 }
 
 func (a *Assignment) String(indent int) string {
-	return fmt.Sprintf("%sset %s = %s", tabs(indent), a.JSONPath.String(0), a.Value.String(0))
+	return fmt.Sprintf("%s%s = %s", tabs(indent), a.JSONPath.String(0), a.Value.String(0))
 }
 
 func (s *Statement) String(indent int) string {
@@ -161,7 +161,7 @@ func (t *ThrowStatement) String(indent int) string {
 }
 
 func (f *FunctionCall) String(indent int) string {
-	functionCall := fmt.Sprintf("%s%s(", tabs(indent), f.JSONPath.String(0))
+	functionCall := fmt.Sprintf("%s$%s(", tabs(indent), f.JSONPath.String(0))
 	if len(f.Arguments) > 0 {
 		args := make([]string, len(f.Arguments))
 		for i, arg := range f.Arguments {
@@ -173,7 +173,7 @@ func (f *FunctionCall) String(indent int) string {
 }
 
 func (m *MethodCall) String(indent int) string {
-	methodCall := fmt.Sprintf("%s%s(", tabs(indent), methodNameMap[m.Method])
+	methodCall := fmt.Sprintf("%s$%s(", tabs(indent), methodNameMap[m.Method])
 	if len(m.Arguments) > 0 {
 		args := make([]string, len(m.Arguments))
 		for i, arg := range m.Arguments {

@@ -37,10 +37,13 @@ func TestParse(t *testing.T) {
 			t.Error("error:", err.Error())
 		}
 
+		//fmt.Println(testNo, ">>>>>>>>")
+		//fmt.Println(p.String(0))
+
 		actual := strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(p.String(0), " ", ""), "\t", ""), "\n", ""), ";", "")
 		expected := strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(example, " ", ""), "\t", ""), "\n", ""), ";", "")
 		if actual != expected && t != nil {
-			t.Errorf("%d: parsed output does not match input script", testNo + 1)
+			t.Errorf("%d: parsed output does not match input script", testNo+1)
 			//fmt.Println("-------")
 			//fmt.Println(actual)
 			//fmt.Println(">>>>>>>>>>>")

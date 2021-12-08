@@ -208,14 +208,14 @@ type FunctionBody struct {
 	Pos lexer.Position
 
 	Parameters []*JSONPath `"(" ( @@ ( "," @@ )* )? ")"`
-	Block      *Block    `@@ End`
+	Block      *Block      `@@ End`
 }
 
 // MethodCall describes a call to a HTTP method.
 type MethodCall struct {
 	Pos lexer.Position
 
-	Method    Method        `@Method`
+	Method    Method        `"$" @Method`
 	Arguments []*Expression `"(" (@@ ( "," @@ )*)? ")"`
 }
 
@@ -223,7 +223,7 @@ type MethodCall struct {
 type FunctionCall struct {
 	Pos lexer.Position
 
-	JSONPath  *JSONPath     `@@`
+	JSONPath  *JSONPath     `"$" @@`
 	Arguments []*Expression `"(" (@@ ( "," @@ )*)? ")"`
 }
 
@@ -285,7 +285,7 @@ type Statement struct {
 type Assignment struct {
 	Pos lexer.Position
 
-	JSONPath *JSONPath   `Set @@ "="`
+	JSONPath *JSONPath   `@@ "="`
 	Value    *Expression `@@`
 }
 
@@ -365,6 +365,7 @@ type Block struct {
 	Pos lexer.Position
 	Tokens []lexer.Token
 
+	//Statements []*Statement     `( @@? ";" )*`
 	Statements []*Statement     `( @@? ";" )*`
 	Return     *ReturnStatement `( @@ |`
 	Throw      *ThrowStatement  `  @@ )?`
@@ -382,7 +383,6 @@ var lex = lexer.MustSimple([]lexer.Rule{
 
 	{"StringLit", `"(\\"|[^"])*"`, nil},
 	{"Method", `(GET|HEAD|POST|PUT|DELETE|CONNECT|OPTIONS|TRACE|PATCH)`, nil},
-	{"Set", `set\s`, nil},
 	{"While", `while\s`, nil},
 	{"For", `for\s`, nil},
 	{"Do", `\sdo\s`, nil},
@@ -407,7 +407,7 @@ var lex = lexer.MustSimple([]lexer.Rule{
 	{"Batch", `batch\s`, nil},
 	{"Try", `try\s`, nil},
 	{"Operators", `\|\||&&|<=|>=|!=|==|[-+*/%=!<>]`, nil},
-	{"Punct", `[;,.(){}:]|\[|\]`, nil},
+	{"Punct", `[$;,.(){}:]|\[|\]`, nil},
 	{"Ident", `[a-zA-Z_]\w*`, nil},
 	{"Number", `([+-]?[0-9]*[.])?[0-9]+`, nil},
 	{"whitespace", `\s+`, nil},
