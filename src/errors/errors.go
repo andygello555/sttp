@@ -37,3 +37,17 @@ const (
 )
 
 func (se StructureError) Errorf(values... interface{}) error { return errorf(string(se), values...) }
+
+type PurposefulError int
+
+const (
+	Return PurposefulError = iota
+	Throw
+)
+
+var purposefulErrorName = map[PurposefulError]string{
+	Return: "return statement",
+	Throw:  "throw statement",
+}
+
+func (pe PurposefulError) Error() string { return purposefulErrorName[pe] }

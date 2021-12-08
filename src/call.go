@@ -85,7 +85,12 @@ func (cs *CallStack) Call(caller *parser.FunctionCall, current *parser.FunctionD
 			}
 		}
 
-		var self *data.Value
+		// Create the self variable on the heap. We do this by finding the JSONPath on the previous frame.
+		self := previous.Heap.Get(*current.JSONPath.Parts[0].Property)
+		if err := heap.Assign("self", self.Value, true, false); err != nil {
+			return err
+		}
+
 		// Set arguments on the heap
 		for i, param := range params {
 			// Get the value to set the param on the heap to
@@ -109,15 +114,7 @@ func (cs *CallStack) Call(caller *parser.FunctionCall, current *parser.FunctionD
 
 			var pathVal *data.Value
 			if path[0].(string) == "self" {
-				if self == nil {
-					// Create the self variable on the heap. We do this by finding the JSONPath on the previous frame.
-					self = previous.Heap.Get(*current.JSONPath.Parts[0].Property)
-					if err = heap.Assign("self", self.Value, true, false); err != nil {
-						return err
-					}
-				}
-				self = heap.Get("self")
-				pathVal = self
+				pathVal = heap.Get("self")
 			} else {
 				// If the root property doesn't exist on the heap then we will create a null value
 				if !heap.Exists(path[0].(string)) {
@@ -188,16 +185,24 @@ func (cs *CallStack) String() string {
 	for i := len(top) - 1; i > 0; i-- {
 		frame := top[i]
 		parentFrame := top[i - 1]
-		sb.WriteString(
-			fmt.Sprintf(
-				"File \"%s\", position %d:%d, in %s\n\t%s\n",
+		parentCurrent := ""
+		if parentFrame.Current != nil {
+			parentCurrent = fmt.Sprintf(", in %s", parentFrame.Current.JSONPath.String(0))
+		}
+
+		caller := ""
+		if frame.Caller != nil {
+			caller = fmt.Sprintf(
+				"File \"%s\", position %d:%d%s\n\t%s\n",
 				frame.Caller.Pos.Filename,
 				frame.Caller.Pos.Line,
 				frame.Caller.Pos.Column,
-				parentFrame.Current.JSONPath.String(0),
+				parentCurrent,
 				frame.Caller.String(0),
-			),
-		)
+			)
+		}
+
+		sb.WriteString(caller)
 	}
 	return sb.String()
 }

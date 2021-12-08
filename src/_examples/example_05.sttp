@@ -1,13 +1,13 @@
-set out = "";
+out = "";
 
-for set i = 0; i < 100; set i = i + 1 do
+for i = 0; i < 100; i = i + 1 do
     if i % 3 == 0 && i % 5 == 0 then
-        set out = out + "FizzBuzz";
+        out = out + "FizzBuzz";
     elif i % 3 == 0 then
-        set out = out + "Fizz";
+        out = out + "Fizz";
     elif i % 5 == 0 then
-        set out = out + "Buzz";
+        out = out + "Buzz";
     else
-        set out = out + i;
+        out = out + i;
     end;
 end;
