@@ -28,7 +28,6 @@ The following are all the tokens, along with their regular expressions, that the
         StringLit = `"(\\"|[^"])*"'
         Ident     = `[a-zA-Z_]\w*'
         Method    = `(GET|HEAD|POST|PUT|DELETE|CONNECT|OPTIONS|TRACE|PATCH)'
-        Set       = `set\s'
         While     = `while\s'
         For       = `for\s'
         Do        = `\sdo\s'
@@ -52,7 +51,7 @@ The following are all the tokens, along with their regular expressions, that the
         Batch     = `batch\s'
         Try       = `try\s'
         Operators = `\|\||&&|<=|>=|!=|==|[-+*/%=!<>]'
-        Punct     = `[;,.(){}:]|\[|\]'
+        Punct     = `[$;,.(){}:]|\[|\]'
         # Ignored tokens
         comment    = `//.*'
         whitespace = `\s+'
@@ -80,7 +79,7 @@ All capitalised symbols are tokens that are passed from the lexical analyser to 
                  | Function JSONPath FuncBody
                  | If Exp Then Block { ElifSeg } [ ElseSeg ] End ;
 
-        Ass      = Set JSONPath "=" Exp ;
+        Ass      = JSONPath "=" Exp ;
         ElifSeg  = Elif Exp Then Block ;
         ElseSeg  = Else Block ;
 
@@ -90,8 +89,8 @@ All capitalised symbols are tokens that are passed from the lexical analyser to 
 
         RetStmt  = Return [ Exp ] ";" ;
         ThrwStmt = Throw [ Exp ] ";" ;
-        FuncCall = JSONPath Args ;
-        MethCall = Method Args ;
+        FuncCall = "$" JSONPath Args ;
+        MethCall = "$" Method Args ;
         FuncBody = "(" [Params] ")" Block End ;
         Params   = JSONPath { "," JSONPath } ;
         Args     = "(" [ExpList] ")" ;
@@ -192,12 +191,12 @@ The possible value types are strings, floats, integers, arrays, objects, `true'/
         \item \textbf{Variables are set} when the root identifier \textbf{exists} in the \textbf{current scope}.
         \item \textbf{Variables are filled sparsely} when a \textbf{JSONPath accessing a non-existent sublevel} of the JSON is assigned to. For instance:
         \begin{verbatim}
-            set hello_world = {
+            hello_world = {
                 "hello": "world"
             };
-            set hello_world.world[1].hello = "world";
+            hello_world.world[1].hello = "world";
             /*
-            hello = {
+            hello_world = {
                 "hello": "world",
                 "world": [
                     null,
@@ -380,11 +379,11 @@ The \verb|batch| construct lets you \textbf{parallelise all HTTP method calls ma
     04         "https://b.com",
     05         "https://c.com"
     06     ] do
-    07         set result = GET(url);
-    08         print(result);
+    07         result = $GET(url);
+    08         $print(result);
     09     end;
-    10     set oops_forgot_this = GET("https://d.com");
-    11     print(oops_forgot_this);
+    10     oops_forgot_this = $GET("https://d.com");
+    11     $print(oops_forgot_this);
     12 end;
     \end{verbatim}
 \end{center}
