@@ -5,6 +5,7 @@ import (
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/data"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/errors"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/eval"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -15,13 +16,15 @@ type evalNode interface {
 
 func (p *Program) Eval(vm VM) (err error, result *data.Value) {
 	// We insert a nil stack frame to indicate the bottom of the stack
-	err = vm.GetCallStack().Call(nil, nil)
+	err = vm.GetCallStack().Call(nil, nil, vm)
 	if err != nil {
 		return err, nil
 	}
-	err, result = p.Block.Eval(vm)
-	if err == nil {
-		err, _ = vm.GetCallStack().Return()
+	if err, result = p.Block.Eval(vm); err == nil {
+		if testing.Verbose() {
+			fmt.Println("final stack frame heap:", vm.GetCallStack().Current().GetHeap())
+		}
+		err, _ = vm.GetCallStack().Return(vm)
 	}
 	return err, result
 }
@@ -48,7 +51,9 @@ func (b *Block) Eval(vm VM) (err error, result *data.Value) {
 func (r *ReturnStatement) Eval(vm VM) (err error, result *data.Value) {
 	// Set the Return field of the current stack Frame
 	current := vm.GetCallStack().Current()
-	err, result = r.Value.Eval(vm)
+	if err, result = r.Value.Eval(vm); err != nil {
+		return err, nil
+	}
 	*(current.GetReturn()) = *result
 	return err, result
 }
@@ -73,7 +78,9 @@ func (s *Statement) Eval(vm VM) (err error, result *data.Value) {
 	case s.Assignment != nil:
 		err, result = s.Assignment.Eval(vm)
 	case s.FunctionCall != nil:
+		*vm.GetScope() ++
 		err, result = s.FunctionCall.Eval(vm)
+		*vm.GetScope() --
 	case s.MethodCall != nil:
 		err, result = s.MethodCall.Eval(vm)
 	case s.Break != nil:
@@ -145,10 +152,6 @@ func (a *Assignment) Eval(vm VM) (err error, result *data.Value) {
 	if testing.Verbose() {
 		fmt.Println("after assignment heap is:", heap)
 	}
-	return nil, nil
-}
-
-func (f *FunctionCall) Eval(vm VM) (err error, result *data.Value) {
 	return nil, nil
 }
 
@@ -313,7 +316,7 @@ func (tc *TryCatch) Eval(vm VM) (err error, result *data.Value) {
 }
 
 func (f *FunctionDefinition) Eval(vm VM) (err error, result *data.Value) {
-	// Then we convert the JSONPath to a Path representation which can be easily iterated over.
+	// We convert the JSONPath to a Path representation which can be easily iterated over.
 	var path Path
 	err, path = f.JSONPath.Convert(vm)
 	if err != nil {
@@ -355,6 +358,51 @@ func (f *FunctionDefinition) Eval(vm VM) (err error, result *data.Value) {
 		fmt.Println("after function definition heap is:", heap)
 	}
 	return nil, nil
+}
+
+func (f *FunctionCall) Eval(vm VM) (err error, result *data.Value) {
+	// CHECK BUILTINS HERE
+	if err, result = f.JSONPath.Eval(vm); err != nil {
+		return err, nil
+	}
+
+	// If the value isn't a callable then we will return an error
+	if result.Type != data.Function {
+		return errors.Uncallable.Errorf(result.Type.String()), nil
+	}
+
+	// Check if the Golang type of the value
+	switch result.Value.(type) {
+	case *FunctionDefinition:
+		// Evaluate arguments and create a list of args
+		args := make([]*data.Value, len(f.Arguments))
+		for i, arg := range f.Arguments {
+			if err, args[i] = arg.Eval(vm); err != nil {
+				return err, nil
+			}
+		}
+
+		// Construct the new stack frame and put it on the callstack
+		if err = vm.GetCallStack().Call(f, result.Value.(*FunctionDefinition), vm, args...); err != nil {
+			return err, nil
+		}
+
+		// Evaluate the Block within the definition
+		if err, result = result.Value.(*FunctionDefinition).Body.Block.Eval(vm); err != nil {
+			return err, nil
+		}
+
+		// Return the stack frame
+		var frame Frame
+		if err, frame = vm.GetCallStack().Return(vm); err != nil {
+			return err, nil
+		}
+		result = frame.GetReturn()
+	default:
+		panic(fmt.Errorf("function value has type %s", reflect.TypeOf(result.Value).String()))
+	}
+
+	return err, result
 }
 
 func (i *IfElifElse) Eval(vm VM) (err error, result *data.Value) {
@@ -449,9 +497,10 @@ func (j *JSONPath) Eval(vm VM) (err error, result *data.Value) {
 	}
 
 	return nil, &data.Value{
-		Value:  val,
-		Type:   t,
-		Global: *vm.GetScope() == 0,
+		Value:    val,
+		Type:     t,
+		Global:   *vm.GetScope() == 0,
+		ReadOnly: t == data.Function,
 	}
 }
 

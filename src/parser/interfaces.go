@@ -19,8 +19,8 @@ type VM interface {
 
 // CallStack is implemented by the call stack that is used within the VM.
 type CallStack interface {
-	Call(caller *FunctionCall, current *FunctionDefinition) error
-	Return() (err error, frame Frame)
+	Call(caller *FunctionCall, current *FunctionDefinition, vm VM, args ...*data.Value) error
+	Return(vm VM) (err error, frame Frame)
 	Current() Frame
 }
 

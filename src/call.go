@@ -51,11 +51,12 @@ type CallStack []*Frame
 
 // Call allocates a new stack Frame with the given caller and function definition and adds it to the top of the stack.
 // Returns an error if there is a stack overflow as well as the allocated stack frame.
-func (cs *CallStack) Call(caller *parser.FunctionCall, current *parser.FunctionDefinition) error {
+func (cs *CallStack) Call(caller *parser.FunctionCall, current *parser.FunctionDefinition, vm parser.VM, args ...*data.Value) error {
 	if len(*cs) == MaxStackFrames {
 		return errors.StackOverflow.Errorf(MaxStackFrames)
 	}
 
+	// Put a new Frame onto the stack
 	heap := make(data.Heap)
 	*cs = append(*cs, &Frame{
 		Caller:  caller,
@@ -67,6 +68,72 @@ func (cs *CallStack) Call(caller *parser.FunctionCall, current *parser.FunctionD
 			Global: false,
 		},
 	})
+
+	// We only do this if this isn't our last stack frame
+	if caller != nil && current != nil {
+		params := current.Body.Parameters
+		previous := (*cs)[len(*cs) - 2]
+		// If there are more arguments than parameters then we'll return an error
+		if len(args) > len(params) {
+			return errors.MoreArgsThanParams.Errorf(current.JSONPath.String(0), len(params), len(args))
+		}
+
+		// Copy over global variables from the previous stack frame
+		for name, val := range *previous.Heap {
+			if val.Global {
+				heap[name] = val
+			}
+		}
+
+		var self *data.Value
+		// Set arguments on the heap
+		for i, param := range params {
+			// Get the value to set the param on the heap to
+			var val *data.Value
+			if i < len(args) {
+				val = args[i]
+			} else {
+				val = &data.Value{
+					Value:    nil,
+					Type:     data.Null,
+					Global:   false,
+					ReadOnly: false,
+				}
+			}
+
+			// Check whether the param's JSONPath starts with "self"
+			err, path := param.Convert(vm)
+			if err != nil {
+				return err
+			}
+
+			var pathVal *data.Value
+			if path[0].(string) == "self" {
+				if self == nil {
+					// Create the self variable on the heap. We do this by finding the JSONPath on the previous frame.
+					self = previous.Heap.Get(*current.JSONPath.Parts[0].Property)
+					if err = heap.Assign("self", self.Value, true, false); err != nil {
+						return err
+					}
+				}
+				self = heap.Get("self")
+				pathVal = self
+			} else {
+				// If the root property doesn't exist on the heap then we will create a null value
+				if !heap.Exists(path[0].(string)) {
+					if err = heap.Assign(path[0].(string), nil, false, false); err != nil {
+						return err
+					}
+				}
+				pathVal = heap.Get(path[0].(string))
+			}
+
+			// Then finally we set the value of the *data.Value
+			if err, pathVal.Value = path.Set(pathVal.Value, val.Value); err != nil {
+				return err
+			}
+		}
+	}
 	return nil
 }
 
@@ -76,14 +143,34 @@ func (cs *CallStack) Current() parser.Frame {
 }
 
 // Return pops off the topmost stack Frame and returns it. Also returns an error if there is a stack underflow.
-func (cs *CallStack) Return() (err error, frame parser.Frame) {
+func (cs *CallStack) Return(vm parser.VM) (err error, frame parser.Frame) {
 	if len(*cs) == MinStackFrames {
 		return errors.StackUnderFlow.Errorf(MinStackFrames), nil
 	}
 
 	// Pop off the topmost frame
 	frame = (*cs)[len(*cs) - 1]
+	(*cs)[len(*cs) - 1] = nil
 	*cs = (*cs)[:len(*cs) - 1]
+
+	if len(*cs) > 0 {
+		heap := cs.Current().GetHeap()
+		// Copy the globals back to the current stack frame
+		for name, val := range *frame.GetHeap() {
+			if val.Global {
+				// If the variable is self we'll copy back the value into the variable denoted by the root property of the 
+				// old frame's JSONPath.
+				if name == "self" {
+					var path parser.Path
+					if err, path = frame.GetCurrent().JSONPath.Convert(vm); err != nil {
+						return err, frame
+					}
+					name = path[0].(string)
+				}
+				(*heap)[name] = val
+			}
+		}
+	}
 	return nil, frame
 }
 

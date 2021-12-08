@@ -114,6 +114,7 @@ func (t *Type) Get(value interface{}) (err error) {
 	case map[string]interface{}:
 		*t = Object
 	default:
+		// Using reflection we find the name of the value's type to see if it is a FunctionDefinition
 		if strings.Contains(reflect.TypeOf(value).String(), "FunctionDefinition") {
 			*t = Function
 		} else {

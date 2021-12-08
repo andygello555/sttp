@@ -22,6 +22,8 @@ const (
 	StringManipulationError RuntimeError = "error whilst manipulating \"%s\": %s"
 	Exception               RuntimeError = "exception: %s, was thrown on %s"
 	JSONPathError           RuntimeError = "cannot access %s with %s"
+	Uncallable              RuntimeError = "cannot call value of type %s"
+	MoreArgsThanParams      RuntimeError = "function %s has %d parameters, there were %d arguments provided"
 )
 
 func (re RuntimeError) Errorf(values... interface{}) error { return errorf(string(re), values...) }
