@@ -16,9 +16,11 @@ type VM struct {
 	ParentStatement interface{}
 	// CallStack contains the current call stack state.
 	CallStack       *CallStack
+	// TestResults contains the tests that have been run.
+	TestResults     *TestResults
 }
 
-func New() *VM {
+func New(testResults *TestResults) *VM {
 	h := make(data.Heap)
 	cs := make(CallStack, 0)
 	return &VM{
@@ -26,6 +28,7 @@ func New() *VM {
 		Scope: 0,
 		ParentStatement: nil,
 		CallStack: &cs,
+		TestResults: testResults,
 	}
 }
 
@@ -59,4 +62,8 @@ func (vm *VM) GetParentStatement() interface{} {
 
 func (vm *VM) GetCallStack() parser.CallStack {
 	return vm.CallStack
+}
+
+func (vm *VM) GetTestResults() parser.TestResults {
+	return vm.TestResults
 }
