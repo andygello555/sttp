@@ -18,6 +18,7 @@ type VM interface {
 	GetScope() *int
 	GetParentStatement() interface{}
 	GetCallStack() CallStack
+	GetTestResults() TestResults
 }
 
 // CallStack is implemented by the call stack that is used within the VM.
@@ -34,4 +35,17 @@ type Frame interface {
 	GetCurrent() *FunctionDefinition
 	GetHeap()    *data.Heap
 	GetReturn()  *data.Value
+}
+
+// TestResults is a list of test results.
+type TestResults interface{
+	AddTest(node *TestStatement, passed bool)
+	GetConfig() Config
+	CheckPassed() bool
+	indentString
+}
+
+// Config is an interface for any config type.
+type Config interface {
+	Get(name string) interface{}
 }

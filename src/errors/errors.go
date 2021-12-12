@@ -32,6 +32,7 @@ type StructureError string
 
 const (
 	ImmutableValue        StructureError = "%s is immutable, cannot write to it"
+	NoTestSuite           StructureError = "no test suite, cannot execute test statement: \"%s\""
 	HeapEntryDoesNotExist StructureError = "cannot %s %s (scope: %d), as \"%s\" is not an entry in symbol table"
 	HeapScopeDoesNotExist StructureError = "cannot %s %s (scope: %d), as scope: %d does not exist in the scope list for the symbol \"%s\""
 )
@@ -43,11 +44,13 @@ type PurposefulError int
 const (
 	Return PurposefulError = iota
 	Throw
+	FailedTest
 )
 
 var purposefulErrorName = map[PurposefulError]string{
-	Return: "return statement",
-	Throw:  "throw statement",
+	Return:     "return statement",
+	Throw:      "throw statement",
+	FailedTest: "failed test statement",
 }
 
 func (pe PurposefulError) Error() string { return purposefulErrorName[pe] }

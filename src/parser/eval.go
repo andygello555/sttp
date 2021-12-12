@@ -159,7 +159,31 @@ func (m *MethodCall) Eval(vm VM) (err error, result *data.Value) {
 }
 
 func (t *TestStatement) Eval(vm VM) (err error, result *data.Value) {
-	return nil, nil
+	// We defer the addition of the test to simplify the logic within this node a bit
+	if vm.GetTestResults() != nil {
+		passed := false
+		defer func() {
+			vm.GetTestResults().AddTest(t, passed)
+		}()
+
+		if err, result = t.Expression.Eval(vm); err == nil {
+			if result.Type != data.Boolean {
+				if err, result = eval.Cast(result, data.Boolean); err != nil {
+					return err, nil
+				}
+			}
+
+			passed = result.Value.(bool) == true
+			// If the test has not passed and the BreakOnFailure flag has been set in the TestConfig, then we'll set the 
+			// error to FailedTest.
+			if vm.GetTestResults().GetConfig().Get("BreakOnFailure").(bool) && !passed {
+				err = errors.FailedTest
+			}
+		}
+	} else {
+		panic(errors.NoTestSuite.Errorf(t.String(0)))
+	}
+	return err, result
 }
 
 func (w *While) Eval(vm VM) (err error, result *data.Value) {
