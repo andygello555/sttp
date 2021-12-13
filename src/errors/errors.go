@@ -24,6 +24,7 @@ const (
 	JSONPathError           RuntimeError = "cannot access %s with %s"
 	Uncallable              RuntimeError = "cannot call value of type %s"
 	MoreArgsThanParams      RuntimeError = "function %s has %d parameters, there were %d arguments provided"
+	MethodParamNotOptional  RuntimeError = "method parameter \"%s\" is not optional"
 )
 
 func (re RuntimeError) Errorf(values... interface{}) error { return errorf(string(re), values...) }

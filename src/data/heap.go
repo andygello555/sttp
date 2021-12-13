@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/errors"
 	"reflect"
+	"strconv"
 	"strings"
 )
 
@@ -72,9 +73,11 @@ func ConstructSymbol(value interface{}, global bool) (err error, symbol *Value) 
 	switch value.(type) {
 	case string:
 		// If the value is a string we unmarshal it and check the unmarshalled value's type
-		err = json.Unmarshal([]byte(value.(string)), &jsonVal)
-		if err != nil {
-			return err, nil
+		if err = json.Unmarshal([]byte(value.(string)), &jsonVal); err != nil {
+			// If we cannot unmarshal it we can just wrap it in quotations and treat it as a string
+			if err = json.Unmarshal([]byte(strconv.Quote(value.(string))), &jsonVal); err != nil {
+				return err, nil
+			}
 		}
 
 		err = t.Get(jsonVal)

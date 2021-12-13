@@ -4,7 +4,13 @@ import (
 	"fmt"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/data"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/errors"
+	"os/exec"
 	"testing"
+)
+
+const (
+	EchoChamberCmd    = "node"
+	EchoChamberSource = "../_examples/echo_chamber/main.js"
 )
 
 func TestCompute(t *testing.T) {
@@ -387,4 +393,202 @@ func TestCompute(t *testing.T) {
 			t.Errorf("result \"%v\" for testNo: %d does not match the required result: \"%v\"", result, testNo + 1, test.result)
 		}
 	}
+}
+
+func TestMethod_Call(t *testing.T) {
+	// Start the echo chamber web server
+	echoChamber := exec.Command(EchoChamberCmd, EchoChamberSource)
+	if err := echoChamber.Start(); err != nil {
+		panic(fmt.Errorf("could not start echo chamber: \"%s\"", err.Error()))
+	}
+
+	for testNo, test := range []struct {
+		args   []*data.Value
+		method Method
+		result *data.Value
+		err    error
+	}{
+		{
+			args: []*data.Value{
+				{
+					Value:    "http://127.0.0.1:3000/hello/world?hello=world",
+					Type:     data.String,
+					Global:   false,
+					ReadOnly: false,
+				},
+			},
+			method: GET,
+			result: &data.Value{
+				Value:    map[string]interface{} {
+					"code": nil,
+					"headers": map[string]interface{} {
+						"accept-encoding": "gzip",
+						"host": "127.0.0.1:3000",
+						"user-agent": "go-resty/2.7.0 (https://github.com/go-resty/resty)",
+					},
+					"method": "GET",
+					"query_params": map[string]interface{} {
+						"hello": "world",
+					},
+					"url": "http://127.0.0.1:3000/hello/world?hello=world",
+					"version": "1.1",
+				},
+				Type:     data.Object,
+				Global:   false,
+				ReadOnly: false,
+			},
+			err: nil,
+		},
+		{
+			args: []*data.Value{
+				{
+					Value:    "http://127.0.0.1:3000/hello/world?hello=world",
+					Type:     data.String,
+				},
+				{
+					Value: map[string]interface{}{
+						"header_1": float64(1),
+						"header_2": float64(2),
+					},
+					Type: data.Object,
+				},
+			},
+			method: GET,
+			result: &data.Value{
+				Value:    map[string]interface{} {
+					"code": nil,
+					"headers": map[string]interface{} {
+						"accept-encoding": "gzip",
+						"host": "127.0.0.1:3000",
+						"user-agent": "go-resty/2.7.0 (https://github.com/go-resty/resty)",
+						"header_1": "1",
+						"header_2": "2",
+					},
+					"method": "GET",
+					"query_params": map[string]interface{} {
+						"hello": "world",
+					},
+					"url": "http://127.0.0.1:3000/hello/world?hello=world",
+					"version": "1.1",
+				},
+				Type:     data.Object,
+				Global:   false,
+				ReadOnly: false,
+			},
+			err: nil,
+		},
+		{
+			args: []*data.Value{
+				{
+					Value: "http://127.0.0.1:3000/hello/world?hello=world",
+					Type: data.String,
+				},
+				{
+					Value: map[string]interface{}{
+						"header_1": float64(1),
+						"header_2": float64(2),
+					},
+					Type: data.Object,
+				},
+				{
+					Value: map[string]interface{} {
+						"cookie1": float64(1),
+						"cookie2": float64(2),
+					},
+					Type: data.Object,
+				},
+			},
+			method: GET,
+			result: &data.Value{
+				Value:    map[string]interface{} {
+					"code": nil,
+					"headers": map[string]interface{} {
+						"accept-encoding": "gzip",
+						"host": "127.0.0.1:3000",
+						"user-agent": "go-resty/2.7.0 (https://github.com/go-resty/resty)",
+						"cookie": "cookie1=1; cookie2=2",
+						"header_1": "1",
+						"header_2": "2",
+					},
+					"method": "GET",
+					"query_params": map[string]interface{} {
+						"hello": "world",
+					},
+					"url": "http://127.0.0.1:3000/hello/world?hello=world",
+					"version": "1.1",
+				},
+				Type:     data.Object,
+				Global:   false,
+				ReadOnly: false,
+			},
+			err: nil,
+		},
+		{
+			args: []*data.Value{
+				{
+					Value: "http://127.0.0.1:3000/hello/world?hello=world",
+					Type: data.String,
+				},
+				{
+					Value: nil,
+					Type: data.Null,
+				},
+				{
+					Value: map[string]interface{} {
+						"cookie1": float64(1),
+						"cookie2": float64(2),
+					},
+					Type: data.Object,
+				},
+			},
+			method: GET,
+			result: &data.Value{
+				Value:    map[string]interface{} {
+					"code": nil,
+					"headers": map[string]interface{} {
+						"accept-encoding": "gzip",
+						"host": "127.0.0.1:3000",
+						"user-agent": "go-resty/2.7.0 (https://github.com/go-resty/resty)",
+						"cookie": "cookie1=1; cookie2=2",
+					},
+					"method": "GET",
+					"query_params": map[string]interface{} {
+						"hello": "world",
+					},
+					"url": "http://127.0.0.1:3000/hello/world?hello=world",
+					"version": "1.1",
+				},
+				Type:     data.Object,
+				Global:   false,
+				ReadOnly: false,
+			},
+			err: nil,
+		},
+	}{
+		var ok bool
+		err, result := test.method.Call(test.args...)
+		// Check if the actual result is Equal to the expected result only if there is no error.
+		if err == nil {
+			err, ok = EqualInterface(result.Value.(map[string]interface{})["content"], test.result.Value)
+		}
+
+		if testing.Verbose() && result != nil {
+			fmt.Printf("%d: $%s(%v) = %s\n", testNo + 1, test.method.String(), test.args, result.String())
+		}
+
+		if test.err != nil {
+			if err.Error() != test.err.Error() {
+				t.Errorf("error \"%s\" for testNo: %d does not match the required error: \"%s\"", err.Error(), testNo+1, test.err.Error())
+			}
+		} else if err != nil {
+			t.Errorf("error \"%s\" should not have occurred (testNo: %d)", err.Error(), testNo + 1)
+		} else if !ok {
+			t.Errorf("result \"%v\" for testNo: %d does not match the required result: \"%v\"", result, testNo + 1, test.result)
+		}
+	}
+
+	// Kill the echo chamber
+	if err := echoChamber.Process.Kill(); err != nil {
+		panic("failed to kill echo chamber")
+	} 
 }
