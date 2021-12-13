@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/parser"
+	"io"
 	"io/ioutil"
 	"path/filepath"
 	"reflect"
@@ -145,8 +146,10 @@ func (ts *TestSuite) String() string {
 }
 
 // Run will create a new VM for each test script in the current and any sub-directories and will also construct a new 
-// TestSuite for any sub-directories. The results of the test suite will be output at the end of the procedure.
-func (ts *TestSuite) Run() error {
+// TestSuite for any sub-directories. The results of the test suite will be output at the end of the procedure. You can
+// also specify the io.Writer for stdout and stderr, if these are nil then these will default to os.Stdout and os.Stderr
+// respectfully.
+func (ts *TestSuite) Run(stdout io.Writer, stderr io.Writer) error {
 	if files, err := ioutil.ReadDir(ts.Path); err != nil {
 		return err
 	} else {
@@ -155,7 +158,7 @@ func (ts *TestSuite) Run() error {
 			if file.IsDir() {
 				// Create a new test suite
 				newSuite := NewSuite(path, ts.Config.BreakOnFailure, ts.NestLevel + 1)
-				if err = newSuite.Run(); err != nil {
+				if err = newSuite.Run(stdout, stderr); err != nil {
 					return err
 				}
 				// Merge the test suite into the InnerSuites
@@ -169,7 +172,7 @@ func (ts *TestSuite) Run() error {
 					}
 
 					// Create a new VM and run the script
-					vm := New(ts.Suite[path])
+					vm := New(ts.Suite[path], stdout, stderr)
 					fileBytes, _ := ioutil.ReadFile(path)
 					if err, _ = vm.Eval(path, string(fileBytes)); err != nil && ts.Config.BreakOnFailure {
 						break

@@ -17,9 +17,7 @@ const (
 	POST
 	PUT
 	DELETE
-	CONNECT
 	OPTIONS
-	TRACE
 	PATCH
 )
 
@@ -29,9 +27,7 @@ var methodMap = map[string]Method{
 	"POST":    POST,
 	"PUT":     PUT,
 	"DELETE":  DELETE,
-	"CONNECT": CONNECT,
 	"OPTIONS": OPTIONS,
-	"TRACE":   TRACE,
 	"PATCH":   PATCH,
 }
 
@@ -41,22 +37,8 @@ var methodNameMap = map[Method]string{
 	POST:    "POST",
 	PUT:     "PUT",
 	DELETE:  "DELETE",
-	CONNECT: "CONNECT",
 	OPTIONS: "OPTIONS",
-	TRACE:   "TRACE",
 	PATCH:   "PATCH",
-}
-
-var methodCall = map[Method]func(args ...*data.Value) (error, *data.Value) {
-	GET:     get,
-	HEAD:    head,
-	POST:    post,
-	PUT:     put,
-	DELETE:  del,
-	CONNECT: connect,
-	OPTIONS: options,
-	TRACE:   trace,
-	PATCH:   patch,
 }
 
 type MethodParamType int
@@ -87,9 +69,7 @@ var methodParams = map[Method]map[MethodParamType]bool {
 	POST:    {Url: true, Headers: false, Cookies: false, Body: false},
 	PUT:     {Url: true, Headers: false, Cookies: false, Body: false},
 	DELETE:  {Url: true, Headers: false, Cookies: false, Body: false},
-	CONNECT: {Url: true, Headers: false, Cookies: false},
 	OPTIONS: {Url: true, Headers: false, Cookies: false},
-	TRACE:   {Url: true, Headers: false, Cookies: false},
 	PATCH:   {Url: true, Headers: false, Cookies: false, Body: false},
 }
 
@@ -156,6 +136,7 @@ func (mpt MethodParamType) ApplyArg(arg *data.Value, request *resty.Request) err
 	return nil
 }
 
+// GetParamType will return the MethodParamType for the given i-th argument.
 func (m *Method) GetParamType(arg int) MethodParamType {
 	var mpt, i int
 	for mpt, i = 0, 0; mpt < len(methodParams[*m]); mpt++ {
@@ -170,6 +151,7 @@ func (m *Method) GetParamType(arg int) MethodParamType {
 	return MethodParamType(mpt)
 }
 
+// Call will call the HTTP method.
 func (m *Method) Call(args ...*data.Value) (err error, value *data.Value) {
 	if len(args) > 0 {
 		request := resty.New().R()
@@ -235,6 +217,7 @@ func (m *Method) Call(args ...*data.Value) (err error, value *data.Value) {
 	return err, value
 }
 
+// Capture method for participle lexer.
 func (m *Method) Capture(s []string) error {
 	var ok bool
 	*m, ok = methodMap[s[0]]
@@ -244,6 +227,7 @@ func (m *Method) Capture(s []string) error {
 	return nil
 }
 
+// String returns the name of the method from the methodNameMap.
 func (m *Method) String() string {
 	return methodNameMap[*m]
 }

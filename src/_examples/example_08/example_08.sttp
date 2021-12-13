@@ -5,4 +5,4 @@ function fib(n)
     return $fib(n - 1) + $fib(n - 2);
 end;
 
-fib10 = $fib(20);
+fib10 = $fib(10);

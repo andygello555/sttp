@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/data"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/parser"
+	"io"
+	"os"
 )
 
 // VM represents the current state of the sttp virtual machines.
@@ -18,17 +20,26 @@ type VM struct {
 	CallStack       *CallStack
 	// TestResults contains the tests that have been run.
 	TestResults     *TestResults
+	// Stdout is the io.Writer written to for print calls.
+	Stdout          io.Writer
+	// Stderr is the io.Writer written to for error calls.
+	Stderr			io.Writer
 }
 
-func New(testResults *TestResults) *VM {
+func New(testResults *TestResults, stdout io.Writer, stderr io.Writer) *VM {
 	h := make(data.Heap)
 	cs := make(CallStack, 0)
+
+	if stdout == nil { stdout = os.Stdout }
+	if stderr == nil { stderr = os.Stderr }
 	return &VM{
 		Symbols: &h,
 		Scope: 0,
 		ParentStatement: nil,
 		CallStack: &cs,
 		TestResults: testResults,
+		Stdout: stdout,
+		Stderr: stderr,
 	}
 }
 
@@ -66,4 +77,12 @@ func (vm *VM) GetCallStack() parser.CallStack {
 
 func (vm *VM) GetTestResults() parser.TestResults {
 	return vm.TestResults
+}
+
+func (vm *VM) GetStdout() io.Writer {
+	return vm.Stdout
+}
+
+func (vm *VM) GetStderr() io.Writer {
+	return vm.Stderr
 }

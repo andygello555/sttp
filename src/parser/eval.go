@@ -155,7 +155,13 @@ func (a *Assignment) Eval(vm VM) (err error, result *data.Value) {
 }
 
 func (m *MethodCall) Eval(vm VM) (err error, result *data.Value) {
-	return nil, nil
+	args := make([]*data.Value, len(m.Arguments))
+	for i, arg := range m.Arguments {
+		if err, args[i] = arg.Eval(vm); err != nil {
+			return err, nil
+		}
+	}
+	return m.Method.Call(args...)
 }
 
 func (t *TestStatement) Eval(vm VM) (err error, result *data.Value) {
@@ -384,27 +390,42 @@ func (f *FunctionDefinition) Eval(vm VM) (err error, result *data.Value) {
 }
 
 func (f *FunctionCall) Eval(vm VM) (err error, result *data.Value) {
-	// CHECK BUILTINS HERE
+	// We start a panic catcher to give us more helpful error messages
+	defer func() {
+		if p := recover(); p != nil {
+			err = fmt.Errorf("%v", p)
+		}
+	}()
+
 	if err, result = f.JSONPath.Eval(vm); err != nil {
 		return err, nil
 	}
 
 	// If the value isn't a callable then we will return an error
 	if result.Type != data.Function {
-		return errors.Uncallable.Errorf(result.Type.String()), nil
+		// If there is a builtin with that variable name we'll retrieve it
+		if CheckBuiltin(*f.JSONPath.Parts[0].Property) && len(f.JSONPath.Parts) == 1 {
+			err, result = nil, GetBuiltin(*f.JSONPath.Parts[0].Property)
+		} else {
+			return errors.Uncallable.Errorf(result.Type.String()), nil
+		}
+	}
+
+	calculateArgs := func() []*data.Value {
+		// Evaluate arguments and create a list of args
+		args := make([]*data.Value, len(f.Arguments))
+		for i, arg := range f.Arguments {
+			if err, args[i] = arg.Eval(vm); err != nil {
+				panic(err)
+			}
+		}
+		return args
 	}
 
 	// Check if the Golang type of the value
 	switch result.Value.(type) {
 	case *FunctionDefinition:
-		// Evaluate arguments and create a list of args
-		args := make([]*data.Value, len(f.Arguments))
-		for i, arg := range f.Arguments {
-			if err, args[i] = arg.Eval(vm); err != nil {
-				return err, nil
-			}
-		}
-
+		args := calculateArgs()
 		// Construct the new stack frame and put it on the callstack
 		if err = vm.GetCallStack().Call(f, result.Value.(*FunctionDefinition), vm, args...); err != nil {
 			return err, nil
@@ -432,6 +453,11 @@ func (f *FunctionCall) Eval(vm VM) (err error, result *data.Value) {
 			return err, nil
 		}
 		result = frame.GetReturn()
+	case func(vm VM, args ...*data.Value) (err error, value *data.Value):
+		args := calculateArgs()
+		if err, result = result.Value.(func(vm VM, args ...*data.Value) (err error, value *data.Value))(vm, args...); err != nil {
+			return err, result
+		}
 	default:
 		panic(fmt.Errorf("function value has type %s", reflect.TypeOf(result.Value).String()))
 	}
@@ -502,7 +528,8 @@ func (b *Boolean) Eval(vm VM) (err error, result *data.Value) {
 	}
 }
 
-// Eval for JSONPath calls Convert and then path.Get, to retrieve the Value at the given JSONPath.
+// Eval for JSONPath calls Convert and then path.Get, to retrieve the Value at the given JSONPath. Will return data.Null
+// if the JSONPath points to nothing.
 func (j *JSONPath) Eval(vm VM) (err error, result *data.Value) {
 	var path Path; err, path = j.Convert(vm)
 	if err != nil {

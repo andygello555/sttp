@@ -492,8 +492,7 @@ func TestMethod_Call(t *testing.T) {
 				},
 				{
 					Value: map[string]interface{} {
-						"cookie1": float64(1),
-						"cookie2": float64(2),
+						"cookie": "nom nom nom",
 					},
 					Type: data.Object,
 				},
@@ -506,7 +505,7 @@ func TestMethod_Call(t *testing.T) {
 						"accept-encoding": "gzip",
 						"host": "127.0.0.1:3000",
 						"user-agent": "go-resty/2.7.0 (https://github.com/go-resty/resty)",
-						"cookie": "cookie1=1; cookie2=2",
+						"cookie": "cookie=\"nom nom nom\"",
 						"header_1": "1",
 						"header_2": "2",
 					},
@@ -535,8 +534,7 @@ func TestMethod_Call(t *testing.T) {
 				},
 				{
 					Value: map[string]interface{} {
-						"cookie1": float64(1),
-						"cookie2": float64(2),
+						"cookie": "nom nom nom",
 					},
 					Type: data.Object,
 				},
@@ -549,9 +547,49 @@ func TestMethod_Call(t *testing.T) {
 						"accept-encoding": "gzip",
 						"host": "127.0.0.1:3000",
 						"user-agent": "go-resty/2.7.0 (https://github.com/go-resty/resty)",
-						"cookie": "cookie1=1; cookie2=2",
+						"cookie": "cookie=\"nom nom nom\"",
 					},
 					"method": "GET",
+					"query_params": map[string]interface{} {
+						"hello": "world",
+					},
+					"url": "http://127.0.0.1:3000/hello/world?hello=world",
+					"version": "1.1",
+				},
+				Type:     data.Object,
+				Global:   false,
+				ReadOnly: false,
+			},
+			err: nil,
+		},
+		{
+			args: []*data.Value{
+				{
+					Value: "http://127.0.0.1:3000/hello/world?hello=world",
+					Type: data.String,
+				},
+				{
+					Value: map[string]interface{} {
+						"hello": "world",
+					},
+					Type: data.Object,
+				},
+			},
+			method: POST,
+			result: &data.Value{
+				Value:    map[string]interface{} {
+					"body": map[string]interface{} {
+						"hello": "world",
+					},
+					"code": nil,
+					"headers": map[string]interface{} {
+						"accept-encoding": "gzip",
+						"content-length": "17",
+						"content-type": "application/json",
+						"host": "127.0.0.1:3000",
+						"user-agent": "go-resty/2.7.0 (https://github.com/go-resty/resty)",
+					},
+					"method": "POST",
 					"query_params": map[string]interface{} {
 						"hello": "world",
 					},
@@ -583,6 +621,15 @@ func TestMethod_Call(t *testing.T) {
 		} else if err != nil {
 			t.Errorf("error \"%s\" should not have occurred (testNo: %d)", err.Error(), testNo + 1)
 		} else if !ok {
+			fmt.Println()
+			fmt.Println()
+			fmt.Println((&data.Value{
+				Value:    result.Value.(map[string]interface{})["content"],
+				Type:     data.Object,
+			}).String())
+			fmt.Println("========================= VS ==========================")
+			fmt.Println(test.result.String())
+			fmt.Println()
 			t.Errorf("result \"%v\" for testNo: %d does not match the required result: \"%v\"", result, testNo + 1, test.result)
 		}
 	}
@@ -590,5 +637,5 @@ func TestMethod_Call(t *testing.T) {
 	// Kill the echo chamber
 	if err := echoChamber.Process.Kill(); err != nil {
 		panic("failed to kill echo chamber")
-	} 
+	}
 }

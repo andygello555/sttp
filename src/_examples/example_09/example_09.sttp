@@ -1,0 +1,11 @@
+get = $GET("http://127.0.0.1:3000/get?hello=world");
+head = $HEAD("http://127.0.0.1:3000/head?hello=world");
+post = $POST("http://127.0.0.1:3000/post?hello=world");
+put = $PUT("http://127.0.0.1:3000/put?hello=world");
+delete = $DELETE("http://127.0.0.1:3000/delete?hello=world");
+options = $OPTIONS("http://127.0.0.1:3000/options?hello=world");
+patch = $PATCH("http://127.0.0.1:3000/patch?hello=world");
+
+a = [];
+a = a + get.content + head.content + post.content + put.content + delete.content + options.content + patch.content;
+$print(a, 1 + 2 + 3);
