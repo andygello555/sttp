@@ -173,7 +173,7 @@ func (f *FunctionCall) String(indent int) string {
 }
 
 func (m *MethodCall) String(indent int) string {
-	methodCall := fmt.Sprintf("%s$%s(", tabs(indent), methodNameMap[m.Method])
+	methodCall := fmt.Sprintf("%s$%s(", tabs(indent), m.Method.String())
 	if len(m.Arguments) > 0 {
 		args := make([]string, len(m.Arguments))
 		for i, arg := range m.Arguments {

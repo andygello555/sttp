@@ -1,7 +1,6 @@
 package parser
 
 import (
-	"fmt"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/eval"
 	"github.com/alecthomas/participle/v2"
 	"github.com/alecthomas/participle/v2/lexer"
@@ -18,53 +17,6 @@ type Boolean bool
 
 func (b *Boolean) Capture(values []string) error {
 	*b = values[0] == "true"
-	return nil
-}
-
-type Method int
-
-const (
-	GET Method = iota
-	HEAD
-	POST
-	PUT
-	DELETE
-	CONNECT
-	OPTIONS
-	TRACE
-	PATCH
-)
-
-var methodMap = map[string]Method{
-	"GET": GET,
-	"HEAD": HEAD,
-	"POST": POST,
-	"PUT": PUT,
-	"DELETE": DELETE,
-	"CONNECT": CONNECT,
-	"OPTIONS": OPTIONS,
-	"TRACE": TRACE,
-	"PATCH": PATCH,
-}
-
-var methodNameMap = map[Method]string{
-	GET: "GET",
-	HEAD: "HEAD",
-	POST: "POST",
-	PUT: "PUT",
-	DELETE: "DELETE",
-	CONNECT: "CONNECT",
-	OPTIONS: "OPTIONS",
-	TRACE: "TRACE",
-	PATCH: "PATCH",
-}
-
-func (m *Method) Capture(s []string) error {
-	var ok bool
-	*m, ok = methodMap[s[0]]
-	if !ok {
-		panic(fmt.Sprintf("Unsupported HTTP method: %s", s[0]))
-	}
 	return nil
 }
 
@@ -215,7 +167,7 @@ type FunctionBody struct {
 type MethodCall struct {
 	Pos lexer.Position
 
-	Method    Method        `"$" @Method`
+	Method    eval.Method   `"$" @Method`
 	Arguments []*Expression `"(" (@@ ( "," @@ )*)? ")"`
 }
 
