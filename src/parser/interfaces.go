@@ -3,6 +3,7 @@ package parser
 import (
 	"fmt"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/data"
+	"io"
 )
 
 // ASTNode is implemented by all ASTNodes
@@ -19,6 +20,8 @@ type VM interface {
 	GetParentStatement() interface{}
 	GetCallStack() CallStack
 	GetTestResults() TestResults
+	GetStdout() io.Writer
+	GetStderr() io.Writer
 }
 
 // CallStack is implemented by the call stack that is used within the VM.

@@ -1,0 +1,70 @@
+object = {
+    "repeats": 30,
+    "null": null,
+    "false": false,
+    "true": true,
+    "pi": 3.142,
+    "object": {
+        "hello": "world!",
+        "array": [
+            1,
+            1 + 1,
+            1 + 1 + 1
+        ]
+    },
+    "methodcall": $GET("http://127.0.0.1:3000/this/is/a/method/call"),
+    "results": []
+};
+
+function object.execute(self.ifvar, self.var_ifwithin_self, party_variable.wow[0].a_a[0])
+    for i = 0; i < self.repeats; i = i + 1 do
+        if i % 3 == 0 then
+            google = $GET("http://127.0.0.1:3000/not/google");
+            self.results = self.results + google.content;;;;
+            if true then
+                $print(("hello" + "world")+"!");
+            elif true then
+                $print("still true");
+            else
+                $print("hello");$print("hello 2");$print("hello 3");
+                test "hello" == "hel" + "lo";
+            end;
+        elif i % 5 == 0 then
+            twitter = $GET("http://127.0.0.1:3000/not/twitter");
+            self.results = self.results + twitter.content;
+        elif i % 7 == 0 then
+            reddit = $GET("http://127.0.0.1:3000/not/reddit");
+            self.results = self.results + reddit.content;
+        else
+            facebook = $GET("http://127.0.0.1:3000/not/facebook");
+            self.results = self.results + facebook;
+        end;
+    end;
+    return "wow!";
+end;
+
+try this
+    batch this
+        for id in [
+            "1234-1234-1234",
+            "4321-4321-4321",
+            "6666-6666-6666"
+        ] do
+            result = $GET("http://127.0.0.1:3000/" + id);
+            $print(result.content);
+        end;
+        oops_forgot_this = $GET("http://127.0.0.1:3000/1111-1111-1111");
+        $print(oops_forgot_this.content);
+    end;
+    throw {"error": "time", "ohno": true};
+catch as err then
+    $print(err);
+end;
+
+this_boy = "to be this boy";
+
+try this batch this for id in ["1234-1234-1234","4321-4321-4321","6666-6666-6666"] do result = $GET("http://127.0.0.1:3000/" + id);$print(result.content);end;oops_forgot_this = $GET("http://127.0.0.1:3000/1111-1111-1111");$print(oops_forgot_this.content);end;throw {"error": "time", "ohno": true};catch as err then $print(err);end;
+
+wow = $object.execute();
+
+test object.results == 1 + 1 + 2;
