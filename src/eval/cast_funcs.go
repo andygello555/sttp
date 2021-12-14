@@ -145,6 +145,32 @@ func stArray(symbol *data.Value) (err error, cast *data.Value) {
 	return stringTo(symbol, data.Array)
 }
 
+// stNumber: from String to Number. Will try to parse the value to an integer, then a float, and finally will just take
+// the length of the string.
+func stNumber(symbol *data.Value) (err error, cast *data.Value) {
+	str := symbol.Value.(string)
+	var num interface{}
+
+	// First check if parsable to an integer
+	if num, err = strconv.Atoi(str); err != nil {
+		// If not then we'll check if parsable to a float64
+		if num, err = strconv.ParseFloat(str, 64); err != nil {
+			// If not then we'll return the length of the string
+			return l(symbol)
+		}
+	} else {
+		// If so then we'll convert the number to a float64
+		num = float64(num.(int))
+	}
+
+	return nil, &data.Value{
+		Value:    num,
+		Type:     data.Number,
+		Global:   symbol.Global,
+		ReadOnly: symbol.ReadOnly,
+	}
+}
+
 // nuBoolean: from Number to Boolean. Checks whether the number is greater than 0.
 func nuBoolean(symbol *data.Value) (err error, cast *data.Value) {
 	return nil, &data.Value{

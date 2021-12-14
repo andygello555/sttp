@@ -6,6 +6,7 @@ import (
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/errors"
 	"os/exec"
 	"testing"
+	"time"
 )
 
 const (
@@ -395,12 +396,80 @@ func TestCompute(t *testing.T) {
 	}
 }
 
+func TestCast(t *testing.T) {
+	for testNo, test := range []struct{
+		from   *data.Value
+		to     data.Type
+		result *data.Value
+		err    error
+	}{
+		{
+			from: &data.Value{
+				Value:    "1",
+				Type:     data.String,
+			},
+			to: data.Number,
+			result: &data.Value{
+				Value:    float64(1),
+				Type:     data.Number,
+			},
+			err: nil,
+		},
+		{
+			from: &data.Value{
+				Value:    "1.23",
+				Type:     data.String,
+			},
+			to: data.Number,
+			result: &data.Value{
+				Value: 1.23,
+				Type:  data.Number,
+			},
+			err: nil,
+		},
+		{
+			from: &data.Value{
+				Value:    "1.23abc",
+				Type:     data.String,
+			},
+			to: data.Number,
+			result: &data.Value{
+				Value: float64(7),
+				Type:  data.Number,
+			},
+			err: nil,
+		},
+	}{
+		var ok bool
+		err, result := Cast(test.from, test.to)
+		// Check if the actual result is Equal to the expected result only if there is no error.
+		if err == nil {
+			err, ok = Equal(result, test.result)
+		}
+
+		if testing.Verbose() && result != nil {
+			fmt.Printf("%d: %s -(%s)-> %s\n", testNo + 1, test.from.String(), test.to.String(), result.String())
+		}
+
+		if test.err != nil {
+			if err.Error() != test.err.Error() {
+				t.Errorf("error \"%s\" for testNo: %d does not match the required error: \"%s\"", err.Error(), testNo + 1, test.err.Error())
+			}
+		} else if err != nil {
+			t.Errorf("error \"%s\" should not have occurred (testNo: %d)", err.Error(), testNo + 1)
+		} else if !ok {
+			t.Errorf("result \"%v\" for testNo: %d does not match the required result: \"%v\"", result, testNo + 1, test.result)
+		}
+	}
+}
+
 func TestMethod_Call(t *testing.T) {
 	// Start the echo chamber web server
 	echoChamber := exec.Command(EchoChamberCmd, EchoChamberSource)
 	if err := echoChamber.Start(); err != nil {
 		panic(fmt.Errorf("could not start echo chamber: \"%s\"", err.Error()))
 	}
+	time.Sleep(150 * time.Millisecond)
 
 	for testNo, test := range []struct {
 		args   []*data.Value
