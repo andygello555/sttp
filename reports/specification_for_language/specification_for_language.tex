@@ -183,7 +183,7 @@ Statements can be one of the following:
 The possible value types are strings, floats, integers, arrays, objects, `true'/`false' and `null'. This matches the types available in JSON. In fact the type of each value will be determined by using the Golang JSON parser on the string representation of the value. Some other semantics:
 
 \begin{center}
-    \begin{itemize} 
+    \begin{itemize}
         \item Variables can be modified using `JSON path'.
         \item Variable assignment will carry out a \textbf{deep copy}.
         \item \textbf{Variables are always passed by reference} and expressions are passed by value.
@@ -225,7 +225,63 @@ The grammar for the language supports rudimentary JSON path expressions. This in
     \cprotect\caption{Examples of some valid JSON paths. These all access the \verb|json| variable.}
 \end{figure}
 
-JSON paths can be assigned to. This sets the appropriate property of the variable.
+When accessing a variable using JSONPath, the variable that is being accessed is called the \textbf{root identifier/property}. This is the first identifier in the JSONPath.
+
+\begin{verbatim}
+    // Here the variable that is being accessed
+    // is the "json" variable.
+    json.hello.world
+\end{verbatim}
+
+A JSONPath is constructed from \textbf{properties} and \textbf{parts}. A property is an identifier which directly correlates to a key within an object. A part is an expression surrounded by square braces.
+
+Each part's expression is first evaluated. If the result of this expression is a value of type String then the part will be treated as a property. If the value of the result is of type Number, then the value will be treated as an access to an array. If the value is not of type String or Number, then the interpreter will first try to cast the value to a Number, and then to a String. If the value cannot be cast to either, an error is returned.
+
+\subsubsection{Getting}
+\label{sec:jsonpath-getting}
+
+A JSONPath that is used to `get' a value, will not produce an error if the JSONPath doesn't point to a value. Instead the JSONPath will return a `null' value.
+
+Parts that evaluate to Numbers can also be negative if \verb|abs(i) - 1| is less than the length of the Array to access. Negative numbers allow access from the tail of the Array. For instance:
+
+\begin{verbatim}
+    a = [1, 2, 3];
+    $print(a[-1], a[-2], a[-3]);
+    // Output: 3 2 1
+\end{verbatim}
+
+\subsubsection{Setting}
+
+JSON paths can be assigned to. This sets the appropriate property of the variable. This is done recursively by reconstructing the entire value from the bottom-up. Each recursive call takes the current value, the value to set to, as well as the path remaining to evaluate (an array of properties and parts).
+
+\begin{center}
+    For each property/part in the JSONPath, the following considerations are made.
+    \begin{itemize}
+        \item If we have no path remaining, then we will return the value we are setting to.
+        \item If the current value is `null' then we won't pop the next property/path from the JSONPath. Instead, we will create a new Object, if the current path evaluates to a String, or a new Array, if the current path evaluates to a Number.
+        \item For each of the following actions we will first pop the next item from the remaining path...
+        \begin{itemize}
+            \item If the current value is an \textbf{Object}...
+            \begin{itemize}
+                \item \textbf{If the current path item is a String}, then we will treat it as a key of the Object. We will set the value of the key in the current Object to be the output of a recursive call of the setter function. The current value to pass into the recursive call depends on whether the key already exists in the Object. If it does then we will pass in the value of the key. If it doesn't then we will pass in `null'.
+                \item \textbf{If the current path item is a Number}, then we will order the keys within the Object lexicographically and set the \verb|i|-th key's value using the technique described above. Where \verb|i| is the current path item.
+            \end{itemize}
+            \item If the current value is an \textbf{Array} and the current path item is a Number.
+            \begin{itemize}
+                \item Check if a negative index lookup can be performed as described in the `\hyperref[sec:jsonpath-getting]{Getting}' section...
+                \begin{itemize}
+                    \item If so, then we will set the index of the Array to be the output of the recursive call to the setter function called with the element currently at that index.
+                    \item If not, then we will set each element of the Array up to the index described by the Number to `null' and finally recurse down the index to set, calling the recursive function with `null'.
+                \end{itemize}
+            \end{itemize}
+            \item If the current value has \textbf{any other type}...
+            \begin{itemize}
+                \item \textbf{If the current path item is a String}, then we will wrap the current value into an Object with the value residing in a key-value pair of the key \verb|""|. We will then recurse down the key with the value of the current path item, calling the recursive function with `null'. \verb|""| was chosen as the `default key', because it will always be sorted lexicographically as the first key. This means that the value which used to reside there can be accessed by a part such as \verb|[""]| or \verb|[0]|.
+                \item \textbf{If the current path item is a Number}, then we will wrap the current value into an Array. If we let the current path value be denoted by \verb|i|, then first we will create an Array with \verb|i + 2| spaces. Inserting the existing value in space \verb|i + 1| and recursing down the \verb|i|-th space, calling the recursive function with `null'.
+            \end{itemize}
+        \end{itemize}
+    \end{itemize}
+\end{center}
 
 \subsection{Expressions}
 \label{sec:expressions}
@@ -257,36 +313,17 @@ Both \textbf{boolean and arithmetic expressions are a part of the same precedenc
     \caption{Operators and their precedence from highest precedence (top) to lowest precedence (bottom)}
 \end{figure}
 
-If multiple value types exist within an expression, all other values will be coerced depending on the coercion hierarchy shown below.
+Expressions, and subsequently operators, are evaluated from left to right. Most operator actions involve casting the right-hand side into the type of the value on the left-hand side, then finally performing the operation. This can be used to the benefit of the programmer for various needs, such as casting a value to another type.
 
-\subsubsection{Coercion heirarchy}
-
-\begin{figure}[H]
-    \begin{center}
-        \begin{tabular}{| m{2cm} | m{2cm} | m{6cm} |}
-            \hline
-            Precedence & Type & Description\\
-            \hline
-            \textbf{0} & String & If a string is contained in any expression all other values will be coerced to a string. This is the JSON string version of the value.\\
-            \hline
-            \textbf{1} & Object & If an Object value has the highest coercion precedence in an expression then all other values are converted to strings then wrapped in object with a \verb|null| value.\\
-            \hline
-            \textbf{2} & Array & If an Array value has the highest coercion precedence in an expression then all other values are treated as potential elements. This is explained more in \hyperref[sec:operatorvaluerel]{`Operator-value relationship'}.\\
-            \hline
-            \textbf{3} & Number & If a Number value has the highest coercion precedence in an expression then all other values will be coerced to Numbers. Boolean's being \verb|0/1| and Null being \verb|-1|.\\
-            \hline
-            \textbf{4} & Boolean & If a Boolean value has the highest coercion precedence in an expression then Null's are converted to \verb|false|.\\
-            \hline
-            \textbf{5} & Null & Null's are always coerced to other values unless the expression contains strictly \verb|null| values.\\
-            \hline
-        \end{tabular}
-    \end{center}
-    \caption{Value types and their coercion precedence in expressions from highest precedence (top) to lowest (bottom)}
-\end{figure}
+\begin{verbatim}
+    // Here the Array will be cast to a Number, which will 
+    // result in the Array's length
+    length = 0 + [1, 2, 3];
+\end{verbatim}
 
 \subsubsection{Conditions}
 
-In statements that require conditions (such as `if-elif-else', `while', and `for' statements) a purely arithmetic, a purely binary operator expression, or a mixed expression can all be used. Here is a list of all truthy and falsy values.
+In statements that require conditions (such as `if-elif-else', `while', and `for' statements) a purely arithmetic, a purely logical operator expression, or a mixed expression can all be used. If the expression does not result in a value of a Boolean type, then the result will be cast into a Boolean using the truthy and falsy values below.
 
 \begin{figure}[H]
     \begin{center}
@@ -314,40 +351,47 @@ In statements that require conditions (such as `if-elif-else', `while', and `for
 \subsection{Operator-value relationship}
 \label{sec:operatorvaluerel}
 
-Instead of having built-in functions for operations such as appending to an array, removing from an array, merging objects, etc. Below, is a run through of each value type. \textbf{All operators that aren't mentioned are not supported}.
+Instead of having built-in functions for operations such as appending to an array, removing from an array, merging objects, etc. Operators, perform most of these actions. The following operators remain unchanged for all types:
+
+\begin{itemize}
+    \item \textbf{Equal}: \textbf{Deep} equal. \textbf{Returns boolean}.
+    \item \textbf{Not-equal}: \textbf{Deep} not-equal. \textbf{Returns boolean}.
+    \item \textbf{Less-than, greater-than, less-than or equal, greater-than or equal}: First checks if the first operand is of type Number or String (comparable types). If not then the first operand will be tried to be cast into a Number, and then a String, and if it still cannot, an error will be returned. Then the second operand is cast into the type of the newly cast first operand, returning an error if required. Then these newly cast operands are compared and a Boolean value is returned. \textbf{Null cannot be compared}.
+    \item \textbf{Logical And}: Compares by casting both operands to boolean values.
+    \item \textbf{Logical Or}: Compares by casting both operands to boolean values.
+\end{itemize}
+
+Below, is a run through of each supported operation for each type. \textit{Note that this presumes that all of the types below are on the left-hand side of the operator.}
 
 \subsubsection{Objects}
 
 \begin{itemize}
-    \item \textbf{Addition}: Right value will merge into left value, much like a union operation.
+    \item \textbf{Addition}: Will merge the RHS into the left overriding any values with the same key.
     \item \textbf{Subtraction}: Left value will have key-value pairs found in right value deleted from it.
-    \item \textbf{Modulus}: Reverse of subtraction (reverse set subtraction).
-    \item \textbf{Equal}: \textbf{Deep} equal. \textbf{Returns boolean}.
-    \item \textbf{Not-equal}: \textbf{Deep} not-equal. \textbf{Returns boolean}.
-    \item \textbf{Less-than, greater-than, less-than or equal, greater-than or equal}: Comparison between the number of keys for both. \textbf{Returns a Boolean}.
-    \item \textbf{Logical And}: Compares by coercing left and right to boolean values.
-    \item \textbf{Logical Or}: Compares by coercing left and right to boolean values.
+    \item \textbf{Divide}: Right associative set difference. $op2 - op1$ or $op2 \setminus op1$. This will still have to cast the RHS to an Object.
 \end{itemize}
 
 \subsubsection{Arrays}
 
 \begin{itemize}
-    \item \textbf{Addition}: Right value will be appended to the left value.
-    \item \textbf{Subtraction}: Left value will have elements that are equal to the elements in the left removed. If the element is \verb|null| then the start of the list is removed.
-    \item \textbf{Equal}: \textbf{Deep} equal. \textbf{Returns boolean}.
-    \item \textbf{Not-equal}: \textbf{Deep} not-equal. \textbf{Returns boolean}.
-    \item \textbf{Less-than, greater-than, less-than or equal, greater-than or equal}: Comparison between the number of elements in both. \textbf{Returns a Boolean}.
-    \item \textbf{Logical And}: Compares by coercing left and right to boolean values.
-    \item \textbf{Logical Or}: Compares by coercing left and right to boolean values.
+    \item \textbf{Addition}: Right value will be appended to the left value. Note that the RHS is \textbf{not cast} to the Array type.
+    \item \textbf{Subtraction}: Subtract elements from Array. All elements on the LHS Equal to the elements in the RHS will be removed. If the element is null then the head of the Array is removed. The same element cannot be removed more than once in the same operation. This includes `null'.
 \end{itemize}
 
 \subsubsection{Strings}
 
 \begin{itemize}
+    \item \textbf{Multiply}: Will repeat the String on the left $n$ times, where $n$ is the RHS cast to a Number.
+    \item \textbf{Modulus}: Casts RHS to Array then performs a string format using the verbs available in Go.
     \item \textbf{Addition}: Concatenation.
-    \item \textbf{Equal}: \textbf{Deep} equal. \textbf{Returns boolean}.
-    \item \textbf{Not-equal}: \textbf{Deep} not-equal. \textbf{Returns boolean}.
-    \item \textbf{Less-than, greater-than, less-than or equal, greater-than or equal}: String comparison. \textbf{Returns a Boolean}.
+    \item \textbf{Subtraction}: Depending on the type of the RHS the following will happen:
+    \begin{itemize}
+        \item \textbf{Number}:  Remove the last n digits from the String.
+        \item \textbf{String}:  Remove all occurrences of the RHS from the LHS.
+        \item \textbf{Object}:  Replaces all occurrences of RHS's keys with String versions of their values.
+        \item \textbf{Array}:   Casts each element in the array to a string and removes all occurrences of each from the LHS.
+        \item \textbf{Default}: Casts RHS to string and removes all occurrences of it from the LHS.
+    \end{itemize}
 \end{itemize}
 
 \subsubsection{Numbers}
@@ -357,15 +401,16 @@ All operators work as expected.
 \subsubsection{Booleans}
 
 \begin{itemize}
-    \item \textbf{Equal}: Equal.
-    \item \textbf{Not-equal}: Not-equal.
-    \item \textbf{Logical And}: Lazy logical and of left and right.
-    \item \textbf{Logical Or}: Lazy logical or of left and right.
+    \item \textbf{Multiply}: Same as Logical And.
+    \item \textbf{Divide}: Inverse of Logical And (NAND).
+    \item \textbf{Modulus}: The material conditional/Implies that. $op1 \rightarrow op2$.
+    \item \textbf{Addition}: Same as Logical Or.
+    \item \textbf{Subtraction}: Inverse of Logical Or (NOR).
 \end{itemize}
 
 \subsubsection{Nulls}
 
-The only supported operators are \verb|==| and \verb|!=| which both work as expected.
+Multiply, Divide, Modulus, Addition, and Subtraction will all `nullify' the operation (result in `null'). Null cannot be compared but can be used in logical expressions where it will be cast into `false'.
 
 \section{Batching}
 
