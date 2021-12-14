@@ -1,0 +1,12 @@
+try this
+    throw {"msg": "Oh no", "code": 400};
+catch as e then
+    $print(e);
+end;
+
+try this
+    a = [1, 2, 3];
+    a[-4] = -1;
+catch as e then
+    $print(e);
+end;

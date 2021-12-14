@@ -156,7 +156,12 @@ func set(current interface{}, to interface{}, path *Path) interface{} {
 func (p *Path) Set(current interface{}, to interface{}) (err error, new interface{}) {
 	defer func() {
 		if p := recover(); p != nil {
-			err = fmt.Errorf("%v", p)
+			switch p.(type) {
+			case struct { errors.ProtoSttpError }:
+				err = p.(struct { errors.ProtoSttpError })
+			default:
+				err = fmt.Errorf("%v", p)
+			}
 			new = nil
 		}
 	}()
