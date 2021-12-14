@@ -103,7 +103,7 @@ func TestVM_Eval(t *testing.T) {
 	if err := echoChamber.Start(); err != nil {
 		t.Error(fmt.Errorf("could not start echo chamber: \"%s\"", err.Error()))
 	}
-	time.Sleep(100 * time.Millisecond)
+	time.Sleep(150 * time.Millisecond)
 
 	for testNo, e := range examples {
 		if skipPtr == len(skip) || testNo != skip[skipPtr] {

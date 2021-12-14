@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/data"
+	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/errors"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/parser"
 	"io"
 	"os"
@@ -47,7 +48,12 @@ func (vm *VM) Eval(filename, s string) (err error, result *data.Value) {
 	// We start a panic catcher to give us more helpful error messages
 	defer func() {
 		if p := recover(); p != nil {
-			err = fmt.Errorf("%v", p)
+			switch p.(type) {
+			case struct { errors.ProtoSttpError }:
+				err = p.(struct { errors.ProtoSttpError })
+			default:
+				err = fmt.Errorf("%v", p)
+			}
 		}
 	}()
 

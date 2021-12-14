@@ -374,6 +374,22 @@ func TestCompute(t *testing.T) {
 			},
 			err: nil,
 		},
+		{
+			op1: &data.Value{
+				Value: float64(1),
+				Type:  data.Number,
+			},
+			op2: &data.Value{
+				Value: "1",
+				Type:  data.String,
+			},
+			operator: Add,
+			result: &data.Value{
+				Value: 2,
+				Type:  data.Number,
+			},
+			err: nil,
+		},
 	}{
 		var ok bool
 		err, result := Compute(test.operator, test.op1, test.op2)

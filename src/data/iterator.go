@@ -3,6 +3,7 @@ package data
 import (
 	"container/heap"
 	"fmt"
+	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/errors"
 	"strings"
 )
 
@@ -60,7 +61,12 @@ func (it *Iterator) Next() *Element {
 func Iterate(result *Value) (err error, it *Iterator) {
 	defer func() {
 		if p := recover(); p != nil {
-			err = fmt.Errorf("%v", p)
+			switch p.(type) {
+			case struct { errors.ProtoSttpError }:
+				err = p.(struct { errors.ProtoSttpError })
+			default:
+				err = fmt.Errorf("%v", p)
+			}
 		}
 	}()
 

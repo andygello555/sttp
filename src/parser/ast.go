@@ -315,9 +315,7 @@ type Elif struct {
 // Block describes a "block" of statements which might end with a return statement.
 type Block struct {
 	Pos lexer.Position
-	Tokens []lexer.Token
 
-	//Statements []*Statement     `( @@? ";" )*`
 	Statements []*Statement     `( @@? ";" )*`
 	Return     *ReturnStatement `( @@ |`
 	Throw      *ThrowStatement  `  @@ )?`
@@ -358,10 +356,10 @@ var lex = lexer.MustSimple([]lexer.Rule{
 	{"Null", `null`, nil},
 	{"Batch", `batch\s`, nil},
 	{"Try", `try\s`, nil},
+	{"Number", `[-+]?(\d*\.)?\d+`, nil},
 	{"Operators", `\|\||&&|<=|>=|!=|==|[-+*/%=!<>]`, nil},
 	{"Punct", `[$;,.(){}:]|\[|\]`, nil},
 	{"Ident", `[a-zA-Z_]\w*`, nil},
-	{"Number", `([+-]?[0-9]*[.])?[0-9]+`, nil},
 	{"whitespace", `\s+`, nil},
 })
 

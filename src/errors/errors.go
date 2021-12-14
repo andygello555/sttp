@@ -1,14 +1,20 @@
 package errors
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type SttpError interface {
 	Errorf(values... interface{}) error
 }
 
-func errorf(error string, values... interface{}) error {
-	return fmt.Errorf(error, values...)
+type ProtoSttpError struct {
+	errorMethod func() string
+	Type        string
+	Subset      string
 }
+
+func (p ProtoSttpError) Error() string { return p.errorMethod() }
 
 type RuntimeError string
 
@@ -20,14 +26,34 @@ const (
 	CannotFindLength        RuntimeError = "cannot find length of value \"%v\""
 	InvalidOperation        RuntimeError = "cannot carry out operation \"%s\" for %s and %s"
 	StringManipulationError RuntimeError = "error whilst manipulating \"%s\": %s"
-	Exception               RuntimeError = "exception: %s, was thrown on %s"
 	JSONPathError           RuntimeError = "cannot access %s with %s"
 	Uncallable              RuntimeError = "cannot call value of type %s"
 	MoreArgsThanParams      RuntimeError = "function %s has %d parameters, there were %d arguments provided"
 	MethodParamNotOptional  RuntimeError = "method parameter \"%s\" is not optional"
 )
 
-func (re RuntimeError) Errorf(values... interface{}) error { return errorf(string(re), values...) }
+// runtimeErrorNames contains the names of each RuntimeError enum value.
+var runtimeErrorNames = map[RuntimeError]string{
+	StackOverflow: "StackOverflow",
+	StackUnderFlow: "StackUnderFlow",
+	CannotFindType: "CannotFindType",
+	CannotCast: "CannotCast",
+	CannotFindLength: "CannotFindLength",
+	InvalidOperation: "InvalidOperation",
+	StringManipulationError: "StringManipulationError",
+	JSONPathError: "JSONPathError",
+	Uncallable: "Uncallable",
+	MoreArgsThanParams: "MoreArgsThanParams",
+	MethodParamNotOptional: "MethodParamNotOptional",
+}
+
+func (re RuntimeError) Errorf(values... interface{}) error {
+	pse := struct { ProtoSttpError }{}
+	pse.errorMethod = func() string { return fmt.Sprintf(string(re), values...) }
+	pse.Subset = "RuntimeError"
+	pse.Type = runtimeErrorNames[re]
+	return pse
+}
 
 type StructureError string
 
@@ -38,7 +64,20 @@ const (
 	HeapScopeDoesNotExist StructureError = "cannot %s %s (scope: %d), as scope: %d does not exist in the scope list for the symbol \"%s\""
 )
 
-func (se StructureError) Errorf(values... interface{}) error { return errorf(string(se), values...) }
+var structureErrorNames = map[StructureError]string{
+	ImmutableValue: "ImmutableValue",
+	NoTestSuite: "NoTestSuite",
+	HeapEntryDoesNotExist: "HeapEntryDoesNotExist",
+	HeapScopeDoesNotExist: "HeapScopeDoesNotExist",
+}
+
+func (se StructureError) Errorf(values... interface{}) error {
+	pse := struct { ProtoSttpError }{}
+	pse.errorMethod = func() string { return fmt.Sprintf(string(se), values...) }
+	pse.Subset = "StructureError"
+	pse.Type = structureErrorNames[se]
+	return pse
+}
 
 type PurposefulError int
 
@@ -55,3 +94,59 @@ var purposefulErrorName = map[PurposefulError]string{
 }
 
 func (pe PurposefulError) Error() string { return purposefulErrorName[pe] }
+
+// ConstructSttpError constructs a value which can be used within the sttp VM. If the error provided is Throw 
+// (PurposefulError) then the returned value is the given user defined error. Otherwise, if the error is any other 
+// PurposefulError, then the returned value is:
+//  {
+//      // The int code of the PurposefulError
+//      "type": err.(PurposefulError),
+//      // The error description
+//      "error": err.(PurposefulError).Error(),
+//      // To make sure it matches other types of errors
+//      "subset": "PurposefulError",
+//  }
+// If the error is an anonymous struct that implements the ProtoSttpError then the error is constructed as follows 
+// (sttpErr is the asserted error value):
+//  {
+//      "type": sttpErr.Type,
+//      "error": sttpErr.Error(),
+//      "subset": sttpErr.Subset,
+//  }
+// Finally, if the error's underlying type is none of the above, then the error is constructed as follows:
+//  {
+//      "type": "",
+//      "error": err.Error(),
+//      "subset": "go",
+//  }
+func ConstructSttpError(err error, userErr interface{}) interface{} {
+	var errVal interface{}
+	//fmt.Println(reflect.TypeOf(err).String())
+	switch err.(type) {
+	case PurposefulError:
+		// If the error returned is an errors.Throw error. Then we'll set the errVal to be the result
+		if err.(PurposefulError) == Throw {
+			errVal = userErr
+		} else {
+			errVal = map[string]interface{} {
+				"type": err.(PurposefulError),
+				"error": err.(PurposefulError).Error(),
+				"subset": "PurposefulError",
+			}
+		}
+	case struct { ProtoSttpError }:
+		sttpErr := err.(struct { ProtoSttpError })
+		errVal = map[string]interface{} {
+			"type": sttpErr.Type,
+			"error": sttpErr.Error(),
+			"subset": sttpErr.Subset,
+		}
+	default:
+		errVal = map[string]interface{} {
+			"type": "",
+			"error": err.Error(),
+			"subset": "go",
+		}
+	}
+	return errVal
+}

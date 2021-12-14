@@ -58,18 +58,20 @@ func (r *ReturnStatement) Eval(vm VM) (err error, result *data.Value) {
 }
 
 func (t *ThrowStatement) Eval(vm VM) (err error, result *data.Value) {
-	err, result = t.Value.Eval(vm)
-	if err == nil {
-		if result == nil {
-			result = &data.Value{
-				Value:  nil,
-				Type:   data.Null,
-				Global: false,
-			}
+	if t.Value != nil {
+		if err, result = t.Value.Eval(vm); err != nil {
+			return err, nil
 		}
-		err = errors.Exception.Errorf(result.String(), t.Pos.String())
 	}
-	return err, result
+
+	if result == nil {
+		result = &data.Value{
+			Value:  nil,
+			Type:   data.Null,
+			Global: false,
+		}
+	}
+	return errors.Throw, result
 }
 
 func (s *Statement) Eval(vm VM) (err error, result *data.Value) {
@@ -196,7 +198,12 @@ func (w *While) Eval(vm VM) (err error, result *data.Value) {
 	// Panic recovery makes returning errors a bit easier
 	defer func() {
 		if p := recover(); p != nil {
-			err = fmt.Errorf("%v", p)
+			switch p.(type) {
+			case struct { errors.ProtoSttpError }:
+				err = p.(struct { errors.ProtoSttpError })
+			default:
+				err = fmt.Errorf("%v", p)
+			}
 		}
 	}()
 
@@ -221,7 +228,7 @@ func (w *While) Eval(vm VM) (err error, result *data.Value) {
 			panic(err)
 		}
 	}
-	return err, result
+	return err, nil
 }
 
 func (f *For) Eval(vm VM) (err error, result *data.Value) {
@@ -233,7 +240,12 @@ func (f *For) Eval(vm VM) (err error, result *data.Value) {
 	// Panic recovery makes returning errors a bit easier
 	defer func() {
 		if p := recover(); p != nil {
-			err = fmt.Errorf("%v", p)
+			switch p.(type) {
+			case struct { errors.ProtoSttpError }:
+				err = p.(struct { errors.ProtoSttpError })
+			default:
+				err = fmt.Errorf("%v", p)
+			}
 		}
 	}()
 
@@ -267,7 +279,7 @@ func (f *For) Eval(vm VM) (err error, result *data.Value) {
 		evalStep()
 	}
 
-	return err, result
+	return err, nil
 }
 
 func (f *ForEach) Eval(vm VM) (err error, result *data.Value) {
@@ -303,7 +315,12 @@ func (f *ForEach) Eval(vm VM) (err error, result *data.Value) {
 
 	defer func() {
 		if p := recover(); p != nil {
-			err = fmt.Errorf("%v", p)
+			switch p.(type) {
+			case struct { errors.ProtoSttpError }:
+				err = p.(struct { errors.ProtoSttpError })
+			default:
+				err = fmt.Errorf("%v", p)
+			}
 		}
 	}()
 
@@ -333,7 +350,7 @@ func (f *ForEach) Eval(vm VM) (err error, result *data.Value) {
 			panic(err)
 		}
 	}
-	return err, result
+	return err, nil
 }
 
 func (b *Batch) Eval(vm VM) (err error, result *data.Value) {
@@ -341,6 +358,25 @@ func (b *Batch) Eval(vm VM) (err error, result *data.Value) {
 }
 
 func (tc *TryCatch) Eval(vm VM) (err error, result *data.Value) {
+	if err, result = tc.Try.Eval(vm); err != nil {
+		// Check if the error is user constructed
+		var userErr interface{} = nil
+		if result != nil {
+			userErr = result.Value
+		}
+		// Construct the sttp error using the given err and or userErr
+		errVal := errors.ConstructSttpError(err, userErr)
+
+		// Place the exception on the heap with the provided identifier
+		if err = vm.GetCallStack().Current().GetHeap().Assign(*tc.CatchAs, errVal, false, false); err != nil {
+			return err, nil
+		}
+
+		// Execute the catch block
+		if err, result = tc.Caught.Eval(vm); err != nil {
+			return err, nil
+		}
+	}
 	return nil, nil
 }
 
@@ -393,7 +429,12 @@ func (f *FunctionCall) Eval(vm VM) (err error, result *data.Value) {
 	// We start a panic catcher to give us more helpful error messages
 	defer func() {
 		if p := recover(); p != nil {
-			err = fmt.Errorf("%v", p)
+			switch p.(type) {
+			case struct { errors.ProtoSttpError }:
+				err = p.(struct { errors.ProtoSttpError })
+			default:
+				err = fmt.Errorf("%v", p)
+			}
 		}
 	}()
 
@@ -605,7 +646,12 @@ func jsonDeclaration(j interface{}, vm VM) interface{} {
 func (j *JSON) Eval(vm VM) (err error, result *data.Value) {
 	defer func() {
 		if p := recover(); p != nil {
-			err = fmt.Errorf("%v", p)
+			switch p.(type) {
+			case struct { errors.ProtoSttpError }:
+				err = p.(struct { errors.ProtoSttpError })
+			default:
+				err = fmt.Errorf("%v", p)
+			}
 		}
 	}()
 
