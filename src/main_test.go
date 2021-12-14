@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 const (
@@ -100,8 +101,9 @@ func TestVM_Eval(t *testing.T) {
 	// Start the echo chamber web server
 	echoChamber := exec.Command(EchoChamberCmd, EchoChamberSource)
 	if err := echoChamber.Start(); err != nil {
-		panic(fmt.Errorf("could not start echo chamber: \"%s\"", err.Error()))
+		t.Error(fmt.Errorf("could not start echo chamber: \"%s\"", err.Error()))
 	}
+	time.Sleep(100 * time.Millisecond)
 
 	for testNo, e := range examples {
 		if skipPtr == len(skip) || testNo != skip[skipPtr] {
@@ -146,7 +148,7 @@ func TestVM_Eval(t *testing.T) {
 
 	// Kill the echo chamber
 	if err := echoChamber.Process.Kill(); err != nil {
-		panic("failed to kill echo chamber")
+		t.Error("failed to kill echo chamber")
 	}
 }
 

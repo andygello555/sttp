@@ -57,16 +57,19 @@ func op1(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) {
 	return nil, op1
 }
 
-// muString: Multiply Object. Will repeat the String on the left if there is a number on the right.
+// muString: Multiply Object. Will repeat the String on the left n times, where n is the RHS cast to a Number. Casts RHS
+// to Number.
 func muString(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) {
-	if op2.Type == data.Number {
-		return nil, &data.Value{
-			Value: strings.Repeat(op1.Value.(string), int(op2.Value.(float64))),
-			Type:  data.String,
-			Global: op1.Global,
-		}
+	var op2Number *data.Value
+	if err, op2Number = Cast(op2, data.Number); err != nil {
+		return err, nil
 	}
-	return errors.InvalidOperation.Errorf("*", op1.Type, op2.Type), nil
+
+	return nil, &data.Value{
+		Value: strings.Repeat(op1.Value.(string), int(op2Number.Value.(float64))),
+		Type:  data.String,
+		Global: op1.Global,
+	}
 }
 
 // number evaluates all operations with number on LHS.
@@ -263,7 +266,7 @@ func adNumber(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) 
 	return number(op1, op2, Add)
 }
 
-// suObject: Subtract Objects. Performs a set difference between op1 and op2. op1 - op2.
+// suObject: Subtract Objects. Performs a set difference between op1 and op2. op1 - op2. Casts RHS to Object.
 func suObject(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) {
 	var op2Object *data.Value
 	err, op2Object = Cast(op2, data.Object)
