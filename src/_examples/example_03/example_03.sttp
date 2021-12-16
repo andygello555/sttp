@@ -27,3 +27,5 @@ elif 0 + a.hello == 5 then
 else
     a.done = false;
 end;
+
+$print("a =", a);

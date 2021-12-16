@@ -48,12 +48,31 @@ func (b *Block) Eval(vm VM) (err error, result *data.Value) {
 }
 
 func (r *ReturnStatement) Eval(vm VM) (err error, result *data.Value) {
-	// Set the Return field of the current stack Frame
 	current := vm.GetCallStack().Current()
-	if err, result = r.Value.Eval(vm); err != nil {
-		return err, nil
+
+	// Evaluate the return value, if we have one, and copy the value into valCopy.
+	var valCopy *data.Value
+	if r.Value != nil {
+		if err, result = r.Value.Eval(vm); err != nil {
+			return err, nil
+		}
+		valCopy = &data.Value{
+			Value:    result.Value,
+			Type:     result.Type,
+			Global:   result.Global,
+			ReadOnly: result.ReadOnly,
+		}
+	} else {
+		valCopy = &data.Value{
+			Value:    nil,
+			Type:     data.Null,
+			Global:   false,
+			ReadOnly: false,
+		}
 	}
-	*(current.GetReturn()) = *result
+
+	// Set the Return field of the current stack Frame
+	*current.GetReturn() = *valCopy
 	return errors.Return, result
 }
 
@@ -79,9 +98,7 @@ func (s *Statement) Eval(vm VM) (err error, result *data.Value) {
 	case s.Assignment != nil:
 		err, result = s.Assignment.Eval(vm)
 	case s.FunctionCall != nil:
-		*vm.GetScope() ++
 		err, result = s.FunctionCall.Eval(vm)
-		*vm.GetScope() --
 	case s.MethodCall != nil:
 		err, result = s.MethodCall.Eval(vm)
 	case s.Break != nil:
@@ -137,6 +154,21 @@ func (a *Assignment) Eval(vm VM) (err error, result *data.Value) {
 		return err, nil
 	}
 
+	// If the value we are setting to is a Function, then we will create a new *FunctionDefinition. This will be 
+	// composed of the body of the function and the JSONPath of the variable that we are setting.
+	if result.Type == data.Function {
+		// This will only create a new pointer to store the function pointer in
+		oldFunction := result.Value.(*FunctionDefinition)
+		// This will create a new FunctionDefinition on the heap and set newFunction to be a pointer to it
+		newFunction := &FunctionDefinition{
+			Pos:      oldFunction.Pos,
+			JSONPath: a.JSONPath,
+			Body:     oldFunction.Body,
+		}
+		// Finally, we set the result.Value to be the newFunction that we have just created
+		result.Value = newFunction
+	}
+
 	// Then we set the current value using, the path found previously, to the value on the RHS
 	var val interface{}
 	err, val = path.Set(variableVal.Value, result.Value)
@@ -151,7 +183,7 @@ func (a *Assignment) Eval(vm VM) (err error, result *data.Value) {
 	}
 
 	if testing.Verbose() {
-		fmt.Println("after assignment heap is:", heap)
+		fmt.Println("after assignment of", a.JSONPath.String(0), "heap is:", heap, "global:", heap.Get(variableName).Global, "scope:", *vm.GetScope())
 	}
 	return nil, nil
 }
@@ -426,8 +458,10 @@ func (f *FunctionDefinition) Eval(vm VM) (err error, result *data.Value) {
 }
 
 func (f *FunctionCall) Eval(vm VM) (err error, result *data.Value) {
+	*vm.GetScope() ++
 	// We start a panic catcher to give us more helpful error messages
 	defer func() {
+		*vm.GetScope() --
 		if p := recover(); p != nil {
 			switch p.(type) {
 			case struct { errors.ProtoSttpError }:
@@ -470,6 +504,11 @@ func (f *FunctionCall) Eval(vm VM) (err error, result *data.Value) {
 		// Construct the new stack frame and put it on the callstack
 		if err = vm.GetCallStack().Call(f, result.Value.(*FunctionDefinition), vm, args...); err != nil {
 			return err, nil
+		}
+
+		if testing.Verbose() {
+			fmt.Println("calling function", f.JSONPath.String(0), "type:", result.Type.String(), "args:", args)
+			fmt.Println("new heap:", vm.GetCallStack().Current().GetHeap())
 		}
 
 		// Evaluate the Block within the definition

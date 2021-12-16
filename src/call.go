@@ -6,6 +6,7 @@ import (
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/errors"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/parser"
 	"strings"
+	"testing"
 )
 
 const (
@@ -87,6 +88,9 @@ func (cs *CallStack) Call(caller *parser.FunctionCall, current *parser.FunctionD
 
 		// Create the self variable on the heap. We do this by finding the JSONPath on the previous frame.
 		self := previous.Heap.Get(*current.JSONPath.Parts[0].Property)
+		if testing.Verbose() {
+			fmt.Println("after getting self:", self.String())
+		}
 		if err := heap.Assign("self", self.Value, true, false); err != nil {
 			return err
 		}
@@ -163,8 +167,16 @@ func (cs *CallStack) Return(vm parser.VM) (err error, frame parser.Frame) {
 						return err, frame
 					}
 					name = path[0].(string)
+
+					if testing.Verbose() {
+						fmt.Print("SELF: ")
+					}
 				}
-				(*heap)[name] = val
+				(*heap)[name].Value = val.Value
+
+				if testing.Verbose() {
+					fmt.Println("copying back", name, "to", val, "in function", frame.GetCurrent().JSONPath.String(0))
+				}
 			}
 		}
 	}
