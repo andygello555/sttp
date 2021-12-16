@@ -12,16 +12,19 @@ end;
 a.mutmut[0] = a[0].mutable;
 a[0] = a[0] - {"mutable": null};
 
-function immutable(self, foo, bar)
-    return self + foo * bar;
+function immutable(foo, bar)
+    c = self + foo * bar;
+    $print("calling immutable. 6 =", c["6"]);
+    return c;
 end;
 
 a[0].mutable = immutable;
 a[0].mutable[0] = null;
 mutable_str = "" + a[0].mutable[1];
 
-$a[1 - 1].mutable[0 + 1](1, 2, 3);
+$a[1 - 1].mutable[0 + 1](2, 3);
 $a.mutmut[0](20, "bar", "Foo", "Bar");
+$print(a.hello.bar, a.hello.mutable, "" + a.mutmut[0] - 15);
 
 b = {
     "upper": 30,
@@ -31,11 +34,14 @@ b = {
 function b.range()
     for i = 0; i < self.upper; i = i + 1 do
         if i % 2 == 0 then
+            $print(i, "is even");
             self.results = self.results + i;
         else
+            $print(i, "is odd");
             b.results = b.results + i;
         end;
     end;
 end;
 
 $b.range();
+$print(b.results);

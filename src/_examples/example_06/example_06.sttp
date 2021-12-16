@@ -9,6 +9,8 @@ iterators = {
     "loop5": 123
 };
 
+$print("iterators =", iterators);
+
 loop1out = "[";
 for index, char in iterators.loop1 do
     loop1out = loop1out + ("(%v: %v)" % [index, char]);
@@ -18,6 +20,7 @@ for index, char in iterators.loop1 do
         loop1out = loop1out + "]";
     end;
 end;
+$print("loop1out =", loop1out);
 
 loop2out = "[";
 for index, value in iterators.loop2 do
@@ -28,6 +31,7 @@ for index, value in iterators.loop2 do
         loop2out = loop2out + "]";
     end;
 end;
+$print("loop2out =", loop2out);
 
 loop3out = "[";
 for key, value in iterators.loop3 do
@@ -38,6 +42,7 @@ for key, value in iterators.loop3 do
         loop3out = loop3out + "]";
     end;
 end;
+$print("loop3out =", loop3out);
 
 loop4out = "[";
 for key, value in {
@@ -55,15 +60,18 @@ for key, value in {
         loop4out = loop4out + "]";
     end;
 end;
+$print("loop4out =", loop4out);
 
 for index, value in [] do ohno = true; end;
+$print("ohno =", ohno);
 
 loop5out = "[";
 for index, char in iterators.loop5 do
     loop5out = loop5out + ("(%v: %v)" % [index, char]);
-    if index != 0 + ("" + iterators.loop5) - 1 then
+    if index != 0 + ("a" + iterators.loop5) - 2 then
         loop5out = loop5out + ", ";
     else
         loop5out = loop5out + "]";
     end;
 end;
+$print("loop5out =", loop5out);

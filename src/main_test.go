@@ -56,13 +56,13 @@ func init() {
 							case ".stderr":
 								e.stderr = string(fileBytes)
 							}
-							examples = append(examples, &e)
 						}
 					}
+					examples = append(examples, &e)
 				}
 			}
 		}
-	}	
+	}
 }
 
 func TestParse(t *testing.T) {

@@ -19,7 +19,11 @@ var builtins = map[string]func(vm VM, args ...*data.Value) (err error, value *da
 	"print": func(vm VM, args ...*data.Value) (err error, value *data.Value) {
 		var b strings.Builder
 		for i, arg := range args {
-			b.WriteString(arg.String())
+			if arg.Type == data.String {
+				b.WriteString(arg.Value.(string))
+			} else {
+				b.WriteString(arg.String())
+			}
 			if i != len(args) - 1 {
 				b.WriteString(" ")
 			}

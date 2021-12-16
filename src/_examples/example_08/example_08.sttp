@@ -2,7 +2,33 @@ function fib(n)
     if n < 2 then
         return n;
     end;
+    $print(n - 1, n - 2);
     return $fib(n - 1) + $fib(n - 2);
 end;
 
-fib10 = $fib(10);
+a = {"n": 7};
+
+function a.fib()
+    if self.n < 2 then
+        return self.n;
+    end;
+
+    b.n = self.n - 1;
+    b.fib = self.fib;
+    fib1 = $b.fib();
+
+    c.n = self.n - 2;
+    c.fib = self.fib;
+    fib2 = $c.fib();
+    $print(b.n, c.n);
+
+    return fib1 + fib2;
+end;
+
+fib7 = $fib(7);
+$print("fib7 =", fib7);
+
+$print();
+
+a.fib7 = $a.fib();
+$print("a.fib7 =", a.fib7);

@@ -11,3 +11,5 @@ for i = 0; i < 100; i = i + 1 do
         out = out + i;
     end;
 end;
+
+$print(out);
