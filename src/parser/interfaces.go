@@ -1,8 +1,10 @@
 package parser
 
 import (
+	"container/heap"
 	"fmt"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/data"
+	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/eval"
 	"io"
 )
 
@@ -52,4 +54,17 @@ type TestResults interface{
 // Config is an interface for any config type.
 type Config interface {
 	Get(name string) interface{}
+}
+
+// Result represents a result that can occur for any evaluation within sttp.
+type Result interface {
+	GetErr() error
+	GetValue() *data.Value
+}
+
+// BatchSuite represents the suite that is used to execute a Batch statement.
+type BatchSuite interface {
+	AddWork(id int, method eval.Method, args... *data.Value)
+	GetStatement() *Batch
+	Execute(workers int) heap.Interface
 }

@@ -1,8 +1,10 @@
 package main
 
 import (
+	"container/heap"
 	"fmt"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/data"
+	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/eval"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/parser"
 	"github.com/andygello555/gotils/slices"
 	"io/fs"
@@ -113,7 +115,7 @@ func TestVM_Eval(t *testing.T) {
 			err, result := vm.Eval(e.name, e.script)
 
 			if testing.Verbose() {
-				fmt.Println("vm Eval:", err, result)
+				fmt.Println(testNo + 1, "vm Eval:", err, result)
 			}
 
 			// If the example's stdout field is not empty then we'll check if it matches the actual stdout
@@ -183,7 +185,7 @@ func TestTestSuite_Run(t *testing.T) {
 		for testNo, file := range files {
 			if file.IsDir() && strings.HasPrefix(file.Name(), ExamplePrefix) {
 				suite := NewSuite(filepath.Join(ExampleTestSuitePath, file.Name()), true, 0)
-				if err = suite.Run(nil, nil); err != nil {
+				if err = suite.Run(nil, nil, os.Stdout); err != nil {
 					panic(err)
 				}
 
@@ -209,5 +211,204 @@ func TestTestSuite_Run(t *testing.T) {
 				}
 			}
 		}
+	}
+}
+
+func TestBatchSuite_Execute(t *testing.T) {
+	// Start the echo chamber web server
+	echoChamber := exec.Command(EchoChamberCmd, EchoChamberSource)
+	if err := echoChamber.Start(); err != nil {
+		t.Error(fmt.Errorf("could not start echo chamber: \"%s\"", err.Error()))
+	}
+	time.Sleep(150 * time.Millisecond)
+
+	for testNo, test := range []struct{
+		items []*BatchItem
+		expected BatchResults
+	}{
+		{
+			items: []*BatchItem{
+				{
+					Method: eval.GET,
+					Args:   []*data.Value{
+						{
+							Value: "http://127.0.0.1:3000/a",
+							Type: data.String,
+						},
+					},
+					Id:     0,
+				},
+				{
+					Method: eval.GET,
+					Args:   []*data.Value{
+						{
+							Value: "http://127.0.0.1:3000/b",
+							Type: data.String,
+						},
+					},
+					Id:     1,
+				},
+				{
+					Method: eval.GET,
+					Args:   []*data.Value{
+						{
+							Value: "http://127.0.0.1:3000/c",
+							Type: data.String,
+						},
+					},
+					Id:     2,
+				},
+				{
+					Method: eval.GET,
+					Args:   []*data.Value{
+						{
+							Value: "http://127.0.0.1:3000/d",
+							Type: data.String,
+						},
+					},
+					Id:     3,
+				},
+				{
+					Method: eval.GET,
+					Args:   []*data.Value{
+						{
+							Value: "http://127.0.0.1:3000/e",
+							Type: data.String,
+						},
+					},
+					Id:     4,
+				},
+			},
+			expected: BatchResults{
+				&BatchResult{
+					Id:  0,
+					Err: nil,
+					Value: &data.Value{
+						Value: map[string]interface{}{
+							"code": nil,
+							"headers": map[string]interface{}{
+								"accept-encoding": "gzip",
+								"host":            "127.0.0.1:3000",
+								"user-agent":      "go-resty/2.7.0 (https://github.com/go-resty/resty)",
+							},
+							"method": "GET",
+							"query_params": map[string]interface{} {},
+							"url":     "http://127.0.0.1:3000/a",
+							"version": "1.1",
+						},
+						Type: data.Object,
+					},
+				},
+				&BatchResult{
+					Id:  1,
+					Err: nil,
+					Value: &data.Value{
+						Value: map[string]interface{}{
+							"code": nil,
+							"headers": map[string]interface{}{
+								"accept-encoding": "gzip",
+								"host":            "127.0.0.1:3000",
+								"user-agent":      "go-resty/2.7.0 (https://github.com/go-resty/resty)",
+							},
+							"method": "GET",
+							"query_params": map[string]interface{} {},
+							"url":     "http://127.0.0.1:3000/b",
+							"version": "1.1",
+						},
+						Type: data.Object,
+					},
+				},
+				&BatchResult{
+					Id:  2,
+					Err: nil,
+					Value: &data.Value{
+						Value: map[string]interface{}{
+							"code": nil,
+							"headers": map[string]interface{}{
+								"accept-encoding": "gzip",
+								"host":            "127.0.0.1:3000",
+								"user-agent":      "go-resty/2.7.0 (https://github.com/go-resty/resty)",
+							},
+							"method": "GET",
+							"query_params": map[string]interface{} {},
+							"url":     "http://127.0.0.1:3000/c",
+							"version": "1.1",
+						},
+						Type: data.Object,
+					},
+				},
+				&BatchResult{
+					Id:  2,
+					Err: nil,
+					Value: &data.Value{
+						Value: map[string]interface{}{
+							"code": nil,
+							"headers": map[string]interface{}{
+								"accept-encoding": "gzip",
+								"host":            "127.0.0.1:3000",
+								"user-agent":      "go-resty/2.7.0 (https://github.com/go-resty/resty)",
+							},
+							"method": "GET",
+							"query_params": map[string]interface{} {},
+							"url":     "http://127.0.0.1:3000/d",
+							"version": "1.1",
+						},
+						Type: data.Object,
+					},
+				},
+				&BatchResult{
+					Id:  2,
+					Err: nil,
+					Value: &data.Value{
+						Value: map[string]interface{}{
+							"code": nil,
+							"headers": map[string]interface{}{
+								"accept-encoding": "gzip",
+								"host":            "127.0.0.1:3000",
+								"user-agent":      "go-resty/2.7.0 (https://github.com/go-resty/resty)",
+							},
+							"method": "GET",
+							"query_params": map[string]interface{} {},
+							"url":     "http://127.0.0.1:3000/e",
+							"version": "1.1",
+						},
+						Type: data.Object,
+					},
+				},
+			},
+		},
+	}{
+		batch := Batch(nil)
+		batch.Batch = test.items
+		results := batch.Execute(-1)
+
+		if results.Len() != len(test.expected) {
+			t.Errorf("test no. %d has %d results, expected %d results", testNo + 1, results.Len(), len(test.expected))
+		} else {
+			i := 0
+			for results.Len() > 0 {
+				r := heap.Pop(results).(parser.Result)
+				e := test.expected.Pop().(parser.Result)
+				err, same := eval.EqualInterface(r.GetValue().Value.(map[string]interface{})["content"], e.GetValue().Value)
+				if r.GetErr() != e.GetErr() || !same || err != nil {
+					if testing.Verbose() {
+						fmt.Println(testNo+1, "result:", i, ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+						if err != nil {
+							fmt.Println("Unexpected error:", err)
+						}
+						fmt.Println("Actual:  ", r.GetValue().Value.(map[string]interface{})["content"], r.GetErr())
+						fmt.Println("Expected:", e.GetValue().Value, e.GetErr())
+						fmt.Println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+					}
+					t.Errorf("test no. %d, result no. %d does not match expected, or error occurred", testNo+1, i)
+				}
+				i++
+			}
+		}
+	}
+
+	// Kill the echo chamber
+	if err := echoChamber.Process.Kill(); err != nil {
+		t.Error("failed to kill echo chamber")
 	}
 }
