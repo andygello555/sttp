@@ -149,7 +149,7 @@ func (ts *TestSuite) String() string {
 // TestSuite for any sub-directories. The results of the test suite will be output at the end of the procedure. You can
 // also specify the io.Writer for stdout and stderr, if these are nil then these will default to os.Stdout and os.Stderr
 // respectfully.
-func (ts *TestSuite) Run(stdout io.Writer, stderr io.Writer) error {
+func (ts *TestSuite) Run(stdout io.Writer, stderr io.Writer, debug io.Writer) error {
 	if files, err := ioutil.ReadDir(ts.Path); err != nil {
 		return err
 	} else {
@@ -158,7 +158,7 @@ func (ts *TestSuite) Run(stdout io.Writer, stderr io.Writer) error {
 			if file.IsDir() {
 				// Create a new test suite
 				newSuite := NewSuite(path, ts.Config.BreakOnFailure, ts.NestLevel + 1)
-				if err = newSuite.Run(stdout, stderr); err != nil {
+				if err = newSuite.Run(stdout, stderr, debug); err != nil {
 					return err
 				}
 				// Merge the test suite into the InnerSuites
@@ -172,7 +172,7 @@ func (ts *TestSuite) Run(stdout io.Writer, stderr io.Writer) error {
 					}
 
 					// Create a new VM and run the script
-					vm := New(ts.Suite[path], stdout, stderr)
+					vm := New(ts.Suite[path], stdout, stderr, debug)
 					fileBytes, _ := ioutil.ReadFile(path)
 					if err, _ = vm.Eval(path, string(fileBytes)); err != nil && ts.Config.BreakOnFailure {
 						break
