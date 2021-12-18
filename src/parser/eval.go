@@ -396,7 +396,10 @@ func (tc *TryCatch) Eval(vm VM) (err error, result *data.Value) {
 			userErr = result.Value
 		}
 		// Construct the sttp error using the given err and or userErr
-		errVal := errors.ConstructSttpError(err, userErr)
+		errVal, ret := errors.ConstructSttpError(err, userErr)
+		if ret {
+			return err, result
+		}
 
 		// Place the exception on the heap with the provided identifier
 		if err = vm.GetCallStack().Current().GetHeap().Assign(*tc.CatchAs, errVal, false, false); err != nil {

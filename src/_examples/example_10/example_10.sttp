@@ -10,3 +10,13 @@ try this
 catch as e then
     $print(e);
 end;
+
+function foo(a, b)
+    try this
+        return a * b;
+    catch as e then
+        $print(e);
+    end;
+end;
+
+$foo(2, 4);

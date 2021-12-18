@@ -119,14 +119,24 @@ func (pe PurposefulError) Error() string { return purposefulErrorName[pe] }
 //      "error": err.Error(),
 //      "subset": "go",
 //  }
-func ConstructSttpError(err error, userErr interface{}) interface{} {
-	var errVal interface{}
+func ConstructSttpError(err error, userErr interface{}) (errVal interface{}, ret bool) {
 	//fmt.Println(reflect.TypeOf(err).String())
 	switch err.(type) {
 	case PurposefulError:
 		// If the error returned is an errors.Throw error. Then we'll set the errVal to be the result
-		if err.(PurposefulError) == Throw {
+		switch err.(PurposefulError) {
+		case Throw:
 			errVal = userErr
+		case Return:
+			return err, true
+		default:
+			errVal = map[string]interface{} {
+				"type": err.(PurposefulError),
+				"error": err.(PurposefulError).Error(),
+				"subset": "PurposefulError",
+			}
+		}
+		if err.(PurposefulError) == Throw {
 		} else {
 			errVal = map[string]interface{} {
 				"type": err.(PurposefulError),
@@ -148,5 +158,5 @@ func ConstructSttpError(err error, userErr interface{}) interface{} {
 			"subset": "go",
 		}
 	}
-	return errVal
+	return errVal, false
 }
