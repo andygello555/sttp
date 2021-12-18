@@ -22,6 +22,7 @@ type VM interface {
 	GetTestResults() TestResults
 	GetStdout() io.Writer
 	GetStderr() io.Writer
+	GetDebug() (io.Writer, bool)
 }
 
 // CallStack is implemented by the call stack that is used within the VM.

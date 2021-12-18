@@ -7,7 +7,6 @@ import (
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/eval"
 	"reflect"
 	"strings"
-	"testing"
 )
 
 type evalNode interface {
@@ -21,8 +20,8 @@ func (p *Program) Eval(vm VM) (err error, result *data.Value) {
 		return err, nil
 	}
 	if err, result = p.Block.Eval(vm); err == nil {
-		if testing.Verbose() {
-			fmt.Println("final stack frame heap:", vm.GetCallStack().Current().GetHeap())
+		if debug, ok := vm.GetDebug(); ok {
+			_, _ = fmt.Fprintf(debug, "final stack frame heap: %v\n", vm.GetCallStack().Current().GetHeap())
 		}
 		err, _ = vm.GetCallStack().Return(vm)
 	}
@@ -182,8 +181,8 @@ func (a *Assignment) Eval(vm VM) (err error, result *data.Value) {
 		return err, nil
 	}
 
-	if testing.Verbose() {
-		fmt.Println("after assignment of", a.JSONPath.String(0), "heap is:", heap, "global:", heap.Get(variableName).Global, "scope:", *vm.GetScope())
+	if debug, ok := vm.GetDebug(); ok {
+		_, _ = fmt.Fprintf(debug, "after assignment of %s heap is: %v global: %t scope: %d\n", a.JSONPath.String(0), heap, heap.Get(variableName).Global, *vm.GetScope())
 	}
 	return nil, nil
 }
@@ -451,8 +450,8 @@ func (f *FunctionDefinition) Eval(vm VM) (err error, result *data.Value) {
 		return err, nil
 	}
 
-	if testing.Verbose() {
-		fmt.Println("after function definition heap is:", heap)
+	if debug, ok := vm.GetDebug(); ok {
+		_, _ = fmt.Fprintf(debug,"after function definition heap is: %v\n", heap)
 	}
 	return nil, nil
 }
@@ -506,9 +505,9 @@ func (f *FunctionCall) Eval(vm VM) (err error, result *data.Value) {
 			return err, nil
 		}
 
-		if testing.Verbose() {
-			fmt.Println("calling function", f.JSONPath.String(0), "type:", result.Type.String(), "args:", args)
-			fmt.Println("new heap:", vm.GetCallStack().Current().GetHeap())
+		if debug, ok := vm.GetDebug(); ok {
+			_, _ = fmt.Fprintf(debug, "calling function %s type: %s args: %v\n", f.JSONPath.String(0), result.Type.String(), args)
+			_, _ = fmt.Fprintf(debug, "new heap: %v\n", vm.GetCallStack().Current().GetHeap())
 		}
 
 		// Evaluate the Block within the definition

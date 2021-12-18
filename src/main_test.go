@@ -7,6 +7,7 @@ import (
 	"github.com/andygello555/gotils/slices"
 	"io/fs"
 	"io/ioutil"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -108,7 +109,7 @@ func TestVM_Eval(t *testing.T) {
 	for testNo, e := range examples {
 		if skipPtr == len(skip) || testNo != skip[skipPtr] {
 			var stdout, stderr strings.Builder
-			vm := New(nil, &stdout, &stderr)
+			vm := New(nil, &stdout, &stderr, os.Stdout)
 			err, result := vm.Eval(e.name, e.script)
 
 			if testing.Verbose() {

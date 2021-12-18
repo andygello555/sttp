@@ -5,7 +5,6 @@ import (
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/data"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/eval"
 	"reflect"
-	"testing"
 )
 
 // term describes the signature that all terms share. Each term has a left-hand side with a single higher precedence 
@@ -45,23 +44,23 @@ func tEval(t term, vm VM) (err error, result *data.Value) {
 		return err, nil
 	}
 
-	if testing.Verbose() {
-		fmt.Printf("\tLHS (%s) = %v\n", reflect.TypeOf(t.left()).String(), result)
+	if debug, ok := vm.GetDebug(); ok {
+		_, _ = fmt.Fprintf(debug, "\tLHS (%s) = %v\n", reflect.TypeOf(t.left()).String(), result)
 	}
 
 	for _, r := range t.right() {
 		var right *data.Value
 		err, right = r.Eval(vm)
 
-		if testing.Verbose() {
-			fmt.Printf("\tRHS (%s) = %v\n", reflect.TypeOf(r).String(), right)
+		if debug, ok := vm.GetDebug(); ok {
+			_, _ = fmt.Fprintf(debug, "\tRHS (%s) = %v\n", reflect.TypeOf(r).String(), right)
 		}
 
 		if err == nil {
 			err, result = eval.Compute(r.operator(), result, right)
 
-			if testing.Verbose() {
-				fmt.Println("\tnew LHS =", result)
+			if debug, ok := vm.GetDebug(); ok {
+				_, _ = fmt.Fprintf(debug, "\tnew LHS = %s\n", result.String())
 			}
 			if err == nil {
 				continue
