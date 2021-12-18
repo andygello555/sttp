@@ -5,6 +5,7 @@ import (
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/data"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/errors"
 	"os/exec"
+	"syscall"
 	"testing"
 	"time"
 )
@@ -720,7 +721,11 @@ func TestMethod_Call(t *testing.T) {
 	}
 
 	// Kill the echo chamber
-	if err := echoChamber.Process.Kill(); err != nil {
-		panic("failed to kill echo chamber")
+	pgid, err := syscall.Getpgid(echoChamber.Process.Pid)
+	if err == nil {
+		if err = syscall.Kill(-pgid, 15); err != nil {
+			t.Error("failed to kill echo chamber")
+		}
 	}
+	_ = echoChamber.Wait()
 }
