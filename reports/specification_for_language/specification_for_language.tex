@@ -283,6 +283,8 @@ JSON paths can be assigned to. This sets the appropriate property of the variabl
     \end{itemize}
 \end{center}
 
+If the value being set is a Function type then we'll construct a new FunctionDefinition AST node, that will float outside the AST. This node will contain the body and parameters of the Function value that is being set, but will point to the JSONPath AST node of the variable that it is being assigned to.
+
 \subsection{Expressions}
 \label{sec:expressions}
 
@@ -411,6 +413,136 @@ All operators work as expected.
 \subsubsection{Nulls}
 
 Multiply, Divide, Modulus, Addition, and Subtraction will all `nullify' the operation (result in `null'). Null cannot be compared but can be used in logical expressions where it will be cast into `false'.
+
+\section{Functions}
+
+Functions are defined as follows:
+
+\begin{verbatim}
+function foo(a, b)
+    return a + b;
+end;
+\end{verbatim}
+
+This places the value \verb|foo| on the heap of the current \hyperref[sec:function-call-stack]{stack frame}, with a value of type Function. This value points to the FunctionDefinition AST node of the defined function. In sttp this value will be treated as a String in the format: \verb|function:JSON_PATH:SAFE_PTR|.
+
+\subsection{Call Stack}
+\label{sec:function-call-stack}
+
+Each time a function is called, the Function value will be fetched using JSONPath. If the value returned by the JSONPath is not a Function type, then the builtin function table will be checked, if the function is still not found then an Uncallable error is thrown.
+
+If the function call is to a user-defined function within the AST. The arguments that were provided to the function are evaluated. Then a new stack frame is allocated and placed on the top of the stack. This stack frame contains a pointer back to the FunctionCall AST node, as well as a pointer to the FunctionDefinition AST node which contains the name, body, and parameters of the function that was called.
+
+If the function call is to a builtin or is a HTTP method call, then no stack frame is allocated. The corresponding Golang code is executed instead. At the beginning of each sttp program an initial stack frame is assigned which points to nil for both FunctionCall and FunctionDefinition pointers.
+
+\subsection{Heap}
+
+Along with these pointers a new heap is assigned. This contains a mapping of variable names to sttp values. All values defined as a global variable from the previous stack frame are copied over to the new stack stack frame. Each argument is assigned to the JSONPath defined in the function's parameters and placed on this heap. If there is no argument for a defined function parameter, then that parameter will be set to `null'. If there are more arguments provided then there are parameters, then a MoreArgsThanParams error is thrown. A `self' value is also placed on the heap which contains the value pointed to by the root property of the JSONPath of the function. This value is defined as global, the reason for which will be discussed later. For instance:
+
+\begin{verbatim}
+hello_world = {"name": "John Smith"};
+
+function hello_world.hello()
+    $print("Hello", self.name + "!");
+end;
+
+hello_world.hello();
+// Output: Hello John Smith!
+\end{verbatim}
+
+Parameters are defined in order from left to right, with the `self' parameter defined first. This can give way to some interesting behaviour such as the following:
+
+\begin{verbatim}
+foo = {"name": "John Smith"};
+
+// "foo" is populated with new keys "a", "b", and "c"
+function foo.zoo(self.a, self.b, foo.c)
+    self.result = self.a * self.b * self.c;
+end;
+
+foo.zoo(3, 7, 2);
+print(foo);
+// Output: {
+//     "a": 3,
+//     "b": 7,
+//     "c": 2,
+//     "name": "John Smith",
+//     "result": 42,
+//     "zoo": "function:foo.zoo:XXXXXXX"
+// }
+\end{verbatim}
+
+Once the function has completed execution, then the values on the heap defined as globals in the current stack frame are copied over to the previous stack frame, this includes `self' (as it is global). If the value's variable name is `self', then the value will be assigned to the root property of the currently executing function's JSONPath. Finally, the current stack frame is popped from the callstack.
+
+\section{Error handling}
+
+Each evaluator for each node in the AST is able to return an error and a result. If an error occurs within a leaf node of the AST, then this error will be passed all the way up to the root of the AST, or up until a Try-Catch AST node.
+
+\begin{center}
+    The try catch statement works in the following way:
+    \begin{verbatim}
+        try this
+            a = [1, 2, 3];
+            // Error occurs on below line
+            $print(a[-4]);
+        catch as e then
+            $print(e);
+        end;
+    \end{verbatim}
+\end{center}
+
+Definition of a variable to store the exception within is mandatory and has to be an identifier, rather than a JSONPath. The value stored within the identifier follows the rules defined below:
+
+\begin{enumerate}
+    \item If the error is from a \verb|throw| statement then the value placed into the identifier will match the value of the result of the expression in the \verb|throw| statement. If no expression is given for the \verb|throw| statement, then `null' will be stored in the identifier.
+    \item If the error is \textbf{not} from a \verb|throw| statement then the value is constructed in the following way:
+    \begin{center}
+        \begin{verbatim}
+    {
+        "type":   The name/type of the error (string),
+        "error":  The error message (string),
+        "subset": The subset which the error is 
+                  a part of (string)
+    }
+        \end{verbatim}
+    \end{center}
+\end{enumerate}
+
+\subsection{Error types}
+
+\subsubsection{Subset: Runtime}
+
+\begin{center}
+    \begin{tabular}{| m{5cm} | m{5cm} |}
+        \hline
+        Name & Description\\
+        \hline
+        StackOverflow & Pushed one too many stack frames onto the call stack. Default max stack size is 500.\\
+        \hline
+	    StackUnderFlow & Popped one too many stack frames off the call stack.\\
+        \hline
+	    CannotFindType & Cannot find the type for a value. If the value is not a JSON type.\\
+        \hline
+	    CannotCast & Cannot cast a value of type $x$ into a value of type $y$.\\
+        \hline
+	    CannotFindLength & Cannot find the length of a value.\\
+        \hline
+	    InvalidOperation & Operation $z$ between a value of type $x$ and a value of type $y$ is not defined.\\
+        \hline
+	    StringManipulationError & Error whilst manipulating a string using all string manipulation operators.\\
+        \hline
+	    JSONPathError & Cannot access a value with a property/part.\\
+        \hline
+	    Uncallable & Only values of the Function type can be called. Otherwise, this error is thrown.\\
+        \hline
+	    MoreArgsThanParams & More arguments were given to a function during a function call than there are defined parameters in the function's definition.\\
+        \hline
+	    MethodParamNotOptional & A parameter within a HTTP method call is not optional.\\
+        \hline
+    \end{tabular}
+\end{center}
+
+\subsubsection{Subset: Structure}
 
 \section{Batching}
 
