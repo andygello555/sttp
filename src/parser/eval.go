@@ -6,7 +6,6 @@ import (
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/data"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/errors"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/eval"
-	"io/ioutil"
 	"reflect"
 	"strings"
 )
@@ -199,16 +198,32 @@ func (m *MethodCall) Eval(vm VM) (err error, result *data.Value) {
 
 	if batch, results := vm.GetBatch(); batch != nil && results == nil {
 		// If we are currently batching MethodCalls then we will add the MethodCall to the vm.Batch and return null.
-		batch.AddWork(m.Method, args...)
+		batch.AddWork(m, args...)
+		if debug, ok := vm.GetDebug(); ok {
+			_, _ = fmt.Fprintf(debug, "adding %s %v to work queue\n", m.String(0), args)
+		}
 		return nil, &data.Value{
 			Value: nil,
 			Type:  data.Null,
 		}
 	} else if batch != nil && results != nil {
-		// If we have batched results available, aka. the batch has been executed, then we will pop the next result and
-		// return its error and data.Value.
-		r := heap.Pop(results).(Result)
-		return r.GetErr(), r.GetValue()
+		if results.Len() > 0 {
+			// If we have batched results available, aka. the batch has been executed, then we will pop the next result and
+			// return its error and data.Value.
+			r := heap.Pop(results).(BatchResult)
+			// If the current result's MethodCall pointer does not match the pointer to the current MethodCall then we will
+			// return the appropriate error.
+			if debug, ok := vm.GetDebug(); ok {
+				_, _ = fmt.Fprintf(debug, "popped %s from result queue\n", r.GetMethodCall().String(0))
+			}
+			if r.GetMethodCall() != m {
+				return errors.MethodCallMismatchInBatch.Errorf(r.GetMethodCall().String(0), m.String(0)), nil
+			}
+			return r.GetErr(), r.GetValue()
+		} else {
+			// If we have not got anymore results then we have a mismatch of batched MethodCalls.
+			return errors.MethodCallMismatchInBatch.Errorf("null", m.String(0)), nil
+		}
 	} else {
 		// Otherwise, we are just executing the MethodCall normally.
 		return m.Method.Call(args...)
@@ -407,7 +422,8 @@ func (b *Batch) Eval(vm VM) (err error, result *data.Value) {
 	if batch == nil && results == nil {
 		// Replace Stdout and Stderr with ioutil.Discard
 		oldStdout, oldStderr := vm.GetStdout(), vm.GetStderr()
-		vm.SetStdout(ioutil.Discard); vm.SetStderr(ioutil.Discard)
+		var newStdout, newStderr strings.Builder
+		vm.SetStdout(&newStdout); vm.SetStderr(&newStderr)
 
 		// Create a copy of the current heap
 		newHeap := make(data.Heap)
@@ -428,21 +444,35 @@ func (b *Batch) Eval(vm VM) (err error, result *data.Value) {
 		// Evaluate the Block for the first time. This will collect all the MethodCalls in the Batch to be executed in 
 		// parallel.
 		if err, result = b.Block.Eval(vm); err != nil {
+			// We also have to set the stdout and stderr back to their originals as well as deleting the batch 
+			// altogether
+			vm.SetStdout(oldStdout); vm.SetStderr(oldStderr)
 			vm.DeleteBatch()
 			return err, nil
 		}
 
-		// We then execute the collected MethodCalls. This will set vm.BatchResults to not be nil anymore.
-		vm.ExecuteBatch()
-
-		// Then we put back the old Heap and set the stdout and stderr back to the old ones.
-		*vm.GetCallStack().Current().GetHeap() = *oldHeap
+		// Then we set the stdout and stderr back to the old ones.
 		vm.SetStdout(oldStdout); vm.SetStderr(oldStderr)
 
-		// Then we evaluate the Block again...
-		if err, result = b.Block.Eval(vm); err != nil {
-			vm.DeleteBatch()
-			return err, nil
+		// We assign batch again to find the amount of work we have just enqueued. If we have found now work then we 
+		// optimise by skipping batch execution and running the Block again. We also keep the current copied over heap.
+		batch, _ = vm.GetBatch()
+		work := batch.Work()
+
+		if work > 0 {
+			// We then execute the collected MethodCalls. This will set vm.BatchResults to not be nil anymore.
+			vm.ExecuteBatch()
+			// We also set the current heap back to the old one...
+			*vm.GetCallStack().Current().GetHeap() = *oldHeap
+			// Then we evaluate the Block again...
+			if err, result = b.Block.Eval(vm); err != nil {
+				vm.DeleteBatch()
+				return err, nil
+			}
+		} else {
+			// If we have no work then we will write the new stdout and stderr into their respective io.Writers
+			_, _ = fmt.Fprint(vm.GetStdout(), newStdout.String())
+			_, _ = fmt.Fprint(vm.GetStderr(), newStderr.String())
 		}
 
 		// Finally, we delete the Batch, this will set both vm.Batch and vm.BatchResults back to nil.
@@ -602,6 +632,9 @@ func (f *FunctionCall) Eval(vm VM) (err error, result *data.Value) {
 		result = frame.GetReturn()
 	case func(vm VM, args ...*data.Value) (err error, value *data.Value):
 		args := calculateArgs()
+		if debug, ok := vm.GetDebug(); ok {
+			_, _ = fmt.Fprintf(debug, "calling builtin function %s args: %v\n", *f.JSONPath.Parts[0].Property, args)
+		}
 		if err, result = result.Value.(func(vm VM, args ...*data.Value) (err error, value *data.Value))(vm, args...); err != nil {
 			return err, result
 		}
@@ -700,6 +733,10 @@ func (j *JSONPath) Eval(vm VM) (err error, result *data.Value) {
 	var t data.Type
 	val := path.Get(variableVal.Value)
 	err = t.Get(val)
+
+	if debug, ok := vm.GetDebug(); ok {
+		_, _ = fmt.Fprintf(debug, "getting %s from %s = %v\n", j.String(0), variableVal.String(), val)
+	}
 	if err != nil {
 		return err, nil
 	}

@@ -7,3 +7,46 @@ batch this
     oops_forgot_this = $GET("http://127.0.0.1:3000/" + 100);
     $print(oops_forgot_this.content);
 end;
+
+try this
+    batch this
+        a.result = $GET("http://127.0.0.1:3000/hello/world");
+        batch this
+            for _, prefix in ["a", "b", "c", "d", "e"] do
+                a.result = $GET("http://127.0.0.1:3000/%s" % [prefix]);
+                a.results[i] = result.content;
+            end;
+        end;
+    end;
+catch as e then
+    $print(e);
+end;
+
+batch this
+    $print("no method calls in 'ere");
+end;
+
+try this
+    batch this
+        x = $GET("http://127.0.0.1:3000/the/flow/depends/on/this/request");
+        y = $GET("http://127.0.0.1:3000/the/flow/depends/on/this/request/also");
+        if x.code == 200 && y.code == 200 then
+            wont_be_batched = $GET("http://127.0.0.1:3000/wont/be/batched");
+        end;
+        uh_oh = $GET("http://127.0.0.1:3000/uh/oh");
+    end;
+catch as e then
+    $print(e);
+end;
+
+try this
+    batch this
+        x = $GET("http://127.0.0.1:3000/the/flow/depends/on/this/request");
+        y = $GET("http://127.0.0.1:3000/the/flow/depends/on/this/request/also");
+        if x.code == 200 && y.code == 200 then
+            wont_be_batched = $GET("http://127.0.0.1:3000/wont/be/batched");
+        end;
+    end;
+catch as e then
+    $print(e);
+end;

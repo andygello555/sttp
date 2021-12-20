@@ -4,7 +4,6 @@ import (
 	"container/heap"
 	"fmt"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/data"
-	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/eval"
 	"io"
 )
 
@@ -27,6 +26,7 @@ type VM interface {
 	SetStdout(stdout io.Writer)
 	SetStderr(stderr io.Writer)
 	GetDebug() (io.Writer, bool)
+	WriteDebug(format string, a... interface{})
 	GetBatch() (BatchSuite, heap.Interface)
 	DeleteBatch()
 	CreateBatch(statement *Batch)
@@ -68,9 +68,16 @@ type Result interface {
 	GetValue() *data.Value
 }
 
+// BatchResult represents a result that can occur for a batched MethodCall.
+type BatchResult interface {
+	Result
+	GetMethodCall() *MethodCall
+}
+
 // BatchSuite represents the suite that is used to execute a Batch statement.
 type BatchSuite interface {
-	AddWork(method eval.Method, args... *data.Value)
+	AddWork(method *MethodCall, args... *data.Value)
+	Work() int
 	GetStatement() *Batch
 	Execute(workers int) heap.Interface
 }

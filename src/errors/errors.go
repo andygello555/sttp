@@ -19,17 +19,18 @@ func (p ProtoSttpError) Error() string { return p.errorMethod() }
 type RuntimeError string
 
 const (
-	StackOverflow           RuntimeError = "exceeded the maximum number of stack frames (%d)"
-	StackUnderFlow          RuntimeError = "exceeded the minimum number of stack frames (%d)"
-	CannotFindType          RuntimeError = "cannot find type for value \"%v\""
-	CannotCast              RuntimeError = "cannot cast type %s to %s"
-	CannotFindLength        RuntimeError = "cannot find length of value \"%v\""
-	InvalidOperation        RuntimeError = "cannot carry out operation \"%s\" for %s and %s"
-	StringManipulationError RuntimeError = "error whilst manipulating \"%s\": %s"
-	JSONPathError           RuntimeError = "cannot access %s with %s"
-	Uncallable              RuntimeError = "cannot call value of type %s"
-	MoreArgsThanParams      RuntimeError = "function %s has %d parameters, there were %d arguments provided"
-	MethodParamNotOptional  RuntimeError = "method parameter \"%s\" is not optional"
+	StackOverflow             RuntimeError = "exceeded the maximum number of stack frames (%d)"
+	StackUnderFlow            RuntimeError = "exceeded the minimum number of stack frames (%d)"
+	CannotFindType            RuntimeError = "cannot find type for value \"%v\""
+	CannotCast                RuntimeError = "cannot cast type %s to %s"
+	CannotFindLength          RuntimeError = "cannot find length of value \"%v\""
+	InvalidOperation          RuntimeError = "cannot carry out operation \"%s\" for %s and %s"
+	StringManipulationError   RuntimeError = "error whilst manipulating \"%s\": %s"
+	JSONPathError             RuntimeError = "cannot access %s with %s"
+	Uncallable                RuntimeError = "cannot call value of type %s"
+	MoreArgsThanParams        RuntimeError = "function %s has %d parameters, there were %d arguments provided"
+	MethodParamNotOptional    RuntimeError = "method parameter \"%s\" is not optional"
+	MethodCallMismatchInBatch RuntimeError = "pointer to result for method call: \"%s\" does not match current method call: \"%s\""
 )
 
 // runtimeErrorNames contains the names of each RuntimeError enum value.
@@ -45,6 +46,7 @@ var runtimeErrorNames = map[RuntimeError]string{
 	Uncallable: "Uncallable",
 	MoreArgsThanParams: "MoreArgsThanParams",
 	MethodParamNotOptional: "MethodParamNotOptional",
+	MethodCallMismatchInBatch: "MethodCallMismatchInBatch",
 }
 
 func (re RuntimeError) Errorf(values... interface{}) error {
