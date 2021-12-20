@@ -1,6 +1,7 @@
 package main
 
 import (
+	"container/heap"
 	"fmt"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/data"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/errors"
@@ -29,6 +30,9 @@ type VM struct {
 	// Debug is the io.Writer to write debugging information to. If this is ioutil.Discard then there will be no 
 	// debugging information written (or evaluated).
 	Debug           io.Writer
+	// The BatchSuite used for parser.Batch statements. If nil then the VM is not currently in a parser.Batch statement.
+	Batch           parser.BatchSuite
+	BatchResults    heap.Interface
 }
 
 func New(testResults *TestResults, stdout io.Writer, stderr io.Writer, debug io.Writer) *VM {
@@ -47,6 +51,8 @@ func New(testResults *TestResults, stdout io.Writer, stderr io.Writer, debug io.
 		Stdout: stdout,
 		Stderr: stderr,
 		Debug: debug,
+		Batch: nil,
+		BatchResults: nil,
 	}
 }
 
@@ -99,8 +105,35 @@ func (vm *VM) GetStderr() io.Writer {
 	return vm.Stderr
 }
 
+func (vm *VM) SetStdout(stdout io.Writer) {
+	vm.Stdout = stdout
+}
+
+func (vm *VM) SetStderr(stderr io.Writer) {
+	vm.Stderr = stderr
+}
+
 // GetDebug will return the io.Writer used for debugging. If the io.Writer is equal to ioutil.Discard, then false will 
 // be returned, otherwise true will be returned.
 func (vm *VM) GetDebug() (io.Writer, bool) {
 	return vm.Debug, vm.Debug != ioutil.Discard
+}
+
+func (vm *VM) GetBatch() (parser.BatchSuite, heap.Interface) {
+	return vm.Batch, vm.BatchResults
+}
+
+// DeleteBatch will nullify the Batch.
+func (vm *VM) DeleteBatch() {
+	vm.Batch = nil
+	vm.BatchResults = nil
+}
+
+func (vm *VM) CreateBatch(statement *parser.Batch) {
+	vm.Batch = Batch(statement)
+}
+
+// ExecuteBatch will execute the batched MethodCalls and store them in BatchResults.
+func (vm *VM) ExecuteBatch() {
+	vm.BatchResults = vm.Batch.Execute(-1)
 }

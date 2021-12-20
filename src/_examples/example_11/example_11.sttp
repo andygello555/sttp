@@ -1,0 +1,9 @@
+batch this
+    for i = 0; i < 100; i = i + 1 do
+        result.result = $GET("http://127.0.0.1:3000/" + i);
+        result.results[i] = result.result.content;
+        $print(result.results[i]);
+    end;
+    oops_forgot_this = $GET("http://127.0.0.1:3000/" + 100);
+    $print(oops_forgot_this.content);
+end;

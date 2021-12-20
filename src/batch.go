@@ -42,7 +42,7 @@ type BatchResults []*BatchResult
 
 func (b BatchResults) Len() int { return len(b) }
 
-func (b BatchResults) Less(i, j int) bool { return b[i].Id > b[j].Id }
+func (b BatchResults) Less(i, j int) bool { return b[i].Id < b[j].Id }
 
 func (b BatchResults) Swap(i, j int) { b[i], b[j] = b[j], b[i] }
 
@@ -68,6 +68,7 @@ func (b *BatchResults) String() string {
 type BatchSuite struct {
 	BatchStatement *parser.Batch
 	Batch          []*BatchItem
+	CurrentId      int
 }
 
 // Batch creates a new BatchSuite. 
@@ -75,6 +76,7 @@ func Batch(statement *parser.Batch) *BatchSuite {
 	return &BatchSuite{
 		BatchStatement: statement,
 		Batch:          make([]*BatchItem, 0),
+		CurrentId:      0,
 	}
 }
 
@@ -93,12 +95,13 @@ func methodWorker(jobs <-chan *BatchItem, results chan<- *BatchResult) {
 }
 
 // AddWork will create and append a BatchItem to the Batch.
-func (b *BatchSuite) AddWork(id int, method eval.Method, args... *data.Value) {
+func (b *BatchSuite) AddWork(method eval.Method, args... *data.Value) {
 	b.Batch = append(b.Batch, &BatchItem{
 		Method: method,
 		Args:   args,
-		Id:     id,
+		Id:     b.CurrentId,
 	})
+	b.CurrentId ++
 }
 
 // GetStatement will return a pointer to a parser.Batch statement so that it can be compared and or set.

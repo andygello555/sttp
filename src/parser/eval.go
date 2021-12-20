@@ -1,10 +1,12 @@
 package parser
 
 import (
+	"container/heap"
 	"fmt"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/data"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/errors"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/eval"
+	"io/ioutil"
 	"reflect"
 	"strings"
 )
@@ -194,7 +196,23 @@ func (m *MethodCall) Eval(vm VM) (err error, result *data.Value) {
 			return err, nil
 		}
 	}
-	return m.Method.Call(args...)
+
+	if batch, results := vm.GetBatch(); batch != nil && results == nil {
+		// If we are currently batching MethodCalls then we will add the MethodCall to the vm.Batch and return null.
+		batch.AddWork(m.Method, args...)
+		return nil, &data.Value{
+			Value: nil,
+			Type:  data.Null,
+		}
+	} else if batch != nil && results != nil {
+		// If we have batched results available, aka. the batch has been executed, then we will pop the next result and
+		// return its error and data.Value.
+		r := heap.Pop(results).(Result)
+		return r.GetErr(), r.GetValue()
+	} else {
+		// Otherwise, we are just executing the MethodCall normally.
+		return m.Method.Call(args...)
+	}
 }
 
 func (t *TestStatement) Eval(vm VM) (err error, result *data.Value) {
@@ -385,7 +403,54 @@ func (f *ForEach) Eval(vm VM) (err error, result *data.Value) {
 }
 
 func (b *Batch) Eval(vm VM) (err error, result *data.Value) {
-	return nil, nil
+	batch, results := vm.GetBatch()
+	if batch == nil && results == nil {
+		// Replace Stdout and Stderr with ioutil.Discard
+		oldStdout, oldStderr := vm.GetStdout(), vm.GetStderr()
+		vm.SetStdout(ioutil.Discard); vm.SetStderr(ioutil.Discard)
+
+		// Create a copy of the current heap
+		newHeap := make(data.Heap)
+		oldHeap := vm.GetCallStack().Current().GetHeap()
+		for name, val := range *oldHeap {
+			newHeap[name] = &data.Value{
+				Value:    val.Value,
+				Type:     val.Type,
+				Global:   val.Global,
+				ReadOnly: val.ReadOnly,
+			}
+		}
+		// Use the copy as the new heap
+		*vm.GetCallStack().Current().GetHeap() = newHeap
+		// Set up the BatchSuite. vm.Batch is now not nil, but vm.BatchResults is...
+		vm.CreateBatch(b)
+
+		// Evaluate the Block for the first time. This will collect all the MethodCalls in the Batch to be executed in 
+		// parallel.
+		if err, result = b.Block.Eval(vm); err != nil {
+			vm.DeleteBatch()
+			return err, nil
+		}
+
+		// We then execute the collected MethodCalls. This will set vm.BatchResults to not be nil anymore.
+		vm.ExecuteBatch()
+
+		// Then we put back the old Heap and set the stdout and stderr back to the old ones.
+		*vm.GetCallStack().Current().GetHeap() = *oldHeap
+		vm.SetStdout(oldStdout); vm.SetStderr(oldStderr)
+
+		// Then we evaluate the Block again...
+		if err, result = b.Block.Eval(vm); err != nil {
+			vm.DeleteBatch()
+			return err, nil
+		}
+
+		// Finally, we delete the Batch, this will set both vm.Batch and vm.BatchResults back to nil.
+		vm.DeleteBatch()
+		return nil, nil
+	}
+	// We return an error if we are already in a Batch statement
+	return errors.BatchWithinBatch.Errorf(), nil
 }
 
 func (tc *TryCatch) Eval(vm VM) (err error, result *data.Value) {

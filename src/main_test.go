@@ -36,6 +36,27 @@ type example struct {
 
 var examples []*example
 
+func startServer() *exec.Cmd {
+	echoChamber := exec.Command(EchoChamberCmd, EchoChamberSource)
+	echoChamber.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	if err := echoChamber.Start(); err != nil {
+		panic(fmt.Errorf("could not start echo chamber: \"%s\"", err.Error()))
+	}
+	time.Sleep(150 * time.Millisecond)
+	return echoChamber
+}
+
+func killServer(echoChamber *exec.Cmd) {
+	// Kill the echo chamber
+	pgid, err := syscall.Getpgid(echoChamber.Process.Pid)
+	if err == nil {
+		if err = syscall.Kill(-pgid, 15); err != nil {
+			panic("failed to kill echo chamber")
+		}
+	}
+	_ = echoChamber.Wait()
+}
+
 func init() {
 	examples = make([]*example, 0)
 	if files, err := ioutil.ReadDir(ExamplePath); err != nil {
@@ -99,14 +120,11 @@ func BenchmarkParse(b *testing.B) {
 }
 
 func TestVM_Eval(t *testing.T) {
-	skip := []int{0}
+	skip := []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
 	skipPtr := 0
 
 	// Start the echo chamber web server
-	echoChamber := exec.Command(EchoChamberCmd, EchoChamberSource)
-	if err := echoChamber.Start(); err != nil {
-		t.Error(fmt.Errorf("could not start echo chamber: \"%s\"", err.Error()))
-	}
+	echoChamber := startServer()
 	time.Sleep(150 * time.Millisecond)
 
 	for testNo, e := range examples {
@@ -131,7 +149,9 @@ func TestVM_Eval(t *testing.T) {
 						fmt.Println(stdout.String())
 						fmt.Println()
 					}
-					t.Errorf("example %d's stdout does not match the expected stdout", testNo + 1)
+					if t != nil {
+						t.Errorf("example %d's stdout does not match the expected stdout", testNo+1)
+					}
 				}
 			}
 
@@ -151,13 +171,7 @@ func TestVM_Eval(t *testing.T) {
 	}
 
 	// Kill the echo chamber
-	pgid, err := syscall.Getpgid(echoChamber.Process.Pid)
-	if err == nil {
-		if err = syscall.Kill(-pgid, 15); err != nil {
-			t.Error("failed to kill echo chamber")
-		}
-	}
-	_ = echoChamber.Wait()
+	killServer(echoChamber)
 }
 
 func BenchmarkVM_Eval(b *testing.B) {
@@ -221,11 +235,7 @@ func TestTestSuite_Run(t *testing.T) {
 
 func TestBatchSuite_Execute(t *testing.T) {
 	// Start the echo chamber web server
-	echoChamber := exec.Command(EchoChamberCmd, EchoChamberSource)
-	if err := echoChamber.Start(); err != nil {
-		t.Error(fmt.Errorf("could not start echo chamber: \"%s\"", err.Error()))
-	}
-	time.Sleep(150 * time.Millisecond)
+	echoChamber := startServer()
 
 	for testNo, test := range []struct{
 		items []*BatchItem
@@ -343,7 +353,7 @@ func TestBatchSuite_Execute(t *testing.T) {
 					},
 				},
 				&BatchResult{
-					Id:  2,
+					Id:  3,
 					Err: nil,
 					Value: &data.Value{
 						Value: map[string]interface{}{
@@ -362,7 +372,7 @@ func TestBatchSuite_Execute(t *testing.T) {
 					},
 				},
 				&BatchResult{
-					Id:  2,
+					Id:  4,
 					Err: nil,
 					Value: &data.Value{
 						Value: map[string]interface{}{
@@ -386,6 +396,7 @@ func TestBatchSuite_Execute(t *testing.T) {
 		batch := Batch(nil)
 		batch.Batch = test.items
 		results := batch.Execute(-1)
+		heap.Init(&test.expected)
 
 		if results.Len() != len(test.expected) {
 			t.Errorf("test no. %d has %d results, expected %d results", testNo + 1, results.Len(), len(test.expected))
@@ -393,7 +404,7 @@ func TestBatchSuite_Execute(t *testing.T) {
 			i := 0
 			for results.Len() > 0 {
 				r := heap.Pop(results).(parser.Result)
-				e := test.expected.Pop().(parser.Result)
+				e := heap.Pop(&test.expected).(parser.Result)
 				err, same := eval.EqualInterface(r.GetValue().Value.(map[string]interface{})["content"], e.GetValue().Value)
 				if r.GetErr() != e.GetErr() || !same || err != nil {
 					if testing.Verbose() {
@@ -413,11 +424,117 @@ func TestBatchSuite_Execute(t *testing.T) {
 	}
 
 	// Kill the echo chamber
-	pgid, err := syscall.Getpgid(echoChamber.Process.Pid)
-	if err == nil {
-		if err = syscall.Kill(-pgid, 15); err != nil {
-			t.Error("failed to kill echo chamber")
-		}
-	}
-	_ = echoChamber.Wait()
+	killServer(echoChamber)
 }
+
+// Benchmarking batches can be done in the following way.
+//  go test -run=XXX -bench="Benchmark(No)?Batch" -benchtime=5x -count=3
+// This will run a batch-less sttp script...
+//  for i = 0; i < %d; i = i + 1 do
+//      result.result = $GET("http://127.0.0.1:3000/" + i);
+//      result.results[i] = result.result.content;
+//      $print(result.results[i]);
+//  end;
+//  oops_forgot_this = $GET("http://127.0.0.1:3000/" + %d);
+//  $print(oops_forgot_this.content);
+// And a batched sttp script.
+//  batch this
+//      for i = 0; i < %d; i = i + 1 do
+//          result.result = $GET("http://127.0.0.1:3000/" + i);
+//          result.results[i] = result.result.content;
+//          $print(result.results[i]);
+//      end;
+//      oops_forgot_this = $GET("http://127.0.0.1:3000/" + %d);
+//      $print(oops_forgot_this.content);
+//  end;
+// Each script will iterate up to the given number of iterations (10, 20, 30, 50, 100, 200). Each benchmark will run 5 
+// times. Anything more than 5 will cause problems with the limit of the number of open sockets. If you are getting 
+// i/o timeouts or other socket issues, then try increasing ulimit -n.
+func batchBenchmarkSetup(i int) []interface{} {
+	var null strings.Builder
+	var expectedStdout strings.Builder
+	for l := 0; l <= i; l++ {
+		expectedStdout.WriteString(fmt.Sprintf("{\"code\":null,\"headers\":{\"accept-encoding\":\"gzip\",\"host\":\"127.0.0.1:3000\",\"user-agent\":\"go-resty/2.7.0 (https://github.com/go-resty/resty)\"},\"method\":\"GET\",\"query_params\":{},\"url\":\"http://127.0.0.1:3000/%d\",\"version\":\"1.1\"}\n", l))
+	}
+	return []interface{}{i, expectedStdout.String(), New(nil, &null, &null, ioutil.Discard)}
+}
+
+func benchmarkNoBatch(args []interface{}, b *testing.B) {
+	i := args[0].(int)
+	expected := args[1].(string)
+	vm := args[2].(*VM)
+	s := fmt.Sprintf(`for i = 0; i < %d; i = i + 1 do
+        result.result = $GET("http://127.0.0.1:3000/" + i);
+        result.results[i] = result.result.content;
+        $print(result.results[i]);
+    end;
+    oops_forgot_this = $GET("http://127.0.0.1:3000/" + %d);
+    $print(oops_forgot_this.content);`, i, i)
+	var stdout, stderr strings.Builder
+	vm.SetStdout(&stdout); vm.SetStderr(&stderr)
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		err, _ := vm.Eval("batch example", s)
+		if err != nil {
+			b.Errorf("error should not have occurred \"%v\"", err)
+		}
+
+		if stdout.String() != expected {
+			fmt.Println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+			fmt.Println(stdout.String())
+			fmt.Println("================================")
+			fmt.Println(expected)
+			b.Error("stdout does not match to expected")
+		}
+		stdout.Reset(); stderr.Reset()
+	}
+}
+
+func BenchmarkNoBatch10(b *testing.B) { s := startServer(); benchmarkNoBatch(batchBenchmarkSetup(10), b); killServer(s) }
+func BenchmarkNoBatch20(b *testing.B) { s := startServer(); benchmarkNoBatch(batchBenchmarkSetup(20), b); killServer(s) }
+func BenchmarkNoBatch30(b *testing.B) { s := startServer(); benchmarkNoBatch(batchBenchmarkSetup(30), b); killServer(s) }
+func BenchmarkNoBatch50(b *testing.B) { s := startServer(); benchmarkNoBatch(batchBenchmarkSetup(50), b); killServer(s) }
+func BenchmarkNoBatch100(b *testing.B) { s := startServer(); benchmarkNoBatch(batchBenchmarkSetup(100), b); killServer(s) }
+func BenchmarkNoBatch200(b *testing.B) { s := startServer(); benchmarkNoBatch(batchBenchmarkSetup(200), b); killServer(s) }
+
+func benchmarkBatch(args []interface{}, b *testing.B) {
+	i := args[0].(int)
+	expected := args[1].(string)
+	vm := args[2].(*VM)
+	s := fmt.Sprintf(`batch this
+    for i = 0; i < %d; i = i + 1 do
+        result.result = $GET("http://127.0.0.1:3000/" + i);
+        result.results[i] = result.result.content;
+        $print(result.results[i]);
+    end;
+    oops_forgot_this = $GET("http://127.0.0.1:3000/" + %d);
+    $print(oops_forgot_this.content);
+end;`, i, i)
+	var stdout, stderr strings.Builder
+	vm.SetStdout(&stdout); vm.SetStderr(&stderr)
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		err, _ := vm.Eval("batch example", s)
+		if err != nil {
+			b.Errorf("error should not have occurred \"%v\"", err)
+		}
+
+		if stdout.String() != expected {
+			fmt.Println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+			fmt.Println(stdout.String())
+			fmt.Println("================================")
+			fmt.Println(expected)
+			b.Error("stdout does not match to expected")
+		}
+		stdout.Reset(); stderr.Reset()
+	}
+}
+
+func BenchmarkBatch10(b *testing.B) { s := startServer(); benchmarkBatch(batchBenchmarkSetup(10), b); killServer(s) }
+func BenchmarkBatch20(b *testing.B) { s := startServer(); benchmarkBatch(batchBenchmarkSetup(20), b); killServer(s) }
+func BenchmarkBatch30(b *testing.B) { s := startServer(); benchmarkBatch(batchBenchmarkSetup(30), b); killServer(s) }
+func BenchmarkBatch50(b *testing.B) { s := startServer(); benchmarkBatch(batchBenchmarkSetup(50), b); killServer(s) }
+func BenchmarkBatch100(b *testing.B) { s := startServer(); benchmarkBatch(batchBenchmarkSetup(100), b); killServer(s) }
+func BenchmarkBatch200(b *testing.B) { s := startServer(); benchmarkBatch(batchBenchmarkSetup(200), b); killServer(s) }

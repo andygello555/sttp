@@ -24,7 +24,13 @@ type VM interface {
 	GetTestResults() TestResults
 	GetStdout() io.Writer
 	GetStderr() io.Writer
+	SetStdout(stdout io.Writer)
+	SetStderr(stderr io.Writer)
 	GetDebug() (io.Writer, bool)
+	GetBatch() (BatchSuite, heap.Interface)
+	DeleteBatch()
+	CreateBatch(statement *Batch)
+	ExecuteBatch()
 }
 
 // CallStack is implemented by the call stack that is used within the VM.
@@ -64,7 +70,7 @@ type Result interface {
 
 // BatchSuite represents the suite that is used to execute a Batch statement.
 type BatchSuite interface {
-	AddWork(id int, method eval.Method, args... *data.Value)
+	AddWork(method eval.Method, args... *data.Value)
 	GetStatement() *Batch
 	Execute(workers int) heap.Interface
 }
