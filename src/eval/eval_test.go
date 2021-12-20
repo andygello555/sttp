@@ -483,6 +483,7 @@ func TestCast(t *testing.T) {
 func TestMethod_Call(t *testing.T) {
 	// Start the echo chamber web server
 	echoChamber := exec.Command(EchoChamberCmd, EchoChamberSource)
+	echoChamber.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	if err := echoChamber.Start(); err != nil {
 		panic(fmt.Errorf("could not start echo chamber: \"%s\"", err.Error()))
 	}

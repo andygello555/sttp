@@ -59,6 +59,7 @@ type StructureError string
 
 const (
 	ImmutableValue        StructureError = "%s is immutable, cannot write to it"
+	BatchWithinBatch      StructureError = "cannot have a batch statement within a batch statement"
 	NoTestSuite           StructureError = "no test suite, cannot execute test statement: \"%s\""
 	HeapEntryDoesNotExist StructureError = "cannot %s %s (scope: %d), as \"%s\" is not an entry in symbol table"
 	HeapScopeDoesNotExist StructureError = "cannot %s %s (scope: %d), as scope: %d does not exist in the scope list for the symbol \"%s\""
@@ -66,6 +67,7 @@ const (
 
 var structureErrorNames = map[StructureError]string{
 	ImmutableValue: "ImmutableValue",
+	BatchWithinBatch: "BatchWithinBatch",
 	NoTestSuite: "NoTestSuite",
 	HeapEntryDoesNotExist: "HeapEntryDoesNotExist",
 	HeapScopeDoesNotExist: "HeapScopeDoesNotExist",
