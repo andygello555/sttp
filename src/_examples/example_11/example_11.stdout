@@ -99,3 +99,7 @@
 {"code":null,"headers":{"accept-encoding":"gzip","host":"127.0.0.1:3000","user-agent":"go-resty/2.7.0 (https://github.com/go-resty/resty)"},"method":"GET","query_params":{},"url":"http://127.0.0.1:3000/98","version":"1.1"}
 {"code":null,"headers":{"accept-encoding":"gzip","host":"127.0.0.1:3000","user-agent":"go-resty/2.7.0 (https://github.com/go-resty/resty)"},"method":"GET","query_params":{},"url":"http://127.0.0.1:3000/99","version":"1.1"}
 {"code":null,"headers":{"accept-encoding":"gzip","host":"127.0.0.1:3000","user-agent":"go-resty/2.7.0 (https://github.com/go-resty/resty)"},"method":"GET","query_params":{},"url":"http://127.0.0.1:3000/100","version":"1.1"}
+{"error":"cannot have a batch statement within a batch statement","subset":"StructureError","type":"BatchWithinBatch"}
+no method calls in 'ere
+{"error":"pointer to result for method call: \"$GET(\"http://127.0.0.1:3000/uh/oh\")\" does not match current method call: \"$GET(\"http://127.0.0.1:3000/wont/be/batched\")\"","subset":"RuntimeError","type":"MethodCallMismatchInBatch"}
+{"error":"pointer to result for method call: \"null\" does not match current method call: \"$GET(\"http://127.0.0.1:3000/wont/be/batched\")\"","subset":"RuntimeError","type":"MethodCallMismatchInBatch"}

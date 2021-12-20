@@ -120,7 +120,7 @@ func BenchmarkParse(b *testing.B) {
 }
 
 func TestVM_Eval(t *testing.T) {
-	skip := []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
+	skip := []int{0}
 	skipPtr := 0
 
 	// Start the echo chamber web server
@@ -244,7 +244,9 @@ func TestBatchSuite_Execute(t *testing.T) {
 		{
 			items: []*BatchItem{
 				{
-					Method: eval.GET,
+					Method: &parser.MethodCall{
+						Method: eval.GET,
+					},
 					Args:   []*data.Value{
 						{
 							Value: "http://127.0.0.1:3000/a",
@@ -254,7 +256,9 @@ func TestBatchSuite_Execute(t *testing.T) {
 					Id:     0,
 				},
 				{
-					Method: eval.GET,
+					Method: &parser.MethodCall{
+						Method: eval.GET,
+					},
 					Args:   []*data.Value{
 						{
 							Value: "http://127.0.0.1:3000/b",
@@ -264,7 +268,9 @@ func TestBatchSuite_Execute(t *testing.T) {
 					Id:     1,
 				},
 				{
-					Method: eval.GET,
+					Method: &parser.MethodCall{
+						Method: eval.GET,
+					},
 					Args:   []*data.Value{
 						{
 							Value: "http://127.0.0.1:3000/c",
@@ -274,7 +280,9 @@ func TestBatchSuite_Execute(t *testing.T) {
 					Id:     2,
 				},
 				{
-					Method: eval.GET,
+					Method: &parser.MethodCall{
+						Method: eval.GET,
+					},
 					Args:   []*data.Value{
 						{
 							Value: "http://127.0.0.1:3000/d",
@@ -284,7 +292,9 @@ func TestBatchSuite_Execute(t *testing.T) {
 					Id:     3,
 				},
 				{
-					Method: eval.GET,
+					Method: &parser.MethodCall{
+						Method: eval.GET,
+					},
 					Args:   []*data.Value{
 						{
 							Value: "http://127.0.0.1:3000/e",

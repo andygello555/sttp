@@ -187,10 +187,10 @@ func (m *Method) Call(args ...*data.Value) (err error, value *data.Value) {
 						cookies[i] = map[string]interface{}{
 							"name": cookie.Name,
 							"value": cookie.Value,
-							"max_age": cookie.MaxAge,
+							"max_age": float64(cookie.MaxAge),
 							"secure": cookie.Secure,
 							"http_only": cookie.HttpOnly,
-							"same_site": cookie.SameSite,
+							"same_site": float64(cookie.SameSite),
 							"raw": cookie.Raw,
 						}
 					}
@@ -204,9 +204,9 @@ func (m *Method) Call(args ...*data.Value) (err error, value *data.Value) {
 					return headers
 				}(),
 				"received": resp.ReceivedAt().String(),
-				"size": resp.Size(),
+				"size": float64(resp.Size()),
 				"status": resp.Status(),
-				"code": resp.StatusCode(),
+				"code": float64(resp.StatusCode()),
 				"time": resp.Time().String(),
 			},
 			Type:     data.Object,

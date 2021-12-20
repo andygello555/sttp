@@ -119,6 +119,13 @@ func (vm *VM) GetDebug() (io.Writer, bool) {
 	return vm.Debug, vm.Debug != ioutil.Discard
 }
 
+// WriteDebug will write to the Debug io.Writer if it exists, otherwise will be ignored.
+func (vm *VM) WriteDebug(format string, a... interface{}) {
+	if debug, ok := vm.GetDebug(); ok {
+		_, _ = fmt.Fprintf(debug, format, a...)
+	}
+}
+
 func (vm *VM) GetBatch() (parser.BatchSuite, heap.Interface) {
 	return vm.Batch, vm.BatchResults
 }

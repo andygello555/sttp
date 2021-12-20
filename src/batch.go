@@ -4,7 +4,6 @@ import (
 	"container/heap"
 	"fmt"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/data"
-	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/eval"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/parser"
 	"strings"
 )
@@ -14,16 +13,17 @@ const MaxWorkers = 20
 
 // BatchItem is a unit of work that is distributed amongst each methodWorker.
 type BatchItem struct {
-	Method eval.Method
+	Method *parser.MethodCall
 	Args   []*data.Value
 	Id     int
 }
 
 // BatchResult contains the result for one BatchItem.
 type BatchResult struct {
-	Id    int
-	Err   error
-	Value *data.Value
+	Id     int
+	Method *parser.MethodCall
+	Err    error
+	Value  *data.Value
 }
 
 // GetErr will return the Err for this BatchResult.
@@ -34,6 +34,11 @@ func (br *BatchResult) GetErr() error {
 // GetValue will return the Value for this BatchResult.
 func (br *BatchResult) GetValue() *data.Value {
 	return br.Value
+}
+
+// GetMethodCall will return the parser.MethodCall for this BatchResult.
+func (br *BatchResult) GetMethodCall() *parser.MethodCall {
+	return br.Method
 }
 
 // BatchResults implements heap.Interface, so that BatchResults can be quickly added back in the order in which they 
@@ -85,23 +90,29 @@ func Batch(statement *parser.Batch) *BatchSuite {
 func methodWorker(jobs <-chan *BatchItem, results chan<- *BatchResult) {
 	for j := range jobs {
 		// Call eval.Method.Call for the parser.MethodCall's eval.Method and queue the result and err up in a BatchResult
-		err, result := j.Method.Call(j.Args...)
+		err, result := j.Method.Method.Call(j.Args...)
 		results <- &BatchResult{
-			Id:    j.Id,
-			Err:   err,
-			Value: result,
+			Id:     j.Id,
+			Method: j.Method,
+			Err:    err,
+			Value:  result,
 		}
 	}
 }
 
 // AddWork will create and append a BatchItem to the Batch.
-func (b *BatchSuite) AddWork(method eval.Method, args... *data.Value) {
+func (b *BatchSuite) AddWork(method *parser.MethodCall, args... *data.Value) {
 	b.Batch = append(b.Batch, &BatchItem{
 		Method: method,
 		Args:   args,
 		Id:     b.CurrentId,
 	})
 	b.CurrentId ++
+}
+
+// Work returns the number of jobs added to the batch so far.
+func (b *BatchSuite) Work() int {
+	return len(b.Batch)
 }
 
 // GetStatement will return a pointer to a parser.Batch statement so that it can be compared and or set.
