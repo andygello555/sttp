@@ -1,0 +1,13 @@
+a = {"b":{"c":"hello","foo":"bar"},"baz":"bor"}
+a = {"b":{"c":null,"foo":null},"baz":"bor"}
+{"error":"cannot carry out operation \"builtin:delete\" for non-JSONPath value: \"\"hello\"\" and delete","subset":"RuntimeError","type":"InvalidOperation"}
+before:
+a = {"b":{"c":null,"foo":null},"baz":"bor"}
+b = null
+c = this is the variable c
+e = {"error":"cannot carry out operation \"builtin:delete\" for non-JSONPath value: \"\"hello\"\" and delete","subset":"RuntimeError","type":"InvalidOperation"}
+after:
+a = null
+b = null
+c = null
+e = null

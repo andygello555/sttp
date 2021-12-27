@@ -5,6 +5,7 @@ import (
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/data"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/eval"
 	"reflect"
+	"strings"
 )
 
 // term describes the signature that all terms share. Each term has a left-hand side with a single higher precedence 
@@ -32,10 +33,14 @@ type factor interface {
 // returns the token as a data.Value.
 type protoEvalNode struct {
 	evalMethod func(vm VM) (err error, result *data.Value)
+	stringMethod func(indent int) string
 }
 
 // Eval calls the stored evalMethod.
 func (p *protoEvalNode) Eval(vm VM) (err error, result *data.Value) { return p.evalMethod(vm) }
+
+// String calls the stored stringMethod.
+func (p *protoEvalNode) String(indent int) string { return p.stringMethod(indent) }
 
 // tEval evaluates an AST node which implements the term interface.
 func tEval(t term, vm VM) (err error, result *data.Value) {
@@ -125,8 +130,10 @@ func (f *Factor) left() evalNode {
 			return nil, &data.Value{
 				Value:  *f.Number,
 				Type:   data.Number,
-				Global: *vm.GetScope() == 0,
 			}
+		}
+		en.stringMethod = func(indent int) string {
+			return fmt.Sprintf("%s%v", strings.Repeat("\t", indent), *f.Number)
 		}
 		n = &en
 	case f.StringLit != nil:
@@ -135,8 +142,10 @@ func (f *Factor) left() evalNode {
 			return nil, &data.Value{
 				Value:  *f.StringLit,
 				Type:   data.String,
-				Global: *vm.GetScope() == 0,
 			}
+		}
+		en.stringMethod = func(indent int) string {
+			return fmt.Sprintf("%s\"%v\"", strings.Repeat("\t", indent), *f.StringLit)
 		}
 		n = &en
 	case f.JSONPath != nil:

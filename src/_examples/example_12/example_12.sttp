@@ -1,0 +1,32 @@
+a.b.c = "hello";
+a.b = a.b + {"foo": "bar"};
+a = a + {"baz": "bor"};
+
+$print("a =", a);
+
+$free(a.b.c + 1, a.b.foo * 3.142);
+
+$print("a =", a);
+
+try this
+    $free("hello" / "blah" + a);
+catch as e then
+    $print(e);
+end;
+
+b = null;
+c = "this is the variable c";
+
+$print("before:");
+$print("a =", a);
+$print("b =", b);
+$print("c =", c);
+$print("e =", e);
+
+$free(a, b, c, e);
+
+$print("after:");
+$print("a =", a);
+$print("b =", b);
+$print("c =", c);
+$print("e =", e);

@@ -50,3 +50,28 @@ try this
 catch as e then
     $print(e);
 end;
+
+function nMethodCalls(n)
+    for i = 0; i < n; i = i + 1 do
+        out.result = $GET("http://127.0.0.1:3000/" + i);
+        out.results[i] = out.result.content;
+        $print(out.results[i]);
+    end;
+    return out.results;
+end;
+
+function fibMethod(n)
+    call = $GET("http://127.0.0.1:3000/currently/on/n/equals/" + n);
+    $print(call.content);
+    if n < 2 then
+        return n;
+    end;
+    return $fibMethod(n - 1) + $fibMethod(n - 2);
+end;
+
+batch this
+    $nMethodCalls(10);
+    $nMethodCalls(20);
+    $nMethodCalls(30);
+    $print("fib %v = %v" % [7, $fibMethod(7)]);
+end;
