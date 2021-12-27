@@ -25,7 +25,6 @@ const responder = (req, res) => {
     console.log(`replying with worker ${process.pid}`)
     // We always 200 as the server is just a simple echo server
     res.statusCode = 200;
-    res.setHeader('Content-Type', 'application/json');
 
     // Defining our response object that will be stringified
     const fullUrl = `http://${hostname}:${port}${req.url}`
@@ -39,7 +38,44 @@ const responder = (req, res) => {
     }
 
     const send = () => {
-        res.end(JSON.stringify(resObj))
+        switch (resObj.query_params.format) {
+            case 'html':
+                res.setHeader('Content-Type', 'text/html')
+                let query_params = '<li>query_params:<ul>'
+                for (const [param, value] of Object.entries(resObj.query_params)) {
+                    query_params += `<li>${param}: ${value}</li>`
+                }
+                query_params += `</ul></li>`
+                let headers = '<li>headers:<ul>'
+                for (const [name, value] of Object.entries(resObj.headers)) {
+                    headers += `<li>${name}: ${value}</li>`
+                }
+                headers += `</ul></li>`
+                let html = `<html lang="en">
+    <head><title>${resObj.method}: ${resObj.url}</title></head>
+    <body>
+        <h1>${resObj.method}: ${resObj.url}</h1>
+        <div>
+            <ul>
+                <li>method: ${resObj.method}</li>
+                <li>url: ${resObj.url}</li>
+                ${query_params}
+                ${headers}
+                <li>code: ${resObj.code}</li>
+                <li>version: ${resObj.version}</li>`
+
+                if (resObj.body) {
+                    html += `<li>body:<div>${resObj.body}</div></li>`
+                }
+                html += '</ul></div></body></html>'
+                res.end(html)
+                break
+            case 'json':
+            default:
+                res.setHeader('Content-Type', 'application/json');
+                res.end(JSON.stringify(resObj))
+                break
+        }
     }
 
     // We add in the request body if it's one of the HTTP methods that should have a body
