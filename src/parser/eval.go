@@ -528,7 +528,7 @@ func (f *FunctionDefinition) Eval(vm VM) (err error, result *data.Value) {
 		variableVal = &data.Value{
 			Value:    nil,
 			Type:     data.Function,
-			Global:   true,
+			Global:   *vm.GetScope() == 0,
 			ReadOnly: true,
 		}
 	}
@@ -583,21 +583,13 @@ func (f *FunctionCall) Eval(vm VM) (err error, result *data.Value) {
 		}
 	}
 
-	calculateArgs := func() []*data.Value {
-		// Evaluate arguments and create a list of args
-		args := make([]*data.Value, len(f.Arguments))
-		for i, arg := range f.Arguments {
-			if err, args[i] = arg.Eval(vm); err != nil {
-				panic(err)
-			}
-		}
-		return args
-	}
-
 	// Check if the Golang type of the value
 	switch result.Value.(type) {
 	case *FunctionDefinition:
-		args := calculateArgs()
+		var args []*data.Value
+		if err, args = computeArgs(vm, f.Arguments...); err != nil {
+			return err, nil
+		}
 		// Construct the new stack frame and put it on the callstack
 		if err = vm.GetCallStack().Call(f, result.Value.(*FunctionDefinition), vm, args...); err != nil {
 			return err, nil
@@ -629,13 +621,17 @@ func (f *FunctionCall) Eval(vm VM) (err error, result *data.Value) {
 		if err, frame = vm.GetCallStack().Return(vm); err != nil {
 			return err, nil
 		}
-		result = frame.GetReturn()
-	case func(vm VM, args ...*data.Value) (err error, value *data.Value):
-		args := calculateArgs()
+
 		if debug, ok := vm.GetDebug(); ok {
-			_, _ = fmt.Fprintf(debug, "calling builtin function %s args: %v\n", *f.JSONPath.Parts[0].Property, args)
+			_, _ = fmt.Fprintf(debug, "returned from %s with return value %s\n", f.JSONPath.String(0), frame.GetReturn().String())
 		}
-		if err, result = result.Value.(func(vm VM, args ...*data.Value) (err error, value *data.Value))(vm, args...); err != nil {
+
+		result = frame.GetReturn()
+	case BuiltinFunction:
+		if debug, ok := vm.GetDebug(); ok {
+			_, _ = fmt.Fprintf(debug, "calling builtin function %s args: %v\n", *f.JSONPath.Parts[0].Property, f.Arguments)
+		}
+		if err, result = result.Value.(BuiltinFunction)(vm, f.Arguments...); err != nil {
 			return err, result
 		}
 	default:
@@ -695,7 +691,6 @@ func (n *Null) Eval(vm VM) (err error, result *data.Value) {
 	return nil, &data.Value{
 		Value:  nil,
 		Type:   data.Null,
-		Global: *vm.GetScope() == 0,
 	}
 }
 
@@ -704,7 +699,6 @@ func (b *Boolean) Eval(vm VM) (err error, result *data.Value) {
 	return nil, &data.Value{
 		Value:  bool(*b),
 		Type:   data.Boolean,
-		Global: *vm.GetScope() == 0,
 	}
 }
 
@@ -725,7 +719,6 @@ func (j *JSONPath) Eval(vm VM) (err error, result *data.Value) {
 		variableVal = &data.Value{
 			Value:  nil,
 			Type:   data.Null,
-			Global: *vm.GetScope() == 0,
 		}
 	}
 
@@ -744,7 +737,6 @@ func (j *JSONPath) Eval(vm VM) (err error, result *data.Value) {
 	return nil, &data.Value{
 		Value:    val,
 		Type:     t,
-		Global:   *vm.GetScope() == 0,
 		ReadOnly: t == data.Function,
 	}
 }
@@ -819,6 +811,5 @@ func (j *JSON) Eval(vm VM) (err error, result *data.Value) {
 	return err, &data.Value{
 		Value:  json,
 		Type:   t,
-		Global: *vm.GetScope() == 0,
 	}
 }
