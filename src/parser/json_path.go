@@ -270,31 +270,66 @@ func (j *JSONPath) Convert(vm VM) (err error, path Path) {
 	return nil, path
 }
 
+//// Convert will convert a Part AST node into a Path.
+//func (p *Part) Convert(vm VM) (err error, path Path) {
+//	path = make(Path, 0)
+//	path = append(path, *p.Property)
+//	for _, i := range p.Indices {
+//		var idx *data.Value
+//		err, idx = i.Eval(vm)
+//		switch idx.Type {
+//		case data.Number:
+//			path = append(path, int(idx.Value.(float64)))
+//		case data.String:
+//			path = append(path, idx.Value.(string))
+//		default:
+//			// Otherwise, we try to cast it to a Number then a String
+//			var idxCast *data.Value
+//			err, idxCast = eval.Cast(idx, data.Number)
+//			if err != nil {
+//				err, idxCast = eval.Cast(idx, data.String)
+//				if err != nil {
+//					return err, nil
+//				}
+//				path = append(path, idxCast.Value.(string))
+//				continue
+//			}
+//			path = append(path, int(idxCast.Value.(float64)))
+//		}
+//	}
+//	return nil, path
+//}
+
 // Convert will convert a Part AST node into a Path.
 func (p *Part) Convert(vm VM) (err error, path Path) {
 	path = make(Path, 0)
 	path = append(path, *p.Property)
 	for _, i := range p.Indices {
-		var idx *data.Value
-		err, idx = i.Eval(vm)
-		switch idx.Type {
-		case data.Number:
-			path = append(path, int(idx.Value.(float64)))
-		case data.String:
-			path = append(path, idx.Value.(string))
-		default:
-			// Otherwise, we try to cast it to a Number then a String
-			var idxCast *data.Value
-			err, idxCast = eval.Cast(idx, data.Number)
-			if err != nil {
-				err, idxCast = eval.Cast(idx, data.String)
+		switch {
+		case i.ExpressionIndex != nil:
+			var idx *data.Value
+			err, idx = i.ExpressionIndex.Eval(vm)
+			switch idx.Type {
+			case data.Number:
+				path = append(path, int(idx.Value.(float64)))
+			case data.String:
+				path = append(path, idx.Value.(string))
+			default:
+				// Otherwise, we try to cast it to a Number then a String
+				var idxCast *data.Value
+				err, idxCast = eval.Cast(idx, data.Number)
 				if err != nil {
-					return err, nil
+					err, idxCast = eval.Cast(idx, data.String)
+					if err != nil {
+						return err, nil
+					}
+					path = append(path, idxCast.Value.(string))
+					continue
 				}
-				path = append(path, idxCast.Value.(string))
-				continue
+				path = append(path, int(idxCast.Value.(float64)))
 			}
-			path = append(path, int(idxCast.Value.(float64)))
+		case i.FilterIndex != nil:
+			path = append(path, i.FilterIndex)
 		}
 	}
 	return nil, path

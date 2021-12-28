@@ -124,12 +124,31 @@ func (s *Statement) String(indent int) string {
 	return stmt + ";\n"
 }
 
+//func (p *Part) String(indent int) string {
+//	part := *p.Property
+//	if len(p.Indices) > 0 {
+//		expressions := make([]string, len(p.Indices))
+//		for i, expression := range p.Indices {
+//			expressions[i] = fmt.Sprintf("[%s]", expression.String(0))
+//		}
+//		part += strings.Join(expressions, "")
+//	}
+//	return part
+//}
+
 func (p *Part) String(indent int) string {
 	part := *p.Property
 	if len(p.Indices) > 0 {
 		expressions := make([]string, len(p.Indices))
 		for i, expression := range p.Indices {
-			expressions[i] = fmt.Sprintf("[%s]", expression.String(0))
+			var indexOut string
+			switch {
+			case expression.ExpressionIndex != nil:
+				indexOut = fmt.Sprintf("[%s]", expression.ExpressionIndex.String(0))
+			case expression.FilterIndex != nil:
+				indexOut = fmt.Sprintf("[%s]", expression.FilterIndex.String(indent + 1))
+			}
+			expressions[i] = indexOut
 		}
 		part += strings.Join(expressions, "")
 	}

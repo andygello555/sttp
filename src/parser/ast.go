@@ -212,7 +212,13 @@ type Part struct {
 	Pos lexer.Position
 
 	Property *string       `@Ident`
-	Indices  []*Expression `( "[" @@ "]" )*`
+	//Indices  []*Expression `( "[" @@ "]" )*`
+	Indices  []*Index `@@*`
+}
+
+type Index struct {
+	ExpressionIndex *Expression `  "[" @@ "]"`
+	FilterIndex     *Block      `| "?[" @@ "]"`
 }
 
 // Statement describes one of the statements that can be used in each "line" of a Block.
@@ -358,7 +364,7 @@ var lex = lexer.MustSimple([]lexer.Rule{
 	{"Try", `try\s`, nil},
 	{"Number", `[-+]?(\d*\.)?\d+`, nil},
 	{"Operators", `\|\||&&|<=|>=|!=|==|[-+*/%=!<>]`, nil},
-	{"Punct", `[$;,.(){}:]|\[|\]`, nil},
+	{"Punct", `[?$;,.(){}:]|\[|\]`, nil},
 	{"Ident", `[a-zA-Z_]\w*`, nil},
 	{"whitespace", `\s+`, nil},
 })
