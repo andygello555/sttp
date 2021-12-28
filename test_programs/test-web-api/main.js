@@ -65,7 +65,7 @@ const responder = (req, res) => {
                 <li>version: ${resObj.version}</li>`
 
                 if (resObj.body) {
-                    html += `<li>body:<div>${resObj.body}</div></li>`
+                    html += `<li>body:<div>${JSON.stringify(resObj.body)}</div></li>`
                 }
                 html += '</ul></div></body></html>'
                 res.end(html)
