@@ -5,7 +5,9 @@ import (
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/data"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/errors"
 	"github.com/go-resty/resty/v2"
+	"golang.org/x/net/html"
 	"net/http"
+	"strings"
 )
 
 // Method represents a valid HTTP method supported by sttp.
@@ -176,6 +178,62 @@ func (m *Method) Call(args ...*data.Value) (err error, value *data.Value) {
 		var body *data.Value
 		if err2, body = data.ConstructSymbol(string(resp.Body()), false); err2 != nil {
 			return err2, nil
+		}
+
+		if strings.Contains(resp.Header().Get("content-type"), "text/html") && body.Type == data.String {
+			var root *html.Node
+			if root, err = html.Parse(strings.NewReader(body.Value.(string))); err != nil {
+				return err, nil
+			}
+
+			var construct func(curr *html.Node) map[string]interface{}
+			construct = func(curr *html.Node) map[string]interface{} {
+				if !(curr.Type == html.TextNode && strings.TrimSpace(curr.Data) == "") {
+					nodeMap := map[string]interface{} {
+						"type": func() string {
+							switch curr.Type {
+							case html.TextNode:
+								return "text"
+							case html.DocumentNode:
+								return "document"
+							case html.ElementNode:
+								return "element"
+							case html.CommentNode:
+								return "comment"
+							case html.DoctypeNode:
+								return "doctype"
+							default:
+								return "error"
+							}
+						}(),
+						"data": curr.Data,
+						"attributes": func() map[string]interface{} {
+							out := make(map[string]interface{})
+							for _, attr := range curr.Attr {
+								out[attr.Key] = attr.Val
+							}
+							return out
+						}(),
+					}
+
+					// We recurse down each child
+					siblings := make([]interface{}, 0)
+					for c := curr.FirstChild; c != nil; c = c.NextSibling {
+						siblingMap := construct(c)
+						if siblingMap != nil {
+							siblings = append(siblings, siblingMap)
+						}
+					}
+
+					nodeMap["siblings"] = siblings
+					return nodeMap
+				}
+				return nil
+			}
+
+			// We construct a value of Object type from the HTML parse tree.
+			body.Value = construct(root)
+			body.Type = data.Object
 		}
 
 		value = &data.Value{
