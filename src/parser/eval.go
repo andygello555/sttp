@@ -171,7 +171,7 @@ func (a *Assignment) Eval(vm VM) (err error, result *data.Value) {
 
 	// Then we set the current value using, the path found previously, to the value on the RHS
 	var val interface{}
-	err, val = path.Set(variableVal.Value, result.Value)
+	err, val = path.Set(vm, variableVal.Value, result.Value)
 	if err != nil {
 		return err, nil
 	}
@@ -535,7 +535,7 @@ func (f *FunctionDefinition) Eval(vm VM) (err error, result *data.Value) {
 
 	// Then we set the current value using, the path found previously, to a value pointing to the FunctionDefinition
 	var val interface{}
-	err, val = path.Set(variableVal.Value, f)
+	err, val = path.Set(vm, variableVal.Value, f)
 	if err != nil {
 		return err, nil
 	}
@@ -724,7 +724,10 @@ func (j *JSONPath) Eval(vm VM) (err error, result *data.Value) {
 
 	// We get the value at the path and get the type of the value.
 	var t data.Type
-	val := path.Get(variableVal.Value)
+	var val interface{}
+	if err, val = path.Get(vm, variableVal.Value); err != nil {
+		return err, nil
+	}
 	err = t.Get(val)
 
 	if debug, ok := vm.GetDebug(); ok {

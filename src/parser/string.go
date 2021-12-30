@@ -146,7 +146,7 @@ func (p *Part) String(indent int) string {
 			case expression.ExpressionIndex != nil:
 				indexOut = fmt.Sprintf("[%s]", expression.ExpressionIndex.String(0))
 			case expression.FilterIndex != nil:
-				indexOut = fmt.Sprintf("[%s]", expression.FilterIndex.String(indent + 1))
+				indexOut = fmt.Sprintf("```\n%s```", expression.FilterIndex.String(indent + 1))
 			}
 			expressions[i] = indexOut
 		}

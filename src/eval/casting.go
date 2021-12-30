@@ -41,3 +41,16 @@ func Cast(symbol *data.Value, to data.Type) (err error, cast *data.Value) {
 	// Otherwise, we return the result of the cast method.
 	return castTable[symbol.Type][to](symbol)
 }
+
+// CastInterface will construct a Value from the given interface{} and cast it to the given Type. Internally this uses
+// Cast to achieve that.
+func CastInterface(value interface{}, to data.Type) (err error, cast *data.Value) {
+	var t data.Type
+	if err = t.Get(value); err != nil {
+		return err, nil
+	}
+	return Cast(&data.Value{
+		Value: value,
+		Type:  t,
+	}, to)
+}

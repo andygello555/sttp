@@ -105,8 +105,7 @@ var operatorTable = [13][8]func(op1 *data.Value, op2 *data.Value) (err error, re
 // returned.
 func Compute(operator Operator, left *data.Value, right *data.Value) (err error, result *data.Value) {
 	// If the operatorTable entry points to o then we will return an InvalidOperation error.
-	//fmt.Println(operator.String(), left.Value, left.Type.String(), reflect.TypeOf(left.Value).String())
-	//fmt.Println(right.Value, right.Type.String(), reflect.TypeOf(right.Value).String())
+	//fmt.Printf("%s (%s) %s %s (%s)\n", left.String(), left.Type.String(), operator.String(), right.String(), right.Type.String())
 	if reflect.ValueOf(operatorTable[operator][left.Type]).Pointer() == reflect.ValueOf(o).Pointer() {
 		return errors.InvalidOperation.Errorf(operator.String(), left.Type.String(), right.Type.String()), nil
 	}
