@@ -211,14 +211,13 @@ type JSONPath struct {
 type Part struct {
 	Pos lexer.Position
 
-	Property *string       `@Ident`
-	//Indices  []*Expression `( "[" @@ "]" )*`
+	Property *string  `@Ident`
 	Indices  []*Index `@@*`
 }
 
 type Index struct {
 	ExpressionIndex *Expression `  "[" @@ "]"`
-	FilterIndex     *Block      `| "?[" @@ "]"`
+	FilterIndex     *Block      `| Filter @@ Filter`
 }
 
 // Statement describes one of the statements that can be used in each "line" of a Block.
@@ -343,7 +342,6 @@ var lex = lexer.MustSimple([]lexer.Rule{
 	{"For", `for\s`, nil},
 	{"Do", `\sdo\s`, nil},
 	{"This", `this\s`, nil},
-	//{"This", `this\s`, nil},
 	{"Break", `break`, nil},
 	{"Then", `\sthen\s`, nil},
 	{"End", `end`, nil},
@@ -364,7 +362,8 @@ var lex = lexer.MustSimple([]lexer.Rule{
 	{"Try", `try\s`, nil},
 	{"Number", `[-+]?(\d*\.)?\d+`, nil},
 	{"Operators", `\|\||&&|<=|>=|!=|==|[-+*/%=!<>]`, nil},
-	{"Punct", `[?$;,.(){}:]|\[|\]`, nil},
+	{"Filter", "```", nil},
+	{"Punct", `[$;,.(){}:]|\[|\]`, nil},
 	{"Ident", `[a-zA-Z_]\w*`, nil},
 	{"whitespace", `\s+`, nil},
 })

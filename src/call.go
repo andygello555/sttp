@@ -129,7 +129,7 @@ func (cs *CallStack) Call(caller *parser.FunctionCall, current *parser.FunctionD
 			}
 
 			// Then finally we set the value of the *data.Value
-			if err, pathVal.Value = path.Set(pathVal.Value, val.Value); err != nil {
+			if err, pathVal.Value = path.Set(vm, pathVal.Value, val.Value); err != nil {
 				return err
 			}
 		}

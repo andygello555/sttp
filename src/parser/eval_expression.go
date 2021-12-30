@@ -63,9 +63,8 @@ func tEval(t term, vm VM) (err error, result *data.Value) {
 
 		if err == nil {
 			err, result = eval.Compute(r.operator(), result, right)
-
 			if debug, ok := vm.GetDebug(); ok {
-				_, _ = fmt.Fprintf(debug, "\tnew LHS = %s\n", result.String())
+				_, _ = fmt.Fprintf(debug, "\tnew LHS = %v\n", result)
 			}
 			if err == nil {
 				continue

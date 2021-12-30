@@ -1,1 +1,29 @@
+["aaaaaabc","world"]
 {"a":"aaaaaabc","format_string":"1 2 3","hello":"world","results":[{"0":null,"no":1}],"world":[null,{"hello":"world"}]}
+a outer: {"key":"a","value":"aaaaaabc"}
+0 inner: {"key":0,"value":"a"}
+1 inner: {"key":1,"value":"a"}
+2 inner: {"key":2,"value":"a"}
+3 inner: {"key":3,"value":"a"}
+4 inner: {"key":4,"value":"a"}
+5 inner: {"key":5,"value":"a"}
+6 inner: {"key":6,"value":"b"}
+7 inner: {"key":7,"value":"c"}
+format_string outer: {"key":"format_string","value":"1 2 3"}
+0 inner: {"key":0,"value":"1"}
+1 inner: {"key":1,"value":" "}
+2 inner: {"key":2,"value":"2"}
+3 inner: {"key":3,"value":" "}
+4 inner: {"key":4,"value":"3"}
+hello outer: {"key":"hello","value":"world"}
+0 inner: {"key":0,"value":"w"}
+1 inner: {"key":1,"value":"o"}
+2 inner: {"key":2,"value":"r"}
+3 inner: {"key":3,"value":"l"}
+4 inner: {"key":4,"value":"d"}
+results outer: {"key":"results","value":[{"0":null,"no":1}]}
+0 inner: {"key":0,"value":{"0":null,"no":1}}
+world outer: {"key":"world","value":[null,{"hello":"world"}]}
+0 inner: {"key":0,"value":null}
+1 inner: {"key":1,"value":{"hello":"world"}}
+{"a":"contains a or 1","format_string":"contains a or 1","hello":"world","results":[{"0":null,"no":1}],"world":[null,{"hello":"world"}]}
