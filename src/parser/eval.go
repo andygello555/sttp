@@ -6,12 +6,14 @@ import (
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/data"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/errors"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/eval"
+	"github.com/alecthomas/participle/v2/lexer"
 	"reflect"
 	"strings"
 )
 
 type evalNode interface {
 	Eval(vm VM) (err error, result *data.Value)
+	GetPos() lexer.Position
 }
 
 func (p *Program) Eval(vm VM) (err error, result *data.Value) {
@@ -232,7 +234,7 @@ func (m *MethodCall) Eval(vm VM) (err error, result *data.Value) {
 
 func (t *TestStatement) Eval(vm VM) (err error, result *data.Value) {
 	// We defer the addition of the test to simplify the logic within this node a bit
-	if vm.GetTestResults() != nil {
+	if vm.CheckTestResults() {
 		passed := false
 		defer func() {
 			vm.GetTestResults().AddTest(t, passed)
@@ -253,7 +255,7 @@ func (t *TestStatement) Eval(vm VM) (err error, result *data.Value) {
 			}
 		}
 	} else {
-		panic(errors.NoTestSuite.Errorf(t.String(0)))
+		err = errors.NoTestSuite.Errorf(t.String(0))
 	}
 	return err, result
 }

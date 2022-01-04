@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/data"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/eval"
+	"github.com/alecthomas/participle/v2/lexer"
 	"reflect"
 	"strings"
 )
@@ -33,6 +34,7 @@ type factor interface {
 // returns the token as a data.Value.
 type protoEvalNode struct {
 	evalMethod func(vm VM) (err error, result *data.Value)
+	getPosMethod func() lexer.Position
 	stringMethod func(indent int) string
 }
 
@@ -42,6 +44,9 @@ func (p *protoEvalNode) Eval(vm VM) (err error, result *data.Value) { return p.e
 // String calls the stored stringMethod.
 func (p *protoEvalNode) String(indent int) string { return p.stringMethod(indent) }
 
+// GetPos calls the stored getPosMethod.
+func (p *protoEvalNode) GetPos() lexer.Position { return p.getPosMethod() }
+
 // tEval evaluates an AST node which implements the term interface.
 func tEval(t term, vm VM) (err error, result *data.Value) {
 	err, result = t.left().Eval(vm)
@@ -50,7 +55,7 @@ func tEval(t term, vm VM) (err error, result *data.Value) {
 	}
 
 	if debug, ok := vm.GetDebug(); ok {
-		_, _ = fmt.Fprintf(debug, "\tLHS (%s) = %v\n", reflect.TypeOf(t.left()).String(), result)
+		_, _ = fmt.Fprintf(debug, "\t%s: LHS (%s) = %v\n", t.GetPos().String(), reflect.TypeOf(t.left()).String(), result)
 	}
 
 	for _, r := range t.right() {
@@ -58,7 +63,7 @@ func tEval(t term, vm VM) (err error, result *data.Value) {
 		err, right = r.Eval(vm)
 
 		if debug, ok := vm.GetDebug(); ok {
-			_, _ = fmt.Fprintf(debug, "\tRHS (%s) = %v\n", reflect.TypeOf(r).String(), right)
+			_, _ = fmt.Fprintf(debug, "\t%s: RHS (%s) = %v\n", r.GetPos().String(), reflect.TypeOf(r).String(), right)
 		}
 
 		if err == nil {
@@ -134,6 +139,9 @@ func (f *Factor) left() evalNode {
 		en.stringMethod = func(indent int) string {
 			return fmt.Sprintf("%s%v", strings.Repeat("\t", indent), *f.Number)
 		}
+		en.getPosMethod = func() lexer.Position {
+			return lexer.Position{}
+		}
 		n = &en
 	case f.StringLit != nil:
 		en := struct { protoEvalNode }{}
@@ -145,6 +153,9 @@ func (f *Factor) left() evalNode {
 		}
 		en.stringMethod = func(indent int) string {
 			return fmt.Sprintf("%s\"%v\"", strings.Repeat("\t", indent), *f.StringLit)
+		}
+		en.getPosMethod = func() lexer.Position {
+			return lexer.Position{}
 		}
 		n = &en
 	case f.JSONPath != nil:

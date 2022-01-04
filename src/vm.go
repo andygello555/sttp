@@ -93,6 +93,10 @@ func (vm *VM) GetCallStack() parser.CallStack {
 	return vm.CallStack
 }
 
+func (vm *VM) CheckTestResults() bool {
+	return vm.TestResults != nil
+}
+
 func (vm *VM) GetTestResults() parser.TestResults {
 	return vm.TestResults
 }

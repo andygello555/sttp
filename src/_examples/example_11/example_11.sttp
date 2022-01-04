@@ -13,7 +13,7 @@ try this
         a.result = $GET("http://127.0.0.1:3000/hello/world");
         batch this
             for _, prefix in ["a", "b", "c", "d", "e"] do
-                a.result = $GET("http://127.0.0.1:3000/%s" % [prefix]);
+                a.result = $GET("http://127.0.0.1:3000/%%" % [prefix]);
                 a.results[i] = result.content;
             end;
         end;
@@ -73,5 +73,5 @@ batch this
     $nMethodCalls(10);
     $nMethodCalls(20);
     $nMethodCalls(30);
-    $print("fib %v = %v" % [7, $fibMethod(7)]);
+    $print("fib %% = %%" % [7, $fibMethod(7)]);
 end;

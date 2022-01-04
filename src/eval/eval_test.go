@@ -340,7 +340,7 @@ func TestCompute(t *testing.T) {
 		},
 		{
 			op1: &data.Value{
-				Value: "Result is: [%d, %d, %d]",
+				Value: "Result is: [%%, %%, %%]",
 				Type:  data.String,
 				Global: false,
 			},
@@ -359,12 +359,12 @@ func TestCompute(t *testing.T) {
 		},
 		{
 			op1: &data.Value{
-				Value: "Result is: [%d]",
+				Value: "Result is: [%%]",
 				Type:  data.String,
 				Global: false,
 			},
 			op2: &data.Value{
-				Value: map[string]interface{}{"1": 1},
+				Value: map[string]interface{}{"1": float64(1)},
 				Type:  data.Object,
 				Global: false,
 			},

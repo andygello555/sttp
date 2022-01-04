@@ -120,7 +120,7 @@ func BenchmarkParse(b *testing.B) {
 }
 
 func TestVM_Eval(t *testing.T) {
-	skip := []int{0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11}
+	skip := []int{}
 	skipPtr := 0
 
 	// Start the echo chamber web server

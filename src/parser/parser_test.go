@@ -301,6 +301,20 @@ func TestPath_Set(t *testing.T) {
 			},
 			err: nil,
 		},
+		{
+			path: Path{"json", "hello", "world"},
+			current: map[string]interface{}{
+				"hello": "world",
+			},
+			to: "egg",
+			expected: map[string]interface{}{
+				"hello": map[string]interface{} {
+					"": "world",
+					"world": "egg",
+				},
+			},
+			err: nil,
+		},
 	}{
 		var equal bool
 		// Parsing in nil for VM parameter as we don't test filter blocks here.

@@ -208,84 +208,6 @@ func set(vm VM, current interface{}, to interface{}, path *Path) interface{} {
 					}
 					filterTeardown()
 				}
-			case string:
-				st := current.(string)
-				if !filter {
-					if property {
-						panic(errors.JSONPathError.Errorf("string", "property"))
-					}
-
-					idx := p.(int)
-					var char string
-					// Find the character to recurse down
-					if abs(idx) < len(st) {
-						idx = mod(idx, len(st))
-						char = string(current.(string)[idx])
-					} else if idx < 0 {
-						// If the absolute value of the idx is greater than the length of the string then we return an error
-						panic(errors.JSONPathError.Errorf("string", fmt.Sprintf("negative index that is out of string bounds (%d)", idx)))
-					} else {
-						char = " "
-					}
-
-					// We iterate down the given character
-					s := set(vm, char, to, path)
-					var t data.Type
-					if err = t.Get(s); err != nil {
-						panic(err)
-					}
-
-					// Convert the returned value to a string
-					var value *data.Value
-					if err, value = eval.Cast(&data.Value{
-						Value: s,
-						Type:  t,
-					}, data.String); err != nil {
-						panic(err)
-					}
-
-					if idx >= len(st) {
-						// We construct a string builder and write the existing string to that builder
-						var b str.Builder
-						b.WriteString(st)
-						// We insert whitespace up until we get to the index to set at, at which point we recurse.
-						for i := len(st); i <= idx; i++ {
-							if i == idx {
-								b.WriteString(value.StringLit())
-							} else {
-								b.WriteString(" ")
-							}
-						}
-						current = b.String()					
-					} else {
-						current = current.(string)[:idx] + value.StringLit() + current.(string)[idx+1:]
-					}
-				} else {
-					it := filterSetup(p.(*Block), &data.Value{
-						Value: current,
-						Type:  data.String,
-					})
-					replacementStrings := make([]string, 0)
-					replacementIndices := make([]int, 0)
-					for it.Len() > 0 {
-						// We get the next node and assign the key and the value to the self variable
-						node := it.Next()
-						// If the result is truthy then we will recurse down the current subtree.
-						if filterNodeEval(node) {
-							var value *data.Value
-							if err, value = eval.CastInterface(set(vm, node.Val.Value, to, path), data.String); err != nil {
-								panic(err)
-							}
-							// Add the current node's index and value to the replacementIndices and 
-							// replacementStrings arrays respectively.
-							replacementStrings = append(replacementStrings, value.StringLit())
-							replacementIndices = append(replacementIndices, node.Key.Int())
-						}
-					}
-					// We set the string at the end, so we don't interfere with the loop above
-					current = strings.ReplaceCharIndex(current.(string), replacementIndices, replacementStrings...)
-					filterTeardown()
-				}
 			default:
 				if property {
 					// If accessing a property then we will wrap the value in an object, assigning it to the key 
@@ -295,22 +217,101 @@ func set(vm VM, current interface{}, to interface{}, path *Path) interface{} {
 					obj[p.(string)] = set(vm, nil, to, path)
 					current = obj
 				} else {
-					// If accessing an index then we will create an array with p.(int) + 2 spaces. Recursing down the 
-					// p.(int) space and inserting the existing value in the p.(int) + 1 space.
-					idx := p.(int)
-					if idx >= 0 {
-						arr := make([]interface{}, idx+2)
-						arr[idx+1] = current
-						for i := 0; i < len(arr)-1; i++ {
-							var val interface{} = nil
-							if i == idx {
-								val = set(vm, nil, to, path)
+					// We have a special case for string access, but we keep the default logic of creating a sparse map
+					// when we are accessing a property (above).
+					switch current.(type) {
+					case string:
+						st := current.(string)
+						if !filter {
+							idx := p.(int)
+							var char string
+							// Find the character to recurse down
+							if abs(idx) < len(st) {
+								idx = mod(idx, len(st))
+								char = string(current.(string)[idx])
+							} else if idx < 0 {
+								// If the absolute value of the idx is greater than the length of the string then we return an error
+								panic(errors.JSONPathError.Errorf("string", fmt.Sprintf("negative index that is out of string bounds (%d)", idx)))
+							} else {
+								char = " "
 							}
-							arr[i] = val
+
+							// We iterate down the given character
+							s := set(vm, char, to, path)
+							var t data.Type
+							if err = t.Get(s); err != nil {
+								panic(err)
+							}
+
+							// Convert the returned value to a string
+							var value *data.Value
+							if err, value = eval.Cast(&data.Value{
+								Value: s,
+								Type:  t,
+							}, data.String); err != nil {
+								panic(err)
+							}
+
+							if idx >= len(st) {
+								// We construct a string builder and write the existing string to that builder
+								var b str.Builder
+								b.WriteString(st)
+								// We insert whitespace up until we get to the index to set at, at which point we recurse.
+								for i := len(st); i <= idx; i++ {
+									if i == idx {
+										b.WriteString(value.StringLit())
+									} else {
+										b.WriteString(" ")
+									}
+								}
+								current = b.String()
+							} else {
+								current = current.(string)[:idx] + value.StringLit() + current.(string)[idx+1:]
+							}
+						} else {
+							it := filterSetup(p.(*Block), &data.Value{
+								Value: current,
+								Type:  data.String,
+							})
+							replacementStrings := make([]string, 0)
+							replacementIndices := make([]int, 0)
+							for it.Len() > 0 {
+								// We get the next node and assign the key and the value to the self variable
+								node := it.Next()
+								// If the result is truthy then we will recurse down the current subtree.
+								if filterNodeEval(node) {
+									var value *data.Value
+									if err, value = eval.CastInterface(set(vm, node.Val.Value, to, path), data.String); err != nil {
+										panic(err)
+									}
+									// Add the current node's index and value to the replacementIndices and 
+									// replacementStrings arrays respectively.
+									replacementStrings = append(replacementStrings, value.StringLit())
+									replacementIndices = append(replacementIndices, node.Key.Int())
+								}
+							}
+							// We set the string at the end, so we don't interfere with the loop above
+							current = strings.ReplaceCharIndex(current.(string), replacementIndices, replacementStrings...)
+							filterTeardown()
 						}
-						current = arr
-					} else {
-						panic(errors.JSONPathError.Errorf("non-object/array type", fmt.Sprintf("a negative index (%d)", idx)))
+					default:
+						// If accessing an index then we will create an array with p.(int) + 2 spaces. Recursing down the 
+						// p.(int) space and inserting the existing value in the p.(int) + 1 space.
+						idx := p.(int)
+						if idx >= 0 {
+							arr := make([]interface{}, idx+2)
+							arr[idx+1] = current
+							for i := 0; i < len(arr)-1; i++ {
+								var val interface{} = nil
+								if i == idx {
+									val = set(vm, nil, to, path)
+								}
+								arr[i] = val
+							}
+							current = arr
+						} else {
+							panic(errors.JSONPathError.Errorf("non-object/array type", fmt.Sprintf("a negative index (%d)", idx)))
+						}
 					}
 				}
 			}

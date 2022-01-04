@@ -57,6 +57,15 @@ func (re RuntimeError) Errorf(values... interface{}) error {
 	return pse
 }
 
+// Errorf constructs a custom ProtoSttpError with the given arguments.
+func Errorf(subset string, t string, format string, values ... interface{}) error {
+	pse := struct { ProtoSttpError }{}
+	pse.errorMethod = func() string { return fmt.Sprintf(format, values...) }
+	pse.Subset = subset
+	pse.Type = t
+	return pse
+}
+
 type StructureError string
 
 const (
@@ -134,14 +143,6 @@ func ConstructSttpError(err error, userErr interface{}) (errVal interface{}, ret
 		case Return:
 			return err, true
 		default:
-			errVal = map[string]interface{} {
-				"type": err.(PurposefulError),
-				"error": err.(PurposefulError).Error(),
-				"subset": "PurposefulError",
-			}
-		}
-		if err.(PurposefulError) == Throw {
-		} else {
 			errVal = map[string]interface{} {
 				"type": err.(PurposefulError),
 				"error": err.(PurposefulError).Error(),

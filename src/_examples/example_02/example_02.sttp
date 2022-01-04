@@ -1,7 +1,7 @@
 hello_world = {
     "hello": "world",
     "a": "a" * 6 + ("b" + "c"),
-    "format_string": "%v %v %v" % [1, 2, 3],
+    "format_string": "%% %% %%" % [1, 2, 3],
     "results": []
 };
 hello_world.world[1].hello = "world";
@@ -15,9 +15,9 @@ $print(filtered);
 $print(hello_world);
 
 hello_world```
-    $print("%v outer:" % [curr.key], curr);
+    $print("%% outer:" % [curr.key], curr);
     return 0 + curr.value```
-        $print("%v inner:" % [curr.key], curr);
+        $print("%% inner:" % [curr.key], curr);
         return curr.value == "a" || curr.value == "1";
     ``` > 0;
 ``` = "contains a or 1";
