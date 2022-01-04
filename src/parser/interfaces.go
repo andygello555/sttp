@@ -20,6 +20,7 @@ type VM interface {
 	GetScope() *int
 	GetParentStatement() interface{}
 	GetCallStack() CallStack
+	CheckTestResults() bool
 	GetTestResults() TestResults
 	GetStdout() io.Writer
 	GetStderr() io.Writer

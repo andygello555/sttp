@@ -67,4 +67,8 @@ try this batch this for id in ["1234-1234-1234","4321-4321-4321","6666-6666-6666
 
 wow = $object.execute();
 
-test object.results == 1 + 1 + 2;
+try this
+    test object.results == 1 + 1 + 2;
+catch as err then
+    $print(err);
+end;

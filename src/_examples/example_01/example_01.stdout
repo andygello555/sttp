@@ -1,0 +1,21 @@
+{"code":null,"headers":{"accept-encoding":"gzip","host":"127.0.0.1:3000","user-agent":"go-resty/2.7.0 (https://github.com/go-resty/resty)"},"method":"GET","query_params":{},"url":"http://127.0.0.1:3000/0","version":"1.1"}
+{"code":null,"headers":{"accept-encoding":"gzip","host":"127.0.0.1:3000","user-agent":"go-resty/2.7.0 (https://github.com/go-resty/resty)"},"method":"GET","query_params":{},"url":"http://127.0.0.1:3000/1","version":"1.1"}
+{"code":null,"headers":{"accept-encoding":"gzip","host":"127.0.0.1:3000","user-agent":"go-resty/2.7.0 (https://github.com/go-resty/resty)"},"method":"GET","query_params":{},"url":"http://127.0.0.1:3000/2","version":"1.1"}
+{"code":null,"headers":{"accept-encoding":"gzip","host":"127.0.0.1:3000","user-agent":"go-resty/2.7.0 (https://github.com/go-resty/resty)"},"method":"GET","query_params":{},"url":"http://127.0.0.1:3000/1111-1111-1111","version":"1.1"}
+{"error":"time","ohno":true}
+{"code":null,"headers":{"accept-encoding":"gzip","host":"127.0.0.1:3000","user-agent":"go-resty/2.7.0 (https://github.com/go-resty/resty)"},"method":"GET","query_params":{},"url":"http://127.0.0.1:3000/0","version":"1.1"}
+{"code":null,"headers":{"accept-encoding":"gzip","host":"127.0.0.1:3000","user-agent":"go-resty/2.7.0 (https://github.com/go-resty/resty)"},"method":"GET","query_params":{},"url":"http://127.0.0.1:3000/1","version":"1.1"}
+{"code":null,"headers":{"accept-encoding":"gzip","host":"127.0.0.1:3000","user-agent":"go-resty/2.7.0 (https://github.com/go-resty/resty)"},"method":"GET","query_params":{},"url":"http://127.0.0.1:3000/2","version":"1.1"}
+{"code":null,"headers":{"accept-encoding":"gzip","host":"127.0.0.1:3000","user-agent":"go-resty/2.7.0 (https://github.com/go-resty/resty)"},"method":"GET","query_params":{},"url":"http://127.0.0.1:3000/1111-1111-1111","version":"1.1"}
+{"error":"time","ohno":true}
+helloworld!
+helloworld!
+helloworld!
+helloworld!
+helloworld!
+helloworld!
+helloworld!
+helloworld!
+helloworld!
+helloworld!
+{"error":"no test suite, cannot execute test statement: \"test object.results == 1 + 1 + 2\"","subset":"StructureError","type":"NoTestSuite"}

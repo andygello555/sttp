@@ -6,6 +6,7 @@ import (
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/data"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/errors"
 	"github.com/andygello555/gotils/slices"
+	str "github.com/andygello555/gotils/strings"
 	"math"
 	"math/big"
 	"strings"
@@ -180,15 +181,50 @@ func diBoolean(op1 *data.Value, op2 *data.Value) (err error, result *data.Value)
 	return nil, result
 }
 
-// moString: Mod String. Casts rhs to Array then performs a string format using the verbs available in Go.
+// moString: Mod String. Casts rhs to Array then performs a string format by casting each value in the RHS array to a 
+// string.
 func moString(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) {
 	var op2Array *data.Value
 	err, op2Array = Cast(op2, data.Array)
 	if err != nil {
 		return err, nil
 	}
+
+	formatString := op1.StringLit()
+	replaceArray := op2Array.Array()
+	replaceIndices := make([][]int, 0)
+	for idx, char := range formatString {
+		// We check if we can "lookahead" to the character in front and behind
+		if idx <= len(formatString) - 2 {
+			// We check if the current character and the next character concatenated make "%%" and the previous 
+			// character is not an escape character.
+			if string(char) + string(formatString[idx + 1]) == "%%" {
+				if idx > 0 && string(formatString[idx - 1]) == "\\" {
+					continue
+				}
+				replaceIndices = append(replaceIndices, []int{idx, idx + 2})
+			}
+		}
+	}
+
+	replaceStrings := make([]string, len(replaceArray))
+	for idx, val := range replaceArray {
+		switch val.(type) {
+		case string:
+			replaceStrings[idx] = val.(string)
+		case float64, int:
+			replaceStrings[idx] = fmt.Sprintf("%v", val)
+		default:
+			var b []byte
+			if b, err = json.Marshal(val); err != nil {
+				return err, nil
+			}
+			replaceStrings[idx] = string(b)
+		}
+	}
+
 	return nil, &data.Value{
-		Value: fmt.Sprintf(op1.Value.(string), op2Array.Value.([]interface{})...),
+		Value: str.ReplaceCharIndexRange(formatString, replaceIndices, replaceStrings...),
 		Type:  data.String,
 		Global: op1.Global,
 	}
