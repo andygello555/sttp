@@ -42,7 +42,7 @@ func TestCompute(t *testing.T) {
 				Type:  0,
 				Global: false,
 			},
-			err: errors.InvalidOperation.Errorf("*", "object", "null"),
+			err: errors.InvalidOperation.Errorf(errors.GetNullVM(), "*", "object", "null"),
 		},
 
 		// Array manipulation

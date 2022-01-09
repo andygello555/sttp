@@ -4,6 +4,8 @@ import (
 	"container/heap"
 	"fmt"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/data"
+	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/errors"
+	"github.com/alecthomas/participle/v2/lexer"
 	"io"
 )
 
@@ -17,9 +19,11 @@ type ASTNode interface {
 type VM interface {
 	Eval(filename, s string) (err error, result *data.Value)
 	GetSymbols() *data.Heap
+	GetCallStack() CallStack
+	errors.VM
+	SetPos(position lexer.Position)
 	GetScope() *int
 	GetParentStatement() interface{}
-	GetCallStack() CallStack
 	CheckTestResults() bool
 	GetTestResults() TestResults
 	GetStdout() io.Writer

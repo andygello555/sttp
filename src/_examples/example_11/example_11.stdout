@@ -99,10 +99,10 @@
 {"code":null,"headers":{"accept-encoding":"gzip","host":"127.0.0.1:3000","user-agent":"go-resty/2.7.0 (https://github.com/go-resty/resty)"},"method":"GET","query_params":{},"url":"http://127.0.0.1:3000/98","version":"1.1"}
 {"code":null,"headers":{"accept-encoding":"gzip","host":"127.0.0.1:3000","user-agent":"go-resty/2.7.0 (https://github.com/go-resty/resty)"},"method":"GET","query_params":{},"url":"http://127.0.0.1:3000/99","version":"1.1"}
 {"code":null,"headers":{"accept-encoding":"gzip","host":"127.0.0.1:3000","user-agent":"go-resty/2.7.0 (https://github.com/go-resty/resty)"},"method":"GET","query_params":{},"url":"http://127.0.0.1:3000/100","version":"1.1"}
-{"error":"cannot have a batch statement within a batch statement","subset":"StructureError","type":"BatchWithinBatch"}
+{"callstack":[],"error":"example_11:14:9: cannot have a batch statement within a batch statement","pos":{"col":9,"filename":"example_11","line":14},"subset":"StructureError","type":"BatchWithinBatch"}
 no method calls in 'ere
-{"error":"pointer to result for method call: \"$GET(\"http://127.0.0.1:3000/uh/oh\")\" does not match current method call: \"$GET(\"http://127.0.0.1:3000/wont/be/batched\")\"","subset":"RuntimeError","type":"MethodCallMismatchInBatch"}
-{"error":"pointer to result for method call: \"null\" does not match current method call: \"$GET(\"http://127.0.0.1:3000/wont/be/batched\")\"","subset":"RuntimeError","type":"MethodCallMismatchInBatch"}
+{"callstack":[],"error":"example_11:34:36: pointer to result for method call: \"$GET(\"http://127.0.0.1:3000/uh/oh\")\" does not match current method call: \"$GET(\"http://127.0.0.1:3000/wont/be/batched\")\"","pos":{"col":36,"filename":"example_11","line":34},"subset":"RuntimeError","type":"MethodCallMismatchInBatch"}
+{"callstack":[],"error":"example_11:47:36: pointer to result for method call: \"null\" does not match current method call: \"$GET(\"http://127.0.0.1:3000/wont/be/batched\")\"","pos":{"col":36,"filename":"example_11","line":47},"subset":"RuntimeError","type":"MethodCallMismatchInBatch"}
 {"code":null,"headers":{"accept-encoding":"gzip","host":"127.0.0.1:3000","user-agent":"go-resty/2.7.0 (https://github.com/go-resty/resty)"},"method":"GET","query_params":{},"url":"http://127.0.0.1:3000/0","version":"1.1"}
 {"code":null,"headers":{"accept-encoding":"gzip","host":"127.0.0.1:3000","user-agent":"go-resty/2.7.0 (https://github.com/go-resty/resty)"},"method":"GET","query_params":{},"url":"http://127.0.0.1:3000/1","version":"1.1"}
 {"code":null,"headers":{"accept-encoding":"gzip","host":"127.0.0.1:3000","user-agent":"go-resty/2.7.0 (https://github.com/go-resty/resty)"},"method":"GET","query_params":{},"url":"http://127.0.0.1:3000/2","version":"1.1"}

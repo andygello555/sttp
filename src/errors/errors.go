@@ -2,19 +2,32 @@ package errors
 
 import (
 	"fmt"
+	"github.com/alecthomas/participle/v2/lexer"
 )
-
-type SttpError interface {
-	Errorf(values... interface{}) error
-}
 
 type ProtoSttpError struct {
 	errorMethod func() string
 	Type        string
 	Subset      string
+	Pos         lexer.Position
+	CallStack   []interface{}
+	FromNullVM  bool
 }
 
 func (p ProtoSttpError) Error() string { return p.errorMethod() }
+
+// UpdateVM will update the ProtoSttpError with the given VM. This will get the new position and callstack value and 
+// set the corresponding fields within the ProtoSttpError.
+func (p ProtoSttpError) UpdateVM(vm VM) {
+	p.Pos = vm.GetPos()
+	p.CallStack = vm.CallStackValue()
+	switch vm.(type) {
+	case struct { NullVM }:
+		p.FromNullVM = true
+	default:
+		p.FromNullVM = false
+	}
+}
 
 type RuntimeError string
 
@@ -49,20 +62,37 @@ var runtimeErrorNames = map[RuntimeError]string{
 	MethodCallMismatchInBatch: "MethodCallMismatchInBatch",
 }
 
-func (re RuntimeError) Errorf(values... interface{}) error {
-	pse := struct { ProtoSttpError }{}
-	pse.errorMethod = func() string { return fmt.Sprintf(string(re), values...) }
-	pse.Subset = "RuntimeError"
-	pse.Type = runtimeErrorNames[re]
-	return pse
+// Errorf will return an anonymous struct implementing ProtoSttpError with an error method that returns the format 
+// string of the RuntimeError filled with the given values.
+func (re RuntimeError) Errorf(vm VM, values... interface{}) error {
+	return Errorf(vm, "RuntimeError", runtimeErrorNames[re], string(re), values...)
 }
 
 // Errorf constructs a custom ProtoSttpError with the given arguments.
-func Errorf(subset string, t string, format string, values ... interface{}) error {
+func Errorf(vm VM, subset string, t string, format string, values ... interface{}) error {
 	pse := struct { ProtoSttpError }{}
-	pse.errorMethod = func() string { return fmt.Sprintf(format, values...) }
 	pse.Subset = subset
 	pse.Type = t
+
+	if vm != nil {
+		pse.Pos = vm.GetPos()
+		pse.CallStack = vm.CallStackValue()
+		// Decide whether FromNullVM should be set or not
+		switch vm.(type) {
+		case struct{ NullVM }:
+			pse.FromNullVM = true
+		default:
+			pse.FromNullVM = false
+		}
+	}
+
+	pse.errorMethod = func() string {
+		main := fmt.Sprintf(format, values...)
+		if pse.Pos != (lexer.Position{}) {
+			main = fmt.Sprintf("%s: %s", pse.Pos.String(), main)
+		}
+		return main
+	}
 	return pse
 }
 
@@ -84,12 +114,8 @@ var structureErrorNames = map[StructureError]string{
 	HeapScopeDoesNotExist: "HeapScopeDoesNotExist",
 }
 
-func (se StructureError) Errorf(values... interface{}) error {
-	pse := struct { ProtoSttpError }{}
-	pse.errorMethod = func() string { return fmt.Sprintf(string(se), values...) }
-	pse.Subset = "StructureError"
-	pse.Type = structureErrorNames[se]
-	return pse
+func (se StructureError) Errorf(vm VM, values... interface{}) error {
+	return Errorf(vm, "StructureError", structureErrorNames[se], string(se), values...)
 }
 
 type PurposefulError int
@@ -125,6 +151,31 @@ func (pe PurposefulError) Error() string { return purposefulErrorName[pe] }
 //      "type": sttpErr.Type,
 //      "error": sttpErr.Error(),
 //      "subset": sttpErr.Subset,
+//      // The below two keys will only be added to the value if the 
+//      "pos": {
+//          // The column number that the error occurred on
+//          "col": 0.0,
+//          // The sttp file in which the error occurred in
+//          "filename": "*.sttp",
+//          // The line number that the error occurred on
+//          "line": 0.0,
+//      },
+//      // The callstack is converted to an sttp value using CallStack.Value. It only converts the most recent couple 
+//      // of stack frames
+//      "callstack": [
+//          {
+//              "parent": {
+//                  "pos": {"line": ..., "col": ..., "filename": ...},
+//					"function": "FunctionDeclaration pointer",
+//					"string": "Pretty printed sttp code",
+//              },
+//				"caller": {
+//					"pos": {"line": ..., "col": ..., "filename": ...},
+//					"string": "Pretty printed sttp code",
+//				},
+//          },
+//          ...
+//      ]
 //  }
 // Finally, if the error's underlying type is none of the above, then the error is constructed as follows:
 //  {
@@ -151,11 +202,20 @@ func ConstructSttpError(err error, userErr interface{}) (errVal interface{}, ret
 		}
 	case struct { ProtoSttpError }:
 		sttpErr := err.(struct { ProtoSttpError })
-		errVal = map[string]interface{} {
+		errMap := map[string]interface{} {
 			"type": sttpErr.Type,
 			"error": sttpErr.Error(),
 			"subset": sttpErr.Subset,
 		}
+		if !sttpErr.FromNullVM {
+			errMap["pos"] = map[string]interface{} {
+				"line": float64(sttpErr.Pos.Line),
+				"col": float64(sttpErr.Pos.Column),
+				"filename": sttpErr.Pos.Filename,
+			}
+			errMap["callstack"] = sttpErr.CallStack
+		}
+		errVal = errMap
 	default:
 		errVal = map[string]interface{} {
 			"type": "",

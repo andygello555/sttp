@@ -6,6 +6,7 @@ import (
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/data"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/errors"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/parser"
+	"github.com/alecthomas/participle/v2/lexer"
 	"io"
 	"io/ioutil"
 	"os"
@@ -15,6 +16,8 @@ import (
 type VM struct {
 	// Symbols contains the symbols for global variables and functions.
 	Symbols         *data.Heap
+	// Pos is the current position of the interpreter. This is used when throwing errors.
+	Pos             lexer.Position
 	// Scope is the current scope that the VM is in.
 	Scope           int
 	// ParentStatement is a pointer to the first parent of the currently evaluated node.
@@ -81,6 +84,14 @@ func (vm *VM) GetSymbols() *data.Heap {
 	return vm.Symbols
 }
 
+func (vm *VM) GetPos() lexer.Position {
+	return vm.Pos
+}
+
+func (vm *VM) SetPos(position lexer.Position) {
+	vm.Pos = position
+}
+
 func (vm *VM) GetScope() *int {
 	return &vm.Scope
 }
@@ -91,6 +102,10 @@ func (vm *VM) GetParentStatement() interface{} {
 
 func (vm *VM) GetCallStack() parser.CallStack {
 	return vm.CallStack
+}
+
+func (vm *VM) CallStackValue() []interface{} {
+	return vm.CallStack.Value()
 }
 
 func (vm *VM) CheckTestResults() bool {

@@ -18,4 +18,4 @@ helloworld!
 helloworld!
 helloworld!
 helloworld!
-{"error":"no test suite, cannot execute test statement: \"test object.results == 1 + 1 + 2\"","subset":"StructureError","type":"NoTestSuite"}
+{"callstack":[],"error":"example_01:71:5: no test suite, cannot execute test statement: \"test object.results == 1 + 1 + 2\"","pos":{"col":5,"filename":"example_01","line":71},"subset":"StructureError","type":"NoTestSuite"}

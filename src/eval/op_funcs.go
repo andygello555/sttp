@@ -96,7 +96,7 @@ func number(op1 *data.Value, op2 *data.Value, operator Operator) (err error, res
 	case Sub:
 		c = a - b
 	default:
-		return errors.InvalidOperation.Errorf(operator.String(), op1.Type.String(), op2.Type.String()), nil
+		return errors.InvalidOperation.Errorf(errors.GetNullVM(), operator.String(), op1.Type.String(), op2.Type.String()), nil
 	}
 	return nil, &data.Value{
 		Value: c,
@@ -404,6 +404,7 @@ func suString(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) 
 		} else {
 			// We cannot take off more characters than the length of the string, and we cannot add on more
 			return errors.StringManipulationError.Errorf(
+				errors.GetNullVM(),
 				op1Str,
 				fmt.Sprintf(
 					"cannot remove %d characters from string (len(%s) - %d = %d)",
@@ -437,7 +438,7 @@ func suString(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) 
 					continue
 				}
 			}
-			return errors.StringManipulationError.Errorf(op1Str, err.Error()), nil
+			return errors.StringManipulationError.Errorf(errors.GetNullVM(), op1Str, err.Error()), nil
 		}
 
 		replacer := strings.NewReplacer(pairs...)
@@ -463,7 +464,7 @@ func suString(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) 
 					continue
 				}
 			}
-			return errors.StringManipulationError.Errorf(op1Str, err.Error()), nil
+			return errors.StringManipulationError.Errorf(errors.GetNullVM(), op1Str, err.Error()), nil
 		}
 
 		replacer := strings.NewReplacer(pairs...)
@@ -531,7 +532,7 @@ func boolean(op1 *data.Value, op2 *data.Value, operator Operator) (err error, re
 	case Or:
 		c = a || b
 	default:
-		return errors.InvalidOperation.Errorf(operator.String(), op1.Type.String(), op2.Type.String()), nil
+		return errors.InvalidOperation.Errorf(errors.GetNullVM(), operator.String(), op1.Type.String(), op2.Type.String()), nil
 	}
 	return nil, &data.Value{
 		Value: c,
@@ -555,7 +556,7 @@ func comparison(op1 *data.Value, op2 *data.Value, operator Operator) (err error,
 		} else if Castable(op1, data.String) {
 			err, op1New = Cast(op1, data.String)
 		} else {
-			return errors.InvalidOperation.Errorf(operator.String(), op1.Type.String(), op2.Type.String()), nil
+			return errors.InvalidOperation.Errorf(errors.GetNullVM(), operator.String(), op1.Type.String(), op2.Type.String()), nil
 		}
 
 		if err != nil {
