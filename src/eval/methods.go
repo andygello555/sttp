@@ -119,7 +119,7 @@ func (mpt MethodParamType) ApplyArg(arg *data.Value, request *resty.Request) err
 				}, data.String); err != nil {
 					return err
 				}
-				vString = newVal.Value.(string)
+				vString = newVal.StringLit()
 			}
 			stringMap[k] = vString
 		}
@@ -172,7 +172,7 @@ func (m *Method) Call(args ...*data.Value) (err error, value *data.Value) {
 		}
 
 		var resp *resty.Response
-		resp, err = request.Execute(m.String(), args[0].Value.(string))
+		resp, err = request.Execute(m.String(), args[0].StringLit())
 
 		var err2 error
 		var body *data.Value
@@ -182,7 +182,7 @@ func (m *Method) Call(args ...*data.Value) (err error, value *data.Value) {
 
 		if strings.Contains(resp.Header().Get("content-type"), "text/html") && body.Type == data.String {
 			var root *html.Node
-			if root, err = html.Parse(strings.NewReader(body.Value.(string))); err != nil {
+			if root, err = html.Parse(strings.NewReader(body.StringLit())); err != nil {
 				return err, nil
 			}
 

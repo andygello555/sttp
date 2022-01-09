@@ -87,6 +87,44 @@ func TestCompute(t *testing.T) {
 		},
 		{
 			op1: &data.Value{
+				Value: []interface{}{1, 2, 3},
+				Type:  data.Array,
+				Global: false,
+			},
+			op2: &data.Value{
+				Value: []interface{}{4, 5, 6, 7},
+				Type:  data.Array,
+				Global: false,
+			},
+			operator: Add,
+			result: &data.Value{
+				Value: []interface{}{1, 2, 3, 4, 5, 6, 7},
+				Type:  data.Array,
+				Global: false,
+			},
+			err: nil,
+		},
+		{
+			op1: &data.Value{
+				Value: []interface{}{1, 2, 3, 4},
+				Type:  data.Array,
+				Global: false,
+			},
+			op2: &data.Value{
+				Value: []interface{}{5, 6, 7},
+				Type:  data.Array,
+				Global: false,
+			},
+			operator: Add,
+			result: &data.Value{
+				Value: []interface{}{1, 2, 3, 4, 5, 6, 7},
+				Type:  data.Array,
+				Global: false,
+			},
+			err: nil,
+		},
+		{
+			op1: &data.Value{
 				Value: []interface{}{[]interface{}{1, 2, 3}, 2, 3},
 				Type:  data.Array,
 				Global: false,
@@ -371,6 +409,25 @@ func TestCompute(t *testing.T) {
 			operator: Mod,
 			result: &data.Value{
 				Value: "Result is: [1]",
+				Type:  data.String,
+				Global: false,
+			},
+			err: nil,
+		},
+		{
+			op1: &data.Value{
+				Value: "Result is: [%%]",
+				Type:  data.String,
+				Global: false,
+			},
+			op2: &data.Value{
+				Value: "nothing",
+				Type:  data.String,
+				Global: false,
+			},
+			operator: Mod,
+			result: &data.Value{
+				Value: "Result is: [nothing]",
 				Type:  data.String,
 				Global: false,
 			},

@@ -1,0 +1,10 @@
+a = { "Hello \"neighbour\"": "How are you doing today \"neighbour\"?" };
+
+$print(a);
+$print(a["Hello \"neighbour\""]);
+$print("prompt: %%\nthis is a newline..." % a["Hello \"neighbour\""]);
+
+new_key = "This is a new key with a " + "\"quoted\"" + " value";
+a[new_key] = ["with a %% value" % "\"quoted\"", "and a value with a newline\\n"];
+
+$print("\nnew key: %%\n\tfirst value: %%\n\tsecond value: %%" % ([a[new_key]] + a[new_key]));

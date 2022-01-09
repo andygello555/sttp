@@ -765,7 +765,7 @@ func jsonDeclaration(j interface{}, vm VM) interface{} {
 				if err == nil {
 					err, key = eval.Cast(key, data.String)
 					if err == nil {
-						obj[key.Value.(string)] = val.Value
+						obj[key.StringLit()] = val.Value
 						continue
 					}
 				}
