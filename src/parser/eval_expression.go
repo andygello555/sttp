@@ -3,6 +3,7 @@ package parser
 import (
 	"fmt"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/data"
+	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/errors"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/eval"
 	"github.com/alecthomas/participle/v2/lexer"
 	"reflect"
@@ -49,9 +50,10 @@ func (p *protoEvalNode) GetPos() lexer.Position { return p.getPosMethod() }
 
 // tEval evaluates an AST node which implements the term interface.
 func tEval(t term, vm VM) (err error, result *data.Value) {
+	vm.SetPos(t.GetPos())
 	err, result = t.left().Eval(vm)
 	if err != nil {
-		return err, nil
+		return errors.UpdateError(err, vm), nil
 	}
 
 	if debug, ok := vm.GetDebug(); ok {
@@ -59,6 +61,7 @@ func tEval(t term, vm VM) (err error, result *data.Value) {
 	}
 
 	for _, r := range t.right() {
+		vm.SetPos(r.GetPos())
 		var right *data.Value
 		err, right = r.Eval(vm)
 
@@ -75,13 +78,14 @@ func tEval(t term, vm VM) (err error, result *data.Value) {
 				continue
 			}
 		}
-		return err, nil
+		return errors.UpdateError(err, vm), nil
 	}
 	return nil, result
 }
 
 // fEval evaluates an AST node which implements the factor interface.
 func fEval(f factor, vm VM) (err error, result *data.Value) {
+	vm.SetPos(f.GetPos())
 	return f.inner().Eval(vm)
 }
 

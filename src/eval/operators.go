@@ -107,7 +107,7 @@ func Compute(operator Operator, left *data.Value, right *data.Value) (err error,
 	// If the operatorTable entry points to o then we will return an InvalidOperation error.
 	//fmt.Printf("%s (%s) %s %s (%s)\n", left.String(), left.Type.String(), operator.String(), right.String(), right.Type.String())
 	if reflect.ValueOf(operatorTable[operator][left.Type]).Pointer() == reflect.ValueOf(o).Pointer() {
-		return errors.InvalidOperation.Errorf(operator.String(), left.Type.String(), right.Type.String()), nil
+		return errors.InvalidOperation.Errorf(errors.GetNullVM(), operator.String(), left.Type.String(), right.Type.String()), nil
 	}
 	// Otherwise, we return the result of the computation method.
 	return operatorTable[operator][left.Type](left, right)

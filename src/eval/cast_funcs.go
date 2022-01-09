@@ -38,7 +38,7 @@ func length(value interface{}) (err error, n float64) {
 	case map[string]interface{}:
 		nI = len(value.(map[string]interface{}))
 	default:
-		err = errors.CannotFindLength.Errorf(value)
+		err = errors.CannotFindLength.Errorf(errors.GetNullVM(), value)
 	}
 	return nil, float64(nI)
 }
@@ -130,7 +130,7 @@ func arObject(symbol *data.Value) (err error, cast *data.Value) {
 func stringTo(symbol *data.Value, to data.Type) (err error, cast *data.Value) {
 	err, cast = data.ConstructSymbol(symbol.StringLit(), symbol.Global)
 	if err != nil || cast.Type != to {
-		return errors.CannotCast.Errorf(symbol.Type.String(), to.String()), nil
+		return errors.CannotCast.Errorf(errors.GetNullVM(), to.String()), nil
 	}
 	return nil, cast
 }

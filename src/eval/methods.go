@@ -166,7 +166,7 @@ func (m *Method) Call(args ...*data.Value) (err error, value *data.Value) {
 			} else {
 				// Otherwise, if the value is null and the parameter is not optional we through an error
 				if methodParams[*m][mpt] {
-					return errors.MethodParamNotOptional.Errorf(mpt.String()), nil
+					return errors.MethodParamNotOptional.Errorf(errors.GetNullVM(), mpt.String()), nil
 				}
 			}
 		}

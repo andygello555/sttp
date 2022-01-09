@@ -33,7 +33,7 @@ func (h *Heap) Assign(name string, value interface{}, global bool, ro bool) (err
 	// Check if there is an existing value and whether it's immutable
 	existing := h.Get(name)
 	if existing != nil && existing.ReadOnly {
-		return errors.ImmutableValue.Errorf(name)
+		return errors.ImmutableValue.Errorf(errors.GetNullVM(), name)
 	}
 
 	(*h)[name] = &Value{
@@ -139,8 +139,7 @@ func (t *Type) Get(value interface{}) (err error) {
 		if strings.Contains(reflect.TypeOf(value).String(), "FunctionDefinition") {
 			*t = Function
 		} else {
-			*t = NoType
-			return errors.CannotFindType.Errorf(value)
+			return errors.CannotFindType.Errorf(errors.GetNullVM(), value)
 		}
 	}
 	return nil

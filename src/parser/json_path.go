@@ -83,7 +83,7 @@ func set(vm VM, current interface{}, to interface{}, path *Path) interface{} {
 				existingSelf = heap.Get(CurrentNodeVariableName)
 
 				if err, it = data.Iterate(toIterate); err != nil {
-					panic(err)
+					panic(errors.UpdateError(err, vm))
 				}
 				return it
 			}
@@ -114,7 +114,7 @@ func set(vm VM, current interface{}, to interface{}, path *Path) interface{} {
 
 				// We cast the result into a boolean
 				if err, result = eval.Cast(result, data.Boolean); err != nil {
-					panic(err)
+					panic(errors.UpdateError(err, vm))
 				}
 				return result.Value.(bool)
 			}
@@ -140,7 +140,7 @@ func set(vm VM, current interface{}, to interface{}, path *Path) interface{} {
 						var ok bool
 						if key, ok = firstKey(obj, p.(int)); !ok {
 							// If we cannot find the needed key we panic
-							panic(errors.JSONPathError.Errorf("object", fmt.Sprintf("index %d", p.(int))))
+							panic(errors.JSONPathError.Errorf(vm, "object", fmt.Sprintf("index %d", p.(int))))
 						}
 					} else {
 						// Otherwise, we assert that the path is a string key
@@ -171,7 +171,7 @@ func set(vm VM, current interface{}, to interface{}, path *Path) interface{} {
 				arr := current.([]interface{})
 				if !filter {
 					if property {
-						panic(errors.JSONPathError.Errorf("array", "property"))
+						panic(errors.JSONPathError.Errorf(vm, "array", "property"))
 					}
 
 					idx := p.(int)
@@ -180,7 +180,7 @@ func set(vm VM, current interface{}, to interface{}, path *Path) interface{} {
 						current.([]interface{})[idx] = set(vm, arr[idx], to, path)
 					} else {
 						if idx < 0 {
-							panic(errors.JSONPathError.Errorf("array", fmt.Sprintf("negative index that is out of array bounds (%d)", idx)))
+							panic(errors.JSONPathError.Errorf(vm, "array", fmt.Sprintf("negative index that is out of array bounds (%d)", idx)))
 						}
 
 						// We insert nils up until we get to the index to set at, at which point we recurse.
@@ -231,7 +231,7 @@ func set(vm VM, current interface{}, to interface{}, path *Path) interface{} {
 								char = string(current.(string)[idx])
 							} else if idx < 0 {
 								// If the absolute value of the idx is greater than the length of the string then we return an error
-								panic(errors.JSONPathError.Errorf("string", fmt.Sprintf("negative index that is out of string bounds (%d)", idx)))
+								panic(errors.JSONPathError.Errorf(vm, "string", fmt.Sprintf("negative index that is out of string bounds (%d)", idx)))
 							} else {
 								char = " "
 							}
@@ -240,7 +240,7 @@ func set(vm VM, current interface{}, to interface{}, path *Path) interface{} {
 							s := set(vm, char, to, path)
 							var t data.Type
 							if err = t.Get(s); err != nil {
-								panic(err)
+								panic(errors.UpdateError(err, vm))
 							}
 
 							// Convert the returned value to a string
@@ -249,7 +249,7 @@ func set(vm VM, current interface{}, to interface{}, path *Path) interface{} {
 								Value: s,
 								Type:  t,
 							}, data.String); err != nil {
-								panic(err)
+								panic(errors.UpdateError(err, vm))
 							}
 
 							if idx >= len(st) {
@@ -310,7 +310,7 @@ func set(vm VM, current interface{}, to interface{}, path *Path) interface{} {
 							}
 							current = arr
 						} else {
-							panic(errors.JSONPathError.Errorf("non-object/array type", fmt.Sprintf("a negative index (%d)", idx)))
+							panic(errors.JSONPathError.Errorf(vm, "non-object/array type", fmt.Sprintf("a negative index (%d)", idx)))
 						}
 					}
 				}
@@ -368,7 +368,7 @@ func (p *Path) Get(vm VM, current interface{}) (err error, gotten interface{}) {
 
 		var it *data.Iterator
 		if err, it = data.Iterate(toIterate); err != nil {
-			panic(err)
+			panic(errors.UpdateError(err, vm))
 		}
 
 		for it.Len() > 0 {
@@ -399,7 +399,7 @@ func (p *Path) Get(vm VM, current interface{}) (err error, gotten interface{}) {
 
 			// We cast the result into a boolean
 			if err, result = eval.Cast(result, data.Boolean); err != nil {
-				panic(err)
+				panic(errors.UpdateError(err, vm))
 			}
 
 			// If the result is truthy then we will append the current node's value onto the filtered array.
@@ -567,7 +567,7 @@ func (p *Part) Convert(vm VM) (err error, path Path) {
 				if err != nil {
 					err, idxCast = eval.Cast(idx, data.String)
 					if err != nil {
-						return err, nil
+						return errors.UpdateError(err, vm), nil
 					}
 					path = append(path, idxCast.StringLit())
 					continue

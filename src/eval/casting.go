@@ -36,7 +36,7 @@ func Castable(symbol *data.Value, to data.Type) bool {
 func Cast(symbol *data.Value, to data.Type) (err error, cast *data.Value) {
 	// If the entry in the matrix points to e then we will return a CannotCast error.
 	if !Castable(symbol, to) {
-		return errors.CannotCast.Errorf(symbol.Type.String(), to.String()), nil
+		return errors.CannotCast.Errorf(errors.GetNullVM(), to.String()), nil
 	}
 	// Otherwise, we return the result of the cast method.
 	return castTable[symbol.Type][to](symbol)

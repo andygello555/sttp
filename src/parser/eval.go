@@ -6,17 +6,17 @@ import (
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/data"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/errors"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/eval"
-	"github.com/alecthomas/participle/v2/lexer"
 	"reflect"
 	"strings"
 )
 
 type evalNode interface {
+	positionable
 	Eval(vm VM) (err error, result *data.Value)
-	GetPos() lexer.Position
 }
 
 func (p *Program) Eval(vm VM) (err error, result *data.Value) {
+	vm.SetPos(p.GetPos())
 	// We insert a nil stack frame to indicate the bottom of the stack
 	err = vm.GetCallStack().Call(nil, nil, vm)
 	if err != nil {
@@ -32,6 +32,7 @@ func (p *Program) Eval(vm VM) (err error, result *data.Value) {
 }
 
 func (b *Block) Eval(vm VM) (err error, result *data.Value) {
+	vm.SetPos(b.GetPos())
 	// We return the last statement or return an error if one occurred in the statement
 	for _, stmt := range b.Statements {
 		if err, result = stmt.Eval(vm); err != nil {
@@ -50,6 +51,7 @@ func (b *Block) Eval(vm VM) (err error, result *data.Value) {
 }
 
 func (r *ReturnStatement) Eval(vm VM) (err error, result *data.Value) {
+	vm.SetPos(r.GetPos())
 	current := vm.GetCallStack().Current()
 
 	// Evaluate the return value, if we have one, and copy the value into valCopy.
@@ -79,6 +81,7 @@ func (r *ReturnStatement) Eval(vm VM) (err error, result *data.Value) {
 }
 
 func (t *ThrowStatement) Eval(vm VM) (err error, result *data.Value) {
+	vm.SetPos(t.GetPos())
 	if t.Value != nil {
 		if err, result = t.Value.Eval(vm); err != nil {
 			return err, nil
@@ -96,6 +99,7 @@ func (t *ThrowStatement) Eval(vm VM) (err error, result *data.Value) {
 }
 
 func (s *Statement) Eval(vm VM) (err error, result *data.Value) {
+	vm.SetPos(s.GetPos())
 	switch {
 	case s.Assignment != nil:
 		err, result = s.Assignment.Eval(vm)
@@ -128,6 +132,7 @@ func (s *Statement) Eval(vm VM) (err error, result *data.Value) {
 }
 
 func (a *Assignment) Eval(vm VM) (err error, result *data.Value) {
+	vm.SetPos(a.GetPos())
 	// Then we convert the JSONPath to a Path representation which can be easily iterated over.
 	var path Path
 	err, path = a.JSONPath.Convert(vm)
@@ -181,7 +186,7 @@ func (a *Assignment) Eval(vm VM) (err error, result *data.Value) {
 	// Finally, we assign the new value to the variable on the heap
 	err = heap.Assign(variableName, val, *vm.GetScope() == 0, false)
 	if err != nil {
-		return err, nil
+		return errors.UpdateError(err, vm), nil
 	}
 
 	if debug, ok := vm.GetDebug(); ok {
@@ -191,6 +196,7 @@ func (a *Assignment) Eval(vm VM) (err error, result *data.Value) {
 }
 
 func (m *MethodCall) Eval(vm VM) (err error, result *data.Value) {
+	vm.SetPos(m.GetPos())
 	args := make([]*data.Value, len(m.Arguments))
 	for i, arg := range m.Arguments {
 		if err, args[i] = arg.Eval(vm); err != nil {
@@ -219,20 +225,22 @@ func (m *MethodCall) Eval(vm VM) (err error, result *data.Value) {
 				_, _ = fmt.Fprintf(debug, "popped %s from result queue\n", r.GetMethodCall().String(0))
 			}
 			if r.GetMethodCall() != m {
-				return errors.MethodCallMismatchInBatch.Errorf(r.GetMethodCall().String(0), m.String(0)), nil
+				return errors.MethodCallMismatchInBatch.Errorf(vm, r.GetMethodCall().String(0), m.String(0)), nil
 			}
-			return r.GetErr(), r.GetValue()
+			return errors.UpdateError(r.GetErr(), vm), r.GetValue()
 		} else {
 			// If we have not got anymore results then we have a mismatch of batched MethodCalls.
-			return errors.MethodCallMismatchInBatch.Errorf("null", m.String(0)), nil
+			return errors.MethodCallMismatchInBatch.Errorf(vm,"null", m.String(0)), nil
 		}
 	} else {
 		// Otherwise, we are just executing the MethodCall normally.
-		return m.Method.Call(args...)
+		err, result = m.Method.Call(args...)
+		return errors.UpdateError(err, vm), result
 	}
 }
 
 func (t *TestStatement) Eval(vm VM) (err error, result *data.Value) {
+	vm.SetPos(t.GetPos())
 	// We defer the addition of the test to simplify the logic within this node a bit
 	if vm.CheckTestResults() {
 		passed := false
@@ -243,7 +251,7 @@ func (t *TestStatement) Eval(vm VM) (err error, result *data.Value) {
 		if err, result = t.Expression.Eval(vm); err == nil {
 			if result.Type != data.Boolean {
 				if err, result = eval.Cast(result, data.Boolean); err != nil {
-					return err, nil
+					return errors.UpdateError(err, vm), nil
 				}
 			}
 
@@ -255,12 +263,13 @@ func (t *TestStatement) Eval(vm VM) (err error, result *data.Value) {
 			}
 		}
 	} else {
-		err = errors.NoTestSuite.Errorf(t.String(0))
+		err = errors.NoTestSuite.Errorf(vm, t.String(0))
 	}
 	return err, result
 }
 
 func (w *While) Eval(vm VM) (err error, result *data.Value) {
+	vm.SetPos(w.GetPos())
 	// Panic recovery makes returning errors a bit easier
 	defer func() {
 		if p := recover(); p != nil {
@@ -282,7 +291,7 @@ func (w *While) Eval(vm VM) (err error, result *data.Value) {
 		// Cast to Boolean if it isn't already
 		if result.Type != data.Boolean {
 			if err, result = eval.Cast(result, data.Boolean); err != nil {
-				panic(err)
+				panic(errors.UpdateError(err, vm))
 			}
 		}
 		return result.Value.(bool)
@@ -298,6 +307,7 @@ func (w *While) Eval(vm VM) (err error, result *data.Value) {
 }
 
 func (f *For) Eval(vm VM) (err error, result *data.Value) {
+	vm.SetPos(f.GetPos())
 	// Evaluate the assignment
 	if err, _ = f.Var.Eval(vm); err != nil {
 		return err, nil
@@ -324,7 +334,7 @@ func (f *For) Eval(vm VM) (err error, result *data.Value) {
 		// Cast to Boolean if it isn't already
 		if result.Type != data.Boolean {
 			if err, result = eval.Cast(result, data.Boolean); err != nil {
-				panic(err)
+				panic(errors.UpdateError(err, vm))
 			}
 		}
 		return result.Value.(bool)
@@ -349,6 +359,7 @@ func (f *For) Eval(vm VM) (err error, result *data.Value) {
 }
 
 func (f *ForEach) Eval(vm VM) (err error, result *data.Value) {
+	vm.SetPos(f.GetPos())
 	// Find the value we are iterating over
 	if err, result = f.In.Eval(vm); err != nil {
 		return err, nil
@@ -370,23 +381,18 @@ func (f *ForEach) Eval(vm VM) (err error, result *data.Value) {
 			to = data.Array
 		} else {
 			object := data.Object; array := data.Array; str := data.String
-			return errors.CannotCast.Errorf(result.Type.String(), strings.Join([]string{object.String(), array.String(), str.String()}, ", ")), nil
+			return errors.CannotCast.Errorf(vm, result.Type.String(), strings.Join([]string{object.String(), array.String(), str.String()}, ", ")), nil
 		}
 
 		// Cast the value
 		if err, result = eval.Cast(result, to); err != nil {
-			return err, nil
+			return errors.UpdateError(err, vm), nil
 		}
 	}
 
 	defer func() {
 		if p := recover(); p != nil {
-			switch p.(type) {
-			case struct { errors.ProtoSttpError }:
-				err = p.(struct { errors.ProtoSttpError })
-			default:
-				err = fmt.Errorf("%v", p)
-			}
+			err = errors.UpdateError(err, vm)
 		}
 	}()
 
@@ -420,6 +426,7 @@ func (f *ForEach) Eval(vm VM) (err error, result *data.Value) {
 }
 
 func (b *Batch) Eval(vm VM) (err error, result *data.Value) {
+	vm.SetPos(b.GetPos())
 	batch, results := vm.GetBatch()
 	if batch == nil && results == nil {
 		// Replace Stdout and Stderr with ioutil.Discard
@@ -482,10 +489,11 @@ func (b *Batch) Eval(vm VM) (err error, result *data.Value) {
 		return nil, nil
 	}
 	// We return an error if we are already in a Batch statement
-	return errors.BatchWithinBatch.Errorf(), nil
+	return errors.BatchWithinBatch.Errorf(vm), nil
 }
 
 func (tc *TryCatch) Eval(vm VM) (err error, result *data.Value) {
+	vm.SetPos(tc.GetPos())
 	if err, result = tc.Try.Eval(vm); err != nil {
 		// Check if the error is user constructed
 		var userErr interface{} = nil
@@ -512,6 +520,7 @@ func (tc *TryCatch) Eval(vm VM) (err error, result *data.Value) {
 }
 
 func (f *FunctionDefinition) Eval(vm VM) (err error, result *data.Value) {
+	vm.SetPos(f.GetPos())
 	// We convert the JSONPath to a Path representation which can be easily iterated over.
 	var path Path
 	err, path = f.JSONPath.Convert(vm)
@@ -557,6 +566,7 @@ func (f *FunctionDefinition) Eval(vm VM) (err error, result *data.Value) {
 }
 
 func (f *FunctionCall) Eval(vm VM) (err error, result *data.Value) {
+	vm.SetPos(f.GetPos())
 	*vm.GetScope() ++
 	// We start a panic catcher to give us more helpful error messages
 	defer func() {
@@ -581,7 +591,7 @@ func (f *FunctionCall) Eval(vm VM) (err error, result *data.Value) {
 		if CheckBuiltin(*f.JSONPath.Parts[0].Property) && len(f.JSONPath.Parts) == 1 {
 			err, result = nil, GetBuiltin(*f.JSONPath.Parts[0].Property)
 		} else {
-			return errors.Uncallable.Errorf(result.Type.String()), nil
+			return errors.Uncallable.Errorf(vm, result.Type.String()), nil
 		}
 	}
 
@@ -644,6 +654,7 @@ func (f *FunctionCall) Eval(vm VM) (err error, result *data.Value) {
 }
 
 func (i *IfElifElse) Eval(vm VM) (err error, result *data.Value) {
+	vm.SetPos(i.GetPos())
 	evalBool := func(e *Expression) (err error, cond bool) {
 		var val *data.Value
 		// Evaluate the condition
@@ -654,7 +665,7 @@ func (i *IfElifElse) Eval(vm VM) (err error, result *data.Value) {
 		// We cast the val to a Boolean if it isn't one
 		if val.Type != data.Boolean {
 			if err, val = eval.Cast(val, data.Boolean); err != nil {
-				return err, false
+				return errors.UpdateError(err, vm), false
 			}
 		}
 		return nil, val.Value.(bool)
@@ -690,6 +701,7 @@ func (i *IfElifElse) Eval(vm VM) (err error, result *data.Value) {
 
 // Eval for Null will just return a data.Value with a nil value and a data.Null type.
 func (n *Null) Eval(vm VM) (err error, result *data.Value) {
+	vm.SetPos(n.GetPos())
 	return nil, &data.Value{
 		Value:  nil,
 		Type:   data.Null,
@@ -698,6 +710,7 @@ func (n *Null) Eval(vm VM) (err error, result *data.Value) {
 
 // Eval for Boolean will return a data.Value with the underlying boolean value and a data.Boolean type.
 func (b *Boolean) Eval(vm VM) (err error, result *data.Value) {
+	vm.SetPos(b.GetPos())
 	return nil, &data.Value{
 		Value:  bool(*b),
 		Type:   data.Boolean,
@@ -707,6 +720,7 @@ func (b *Boolean) Eval(vm VM) (err error, result *data.Value) {
 // Eval for JSONPath calls Convert and then path.Get, to retrieve the Value at the given JSONPath. Will return data.Null
 // if the JSONPath points to nothing.
 func (j *JSONPath) Eval(vm VM) (err error, result *data.Value) {
+	vm.SetPos(j.GetPos())
 	var path Path; err, path = j.Convert(vm)
 	if err != nil {
 		return err, nil
@@ -736,7 +750,7 @@ func (j *JSONPath) Eval(vm VM) (err error, result *data.Value) {
 		_, _ = fmt.Fprintf(debug, "getting %s from %s = %v\n", j.String(0), variableVal.String(), val)
 	}
 	if err != nil {
-		return err, nil
+		return errors.UpdateError(err, vm), nil
 	}
 
 	return nil, &data.Value{
@@ -770,7 +784,7 @@ func jsonDeclaration(j interface{}, vm VM) interface{} {
 					}
 				}
 			}
-			panic(err)
+			panic(errors.UpdateError(err, vm))
 		}
 		out = obj
 	case *Expression:
@@ -784,6 +798,7 @@ func jsonDeclaration(j interface{}, vm VM) interface{} {
 } 
 
 func (j *JSON) Eval(vm VM) (err error, result *data.Value) {
+	vm.SetPos(j.GetPos())
 	defer func() {
 		if p := recover(); p != nil {
 			switch p.(type) {

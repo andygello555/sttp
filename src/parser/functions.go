@@ -51,7 +51,7 @@ func init() {
 					e = t.left()
 					if t == nil {
 						// We return an error if we cannot continue down the left path before finding a JSONPath terminal.
-						return errors.InvalidOperation.Errorf("builtin:delete", fmt.Sprintf("non-JSONPath value: \"%s\"", uncomputedArg.String(0)), "delete"), nil
+						return errors.InvalidOperation.Errorf(vm, "builtin:delete", fmt.Sprintf("non-JSONPath value: \"%s\"", uncomputedArg.String(0)), "delete"), nil
 					} else {
 						// We do a type switch for the evalNode to find out if the underlying type is a JSONPath. If so we
 						// can stop iteration. Otherwise, we cast the evalNode to a term interface and assign the t var.
@@ -61,7 +61,7 @@ func init() {
 							stop = true
 						case *Null, *Boolean, *JSON, *FunctionCall, *MethodCall, *Expression, *struct { protoEvalNode }:
 							// We found an expression terminal/factor before finding a JSONPath.
-							return errors.InvalidOperation.Errorf("builtin:delete", fmt.Sprintf("non-JSONPath value: \"%s\"", e.(ASTNode).String(0)), "delete"), nil
+							return errors.InvalidOperation.Errorf(vm, "builtin:delete", fmt.Sprintf("non-JSONPath value: \"%s\"", e.(ASTNode).String(0)), "delete"), nil
 						default:
 							break
 						}
@@ -138,12 +138,7 @@ func findBuiltin(vm VM, all bool, deepest bool, uncomputedArgs... *Expression) (
 
 	defer func() {
 		if p := recover(); p != nil {
-			switch p.(type) {
-			case struct { errors.ProtoSttpError }:
-				err = p.(struct { errors.ProtoSttpError })
-			default:
-				err = fmt.Errorf("%v", p)
-			}
+			err = errors.UpdateError(err, vm)
 		}
 	}()
 
@@ -156,7 +151,7 @@ func findBuiltin(vm VM, all bool, deepest bool, uncomputedArgs... *Expression) (
 		} else {
 			// We cast each of the rest of the arguments to an Objects.
 			if err, arg = eval.Cast(arg, data.Object); err != nil {
-				return err, nil
+				return errors.UpdateError(err, vm), nil
 			}
 
 			// Then find the search params within the value
