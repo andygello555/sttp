@@ -559,7 +559,7 @@ func (p *Part) Convert(vm VM) (err error, path Path) {
 			case data.Number:
 				path = append(path, int(idx.Value.(float64)))
 			case data.String:
-				path = append(path, idx.Value.(string))
+				path = append(path, idx.StringLit())
 			default:
 				// Otherwise, we try to cast it to a Number then a String
 				var idxCast *data.Value
@@ -569,7 +569,7 @@ func (p *Part) Convert(vm VM) (err error, path Path) {
 					if err != nil {
 						return err, nil
 					}
-					path = append(path, idxCast.Value.(string))
+					path = append(path, idxCast.StringLit())
 					continue
 				}
 				path = append(path, int(idxCast.Value.(float64)))

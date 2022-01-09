@@ -100,8 +100,8 @@ func TestParse(t *testing.T) {
 		//fmt.Println(testNo, ">>>>>>>>")
 		//fmt.Println(p.String(0))
 
-		actual := strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(p.String(0), " ", ""), "\t", ""), "\n", ""), ";", "")
-		expected := strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(e.script, " ", ""), "\t", ""), "\n", ""), ";", "")
+		actual := strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(  p.String(0), " ", ""), "\t", ""), "\n", ""), ";", "")
+		expected := strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(e.script          , " ", ""), "\t", ""), "\n", ""), ";", "")
 		if actual != expected && t != nil {
 			t.Errorf("%d: parsed output does not match input script", testNo+1)
 			//fmt.Println("-------")

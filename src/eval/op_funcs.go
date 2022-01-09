@@ -67,7 +67,7 @@ func muString(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) 
 	}
 
 	return nil, &data.Value{
-		Value: strings.Repeat(op1.Value.(string), int(op2Number.Value.(float64))),
+		Value: strings.Repeat(op1.StringLit(), int(op2Number.Value.(float64))),
 		Type:  data.String,
 		Global: op1.Global,
 	}
@@ -181,13 +181,22 @@ func diBoolean(op1 *data.Value, op2 *data.Value) (err error, result *data.Value)
 	return nil, result
 }
 
-// moString: Mod String. Casts rhs to Array then performs a string format by casting each value in the RHS array to a 
-// string.
+// moString: Mod String. Checks if rhs is a string, if so will wrap the string as a singleton array, otherwise will 
+// cast RHS to Array then performs a string format by casting each value in the RHS array to a string.
 func moString(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) {
 	var op2Array *data.Value
-	err, op2Array = Cast(op2, data.Array)
-	if err != nil {
-		return err, nil
+	if op2.Type != data.String {
+		// Cast the RHS to an Array if not a string
+		err, op2Array = Cast(op2, data.Array)
+		if err != nil {
+			return err, nil
+		}
+	} else {
+		// Otherwise, wrap the string as a singleton
+		op2Array = &data.Value{
+			Value: []interface{}{op2.Value},
+			Type:  data.Array,
+		}
 	}
 
 	formatString := op1.StringLit()
@@ -269,13 +278,25 @@ func adObject(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) 
 	}
 }
 
-// adArray: Add to Array. Append RHS to new Array.
+// adArray: Add to Array. Append RHS to new Array. If RHS is an array then the LHS will be "extended" with the RHS 
+// (elements of RHS will be added to LHS).
 func adArray(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) {
-	a := op1.Value.([]interface{})
-	b := op2.Value
-	c := make([]interface{}, len(a) + 1)
-	copy(c, a)
-	c[len(a)] = b
+	a := op1.Array()
+	var c []interface{}
+	if op2.Type != data.Array {
+		b := op2.Value
+		c = make([]interface{}, len(a) + 1)
+		copy(c, a)
+		c[len(a)] = b
+	} else {
+		b := op2.Array()
+		c = make([]interface{}, len(a) + len(b))
+		copy(c, a)
+		for i := len(a); i < len(a) + len(b); i ++ {
+			c[i] = b[i - len(a)]
+		}
+	}
+
 	return nil, &data.Value{
 		Value: c,
 		Type:  data.Array,
@@ -291,7 +312,7 @@ func adString(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) 
 		return err, nil
 	}
 	return nil, &data.Value{
-		Value: op1.Value.(string) + op2String.Value.(string),
+		Value: op1.StringLit() + op2String.StringLit(),
 		Type:  data.String,
 		Global: op1.Global,
 	}
@@ -365,7 +386,7 @@ func suArray(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) {
 //
 // - Default: Casts RHS to string and removes all occurrences of each from the LHS.
 func suString(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) {
-	op1Str := op1.Value.(string)
+	op1Str := op1.StringLit()
 	var op2Str string
 
 	switch op2.Type {
@@ -411,7 +432,7 @@ func suString(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) 
 				err, vSym = Cast(vSym, data.String)
 				if err == nil {
 					pairs[i] = k
-					pairs[i + 1] = vSym.Value.(string)
+					pairs[i + 1] = vSym.StringLit()
 					i += 2
 					continue
 				}
@@ -437,7 +458,7 @@ func suString(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) 
 				}
 				err, vSym = Cast(vSym, data.String)
 				if err == nil {
-					pairs[i * 2] = vSym.Value.(string)
+					pairs[i * 2] = vSym.StringLit()
 					pairs[i * 2 + 1] = ""
 					continue
 				}
@@ -454,11 +475,11 @@ func suString(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) 
 		if err != nil {
 			return err, nil
 		}
-		op2Str = op2StrSym.Value.(string)
+		op2Str = op2StrSym.StringLit()
 		fallthrough
 	case data.String:
 		if op2.Type == data.String {
-			op2Str = op2.Value.(string)
+			op2Str = op2.StringLit()
 		}
 		op1Str = strings.ReplaceAll(op1Str, op2Str, "")
 	}
@@ -557,7 +578,7 @@ func comparison(op1 *data.Value, op2 *data.Value, operator Operator) (err error,
 		cI = big.NewFloat(op1New.Value.(float64)).Cmp(big.NewFloat(op2New.Value.(float64)))
 	} else if op1New.Type == data.String {
 		// We use the strings.Compare to also get -1, 0, or 1
-		cI = strings.Compare(op1New.Value.(string), op2New.Value.(string))
+		cI = strings.Compare(op1New.StringLit(), op2New.StringLit())
 	}
 
 	// Because we have our comparison in an intermediate format we just return true or false given the operator.

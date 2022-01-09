@@ -71,6 +71,18 @@ func (v *Value) Int() int { return int(v.Float64()) }
 func (v *Value) StringLit() string { return v.Value.(string) }
 func (v *Value) Map() map[string]interface{} { return v.Value.(map[string]interface{}) }
 func (v *Value) Array() []interface{} { return v.Value.([]interface{}) }
+func (v *Value) Len() int {
+	switch v.Type {
+	case Object:
+		return len(v.Map())
+	case Array:
+		return len(v.Array())
+	case String:
+		return len(v.StringLit())
+	default:
+		return 0
+	}
+}
 
 func ConstructSymbol(value interface{}, global bool) (err error, symbol *Value) {
 	var jsonVal interface{}

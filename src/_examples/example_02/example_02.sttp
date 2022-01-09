@@ -1,5 +1,5 @@
 hello_world = {
-    "hello": "world",
+    "\"hello\"": "world",
     "a": "a" * 6 + ("b" + "c"),
     "format_string": "%% %% %%" % [1, 2, 3],
     "results": []
@@ -8,7 +8,7 @@ hello_world.world[1].hello = "world";
 hello_world.results = hello_world.results + ({ "no": 1 } + (3 - 2 - 1));
 
 filtered = hello_world```
-    return curr.key == "hello" || curr.key == "a";
+    return curr.key == "\"hello\"" || curr.key == "a";
 ```;
 
 $print(filtered);

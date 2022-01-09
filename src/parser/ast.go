@@ -336,7 +336,8 @@ type Program struct {
 var lex = lexer.MustSimple([]lexer.Rule{
 	{"comment", `//.*`, nil},
 
-	{"StringLit", `"(\\"|[^"])*"`, nil},
+	//{"StringLit", `"(\\"|[^"])*"`, nil},
+	{"StringLit", `(")([^"\\]*(?:\\.[^"\\]*)*)(")`, nil},
 	{"Method", `(GET|HEAD|POST|PUT|DELETE|CONNECT|OPTIONS|TRACE|PATCH)`, nil},
 	{"While", `while\s`, nil},
 	{"For", `for\s`, nil},
