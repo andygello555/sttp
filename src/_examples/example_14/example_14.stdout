@@ -1,0 +1,8 @@
+{"Hello \"neighbour\"":"How are you doing today \"neighbour\"?"}
+How are you doing today "neighbour"?
+prompt: How are you doing today "neighbour"?
+this is a newline...
+
+new key: ["with a \"quoted\" value","and a value with a newline\\n"]
+	first value: with a "quoted" value
+	second value: and a value with a newline\n

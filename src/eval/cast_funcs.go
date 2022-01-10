@@ -38,7 +38,7 @@ func length(value interface{}) (err error, n float64) {
 	case map[string]interface{}:
 		nI = len(value.(map[string]interface{}))
 	default:
-		err = errors.CannotFindLength.Errorf(value)
+		err = errors.CannotFindLength.Errorf(errors.GetNullVM(), value)
 	}
 	return nil, float64(nI)
 }
@@ -128,9 +128,9 @@ func arObject(symbol *data.Value) (err error, cast *data.Value) {
 // stringTo calls ConstructSymbol on the symbol Value, which is assumed to be a string, and checks whether the returned
 // symbol is of type t.
 func stringTo(symbol *data.Value, to data.Type) (err error, cast *data.Value) {
-	err, cast = data.ConstructSymbol(symbol.Value.(string), symbol.Global)
+	err, cast = data.ConstructSymbol(symbol.StringLit(), symbol.Global)
 	if err != nil || cast.Type != to {
-		return errors.CannotCast.Errorf(symbol.Type.String(), to.String()), nil
+		return errors.CannotCast.Errorf(errors.GetNullVM(), to.String()), nil
 	}
 	return nil, cast
 }
@@ -148,7 +148,7 @@ func stArray(symbol *data.Value) (err error, cast *data.Value) {
 // stNumber: from String to Number. Will try to parse the value to an integer, then a float, and finally will just take
 // the length of the string.
 func stNumber(symbol *data.Value) (err error, cast *data.Value) {
-	str := symbol.Value.(string)
+	str := symbol.StringLit()
 	var num interface{}
 
 	// First check if parsable to an integer

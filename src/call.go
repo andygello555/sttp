@@ -53,7 +53,7 @@ type CallStack []*Frame
 // Returns an error if there is a stack overflow as well as the allocated stack frame.
 func (cs *CallStack) Call(caller *parser.FunctionCall, current *parser.FunctionDefinition, vm parser.VM, args ...*data.Value) error {
 	if len(*cs) == MaxStackFrames {
-		return errors.StackOverflow.Errorf(MaxStackFrames)
+		return errors.StackOverflow.Errorf(vm, MaxStackFrames)
 	}
 
 	// Put a new Frame onto the stack
@@ -75,7 +75,7 @@ func (cs *CallStack) Call(caller *parser.FunctionCall, current *parser.FunctionD
 		previous := (*cs)[len(*cs) - 2]
 		// If there are more arguments than parameters then we'll return an error
 		if len(args) > len(params) {
-			return errors.MoreArgsThanParams.Errorf(current.JSONPath.String(0), len(params), len(args))
+			return errors.MoreArgsThanParams.Errorf(vm, current.JSONPath.String(0), len(params), len(args))
 		}
 
 		// Copy over global variables from the previous stack frame
@@ -87,6 +87,9 @@ func (cs *CallStack) Call(caller *parser.FunctionCall, current *parser.FunctionD
 
 		// Create the self variable on the heap. We do this by finding the JSONPath on the previous frame.
 		self := previous.Heap.Get(*current.JSONPath.Parts[0].Property)
+		if debug, ok := vm.GetDebug(); ok {
+			_, _ = fmt.Fprintf(debug, "after getting self: %s\n", self.String())
+		}
 		if err := heap.Assign("self", self.Value, true, false); err != nil {
 			return err
 		}
@@ -126,7 +129,7 @@ func (cs *CallStack) Call(caller *parser.FunctionCall, current *parser.FunctionD
 			}
 
 			// Then finally we set the value of the *data.Value
-			if err, pathVal.Value = path.Set(pathVal.Value, val.Value); err != nil {
+			if err, pathVal.Value = path.Set(vm, pathVal.Value, val.Value); err != nil {
 				return err
 			}
 		}
@@ -142,7 +145,7 @@ func (cs *CallStack) Current() parser.Frame {
 // Return pops off the topmost stack Frame and returns it. Also returns an error if there is a stack underflow.
 func (cs *CallStack) Return(vm parser.VM) (err error, frame parser.Frame) {
 	if len(*cs) == MinStackFrames {
-		return errors.StackUnderFlow.Errorf(MinStackFrames), nil
+		return errors.StackUnderFlow.Errorf(vm, MinStackFrames), nil
 	}
 
 	// Pop off the topmost frame
@@ -163,8 +166,16 @@ func (cs *CallStack) Return(vm parser.VM) (err error, frame parser.Frame) {
 						return err, frame
 					}
 					name = path[0].(string)
+
+					if debug, ok := vm.GetDebug(); ok {
+						_, _ = fmt.Fprint(debug, "SELF: ")
+					}
 				}
-				(*heap)[name] = val
+				(*heap)[name].Value = val.Value
+
+				if debug, ok := vm.GetDebug(); ok {
+					_, _ = fmt.Fprintf(debug, "copying back %s to %s in function %s\n", name, val.String(), frame.GetCurrent().JSONPath.String(0))
+				}
 			}
 		}
 	}
@@ -205,4 +216,48 @@ func (cs *CallStack) String() string {
 		sb.WriteString(caller)
 	}
 	return sb.String()
+}
+
+// Value gets the sttp value of the most recent stack frames. The returned value will be a []interface{} array which is 
+// supported by sttp.
+func (cs *CallStack) Value() []interface{} {
+	// We first get the most recent stack frames
+	start := 0
+	if len(*cs) > MaxStackFramesPrint {
+		start = len(*cs) - (MaxStackFramesPrint + 1)
+	}
+	top := (*cs)[start:]
+
+	getPosMap := func(node parser.ASTNode) map[string]interface{} {
+		return map[string]interface{} {
+			"line": float64(node.GetPos().Line),
+			"col": float64(node.GetPos().Column),
+			"filename": node.GetPos().Filename,
+		}
+	}
+
+	val := make([]interface{}, 0)
+	for i := len(top) - 1; i > 0; i-- {
+		frame := top[i]
+		parentFrame := top[i - 1]
+		frameMap := make(map[string]interface{})
+
+		if parentFrame.Current != nil {
+			frameMap["current"] = map[string]interface{} {
+				"pos": getPosMap(parentFrame.Current),
+				"function": parentFrame.Current,
+				"string": parentFrame.Current.String(0),
+			}
+		}
+
+		if frame.Caller != nil {
+			frameMap["caller"] = map[string]interface{} {
+				"pos": getPosMap(frame.Caller),
+				"string": frame.Caller.String(0),
+			}
+		}
+
+		val = append(val, frameMap)
+	}
+	return val
 }

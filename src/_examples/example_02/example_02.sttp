@@ -1,8 +1,25 @@
 hello_world = {
-    "hello": "world",
+    "\"hello\"": "world",
     "a": "a" * 6 + ("b" + "c"),
-    "format_string": "%v %v %v" % [1, 2, 3],
+    "format_string": "%% %% %%" % [1, 2, 3],
     "results": []
 };
 hello_world.world[1].hello = "world";
 hello_world.results = hello_world.results + ({ "no": 1 } + (3 - 2 - 1));
+
+filtered = hello_world```
+    return curr.key == "\"hello\"" || curr.key == "a";
+```;
+
+$print(filtered);
+$print(hello_world);
+
+hello_world```
+    $print("%% outer:" % [curr.key], curr);
+    return 0 + curr.value```
+        $print("%% inner:" % [curr.key], curr);
+        return curr.value == "a" || curr.value == "1";
+    ``` > 0;
+``` = "contains a or 1";
+
+$print(hello_world);

@@ -1,10 +1,12 @@
 package eval
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/data"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/errors"
 	"os/exec"
+	"syscall"
 	"testing"
 	"time"
 )
@@ -40,7 +42,7 @@ func TestCompute(t *testing.T) {
 				Type:  0,
 				Global: false,
 			},
-			err: errors.InvalidOperation.Errorf("*", "object", "null"),
+			err: errors.InvalidOperation.Errorf(errors.GetNullVM(), "*", "object", "null"),
 		},
 
 		// Array manipulation
@@ -78,6 +80,44 @@ func TestCompute(t *testing.T) {
 			operator: Add,
 			result: &data.Value{
 				Value: []interface{}{1, 2, 3, map[string]interface{}{"a": 1, "b": 2}},
+				Type:  data.Array,
+				Global: false,
+			},
+			err: nil,
+		},
+		{
+			op1: &data.Value{
+				Value: []interface{}{1, 2, 3},
+				Type:  data.Array,
+				Global: false,
+			},
+			op2: &data.Value{
+				Value: []interface{}{4, 5, 6, 7},
+				Type:  data.Array,
+				Global: false,
+			},
+			operator: Add,
+			result: &data.Value{
+				Value: []interface{}{1, 2, 3, 4, 5, 6, 7},
+				Type:  data.Array,
+				Global: false,
+			},
+			err: nil,
+		},
+		{
+			op1: &data.Value{
+				Value: []interface{}{1, 2, 3, 4},
+				Type:  data.Array,
+				Global: false,
+			},
+			op2: &data.Value{
+				Value: []interface{}{5, 6, 7},
+				Type:  data.Array,
+				Global: false,
+			},
+			operator: Add,
+			result: &data.Value{
+				Value: []interface{}{1, 2, 3, 4, 5, 6, 7},
 				Type:  data.Array,
 				Global: false,
 			},
@@ -338,7 +378,7 @@ func TestCompute(t *testing.T) {
 		},
 		{
 			op1: &data.Value{
-				Value: "Result is: [%d, %d, %d]",
+				Value: "Result is: [%%, %%, %%]",
 				Type:  data.String,
 				Global: false,
 			},
@@ -357,12 +397,12 @@ func TestCompute(t *testing.T) {
 		},
 		{
 			op1: &data.Value{
-				Value: "Result is: [%d]",
+				Value: "Result is: [%%]",
 				Type:  data.String,
 				Global: false,
 			},
 			op2: &data.Value{
-				Value: map[string]interface{}{"1": 1},
+				Value: map[string]interface{}{"1": float64(1)},
 				Type:  data.Object,
 				Global: false,
 			},
@@ -371,6 +411,41 @@ func TestCompute(t *testing.T) {
 				Value: "Result is: [1]",
 				Type:  data.String,
 				Global: false,
+			},
+			err: nil,
+		},
+		{
+			op1: &data.Value{
+				Value: "Result is: [%%]",
+				Type:  data.String,
+				Global: false,
+			},
+			op2: &data.Value{
+				Value: "nothing",
+				Type:  data.String,
+				Global: false,
+			},
+			operator: Mod,
+			result: &data.Value{
+				Value: "Result is: [nothing]",
+				Type:  data.String,
+				Global: false,
+			},
+			err: nil,
+		},
+		{
+			op1: &data.Value{
+				Value: float64(1),
+				Type:  data.Number,
+			},
+			op2: &data.Value{
+				Value: "1",
+				Type:  data.String,
+			},
+			operator: Add,
+			result: &data.Value{
+				Value: 2,
+				Type:  data.Number,
 			},
 			err: nil,
 		},
@@ -466,6 +541,7 @@ func TestCast(t *testing.T) {
 func TestMethod_Call(t *testing.T) {
 	// Start the echo chamber web server
 	echoChamber := exec.Command(EchoChamberCmd, EchoChamberSource)
+	echoChamber.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	if err := echoChamber.Start(); err != nil {
 		panic(fmt.Errorf("could not start echo chamber: \"%s\"", err.Error()))
 	}
@@ -474,7 +550,7 @@ func TestMethod_Call(t *testing.T) {
 	for testNo, test := range []struct {
 		args   []*data.Value
 		method Method
-		result *data.Value
+		result []byte
 		err    error
 	}{
 		{
@@ -487,25 +563,20 @@ func TestMethod_Call(t *testing.T) {
 				},
 			},
 			method: GET,
-			result: &data.Value{
-				Value:    map[string]interface{} {
-					"code": nil,
-					"headers": map[string]interface{} {
-						"accept-encoding": "gzip",
-						"host": "127.0.0.1:3000",
-						"user-agent": "go-resty/2.7.0 (https://github.com/go-resty/resty)",
-					},
-					"method": "GET",
-					"query_params": map[string]interface{} {
-						"hello": "world",
-					},
-					"url": "http://127.0.0.1:3000/hello/world?hello=world",
-					"version": "1.1",
-				},
-				Type:     data.Object,
-				Global:   false,
-				ReadOnly: false,
-			},
+			result: []byte(`{
+	"code": null,
+	"headers": {
+		"accept-encoding": "gzip",
+		"host": "127.0.0.1:3000",
+		"user-agent": "go-resty/2.7.0 (https://github.com/go-resty/resty)"
+	},
+	"method": "GET",
+	"query_params": {
+		"hello": "world"
+	},
+	"url": "http://127.0.0.1:3000/hello/world?hello=world",
+	"version": "1.1"
+}`),
 			err: nil,
 		},
 		{
@@ -523,27 +594,22 @@ func TestMethod_Call(t *testing.T) {
 				},
 			},
 			method: GET,
-			result: &data.Value{
-				Value:    map[string]interface{} {
-					"code": nil,
-					"headers": map[string]interface{} {
-						"accept-encoding": "gzip",
-						"host": "127.0.0.1:3000",
-						"user-agent": "go-resty/2.7.0 (https://github.com/go-resty/resty)",
-						"header_1": "1",
-						"header_2": "2",
-					},
-					"method": "GET",
-					"query_params": map[string]interface{} {
-						"hello": "world",
-					},
-					"url": "http://127.0.0.1:3000/hello/world?hello=world",
-					"version": "1.1",
-				},
-				Type:     data.Object,
-				Global:   false,
-				ReadOnly: false,
-			},
+			result: []byte(`{
+	"code": null,
+	"headers": {
+		"accept-encoding": "gzip",
+		"host": "127.0.0.1:3000",
+		"user-agent": "go-resty/2.7.0 (https://github.com/go-resty/resty)",
+		"header_1": "1",
+		"header_2": "2"
+	},
+	"method": "GET",
+	"query_params": {
+		"hello": "world"
+	},
+	"url": "http://127.0.0.1:3000/hello/world?hello=world",
+	"version": "1.1"
+}`),
 			err: nil,
 		},
 		{
@@ -567,28 +633,23 @@ func TestMethod_Call(t *testing.T) {
 				},
 			},
 			method: GET,
-			result: &data.Value{
-				Value:    map[string]interface{} {
-					"code": nil,
-					"headers": map[string]interface{} {
-						"accept-encoding": "gzip",
-						"host": "127.0.0.1:3000",
-						"user-agent": "go-resty/2.7.0 (https://github.com/go-resty/resty)",
-						"cookie": "cookie=\"nom nom nom\"",
-						"header_1": "1",
-						"header_2": "2",
-					},
-					"method": "GET",
-					"query_params": map[string]interface{} {
-						"hello": "world",
-					},
-					"url": "http://127.0.0.1:3000/hello/world?hello=world",
-					"version": "1.1",
-				},
-				Type:     data.Object,
-				Global:   false,
-				ReadOnly: false,
-			},
+			result: []byte(`{
+	"code": null,
+	"headers": {
+		"accept-encoding": "gzip",
+		"host": "127.0.0.1:3000",
+		"user-agent": "go-resty/2.7.0 (https://github.com/go-resty/resty)",
+		"cookie": "cookie=\"nom nom nom\"",
+		"header_1": "1",
+		"header_2": "2"
+	},
+	"method": "GET",
+	"query_params": {
+		"hello": "world"
+	},
+	"url": "http://127.0.0.1:3000/hello/world?hello=world",
+	"version": "1.1"
+}`),
 			err: nil,
 		},
 		{
@@ -609,26 +670,21 @@ func TestMethod_Call(t *testing.T) {
 				},
 			},
 			method: GET,
-			result: &data.Value{
-				Value:    map[string]interface{} {
-					"code": nil,
-					"headers": map[string]interface{} {
-						"accept-encoding": "gzip",
-						"host": "127.0.0.1:3000",
-						"user-agent": "go-resty/2.7.0 (https://github.com/go-resty/resty)",
-						"cookie": "cookie=\"nom nom nom\"",
-					},
-					"method": "GET",
-					"query_params": map[string]interface{} {
-						"hello": "world",
-					},
-					"url": "http://127.0.0.1:3000/hello/world?hello=world",
-					"version": "1.1",
-				},
-				Type:     data.Object,
-				Global:   false,
-				ReadOnly: false,
-			},
+			result: []byte(`{
+	"code": null,
+	"headers": {
+		"accept-encoding": "gzip",
+		"host": "127.0.0.1:3000",
+		"user-agent": "go-resty/2.7.0 (https://github.com/go-resty/resty)",
+		"cookie": "cookie=\"nom nom nom\""
+	},
+	"method": "GET",
+	"query_params": {
+		"hello": "world"
+	},
+	"url": "http://127.0.0.1:3000/hello/world?hello=world",
+	"version": "1.1"
+}`),
 			err: nil,
 		},
 		{
@@ -645,38 +701,543 @@ func TestMethod_Call(t *testing.T) {
 				},
 			},
 			method: POST,
-			result: &data.Value{
-				Value:    map[string]interface{} {
-					"body": map[string]interface{} {
-						"hello": "world",
-					},
-					"code": nil,
-					"headers": map[string]interface{} {
-						"accept-encoding": "gzip",
-						"content-length": "17",
-						"content-type": "application/json",
-						"host": "127.0.0.1:3000",
-						"user-agent": "go-resty/2.7.0 (https://github.com/go-resty/resty)",
-					},
-					"method": "POST",
-					"query_params": map[string]interface{} {
-						"hello": "world",
-					},
-					"url": "http://127.0.0.1:3000/hello/world?hello=world",
-					"version": "1.1",
-				},
-				Type:     data.Object,
-				Global:   false,
-				ReadOnly: false,
-			},
+			result: []byte(`{
+	"body": {
+		"hello": "world"
+	},
+	"code": null,
+	"headers": {
+		"accept-encoding": "gzip",
+		"content-length": "17",
+		"content-type": "application/json",
+		"host": "127.0.0.1:3000",
+		"user-agent": "go-resty/2.7.0 (https://github.com/go-resty/resty)"
+	},
+	"method": "POST",
+	"query_params": {
+		"hello": "world"
+	},
+	"url": "http://127.0.0.1:3000/hello/world?hello=world",
+	"version": "1.1"
+}`),
 			err: nil,
+		},
+		{
+			args: []*data.Value{
+				{
+					Value: "http://127.0.0.1:3000?format=html",
+					Type: data.String,
+				},
+			},
+			result: []byte(`{
+  "attributes": {},
+  "data": "",
+  "siblings": [
+    {
+      "attributes": {
+        "lang": "en"
+      },
+      "data": "html",
+      "siblings": [
+        {
+          "attributes": {},
+          "data": "head",
+          "siblings": [
+            {
+              "attributes": {},
+              "data": "title",
+              "siblings": [
+                {
+                  "attributes": {},
+                  "data": "GET: http://127.0.0.1:3000/?format=html",
+                  "siblings": [],
+                  "type": "text"
+                }
+              ],
+              "type": "element"
+            }
+          ],
+          "type": "element"
+        },
+        {
+          "attributes": {},
+          "data": "body",
+          "siblings": [
+            {
+              "attributes": {},
+              "data": "h1",
+              "siblings": [
+                {
+                  "attributes": {},
+                  "data": "GET: http://127.0.0.1:3000/?format=html",
+                  "siblings": [],
+                  "type": "text"
+                }
+              ],
+              "type": "element"
+            },
+            {
+              "attributes": {},
+              "data": "div",
+              "siblings": [
+                {
+                  "attributes": {},
+                  "data": "ul",
+                  "siblings": [
+                    {
+                      "attributes": {},
+                      "data": "li",
+                      "siblings": [
+                        {
+                          "attributes": {},
+                          "data": "method: GET",
+                          "siblings": [],
+                          "type": "text"
+                        }
+                      ],
+                      "type": "element"
+                    },
+                    {
+                      "attributes": {},
+                      "data": "li",
+                      "siblings": [
+                        {
+                          "attributes": {},
+                          "data": "url: http://127.0.0.1:3000/?format=html",
+                          "siblings": [],
+                          "type": "text"
+                        }
+                      ],
+                      "type": "element"
+                    },
+                    {
+                      "attributes": {},
+                      "data": "li",
+                      "siblings": [
+                        {
+                          "attributes": {},
+                          "data": "query_params:",
+                          "siblings": [],
+                          "type": "text"
+                        },
+                        {
+                          "attributes": {},
+                          "data": "ul",
+                          "siblings": [
+                            {
+                              "attributes": {},
+                              "data": "li",
+                              "siblings": [
+                                {
+                                  "attributes": {},
+                                  "data": "format: html",
+                                  "siblings": [],
+                                  "type": "text"
+                                }
+                              ],
+                              "type": "element"
+                            }
+                          ],
+                          "type": "element"
+                        }
+                      ],
+                      "type": "element"
+                    },
+                    {
+                      "attributes": {},
+                      "data": "li",
+                      "siblings": [
+                        {
+                          "attributes": {},
+                          "data": "headers:",
+                          "siblings": [],
+                          "type": "text"
+                        },
+                        {
+                          "attributes": {},
+                          "data": "ul",
+                          "siblings": [
+                            {
+                              "attributes": {},
+                              "data": "li",
+                              "siblings": [
+                                {
+                                  "attributes": {},
+                                  "data": "host: 127.0.0.1:3000",
+                                  "siblings": [],
+                                  "type": "text"
+                                }
+                              ],
+                              "type": "element"
+                            },
+                            {
+                              "attributes": {},
+                              "data": "li",
+                              "siblings": [
+                                {
+                                  "attributes": {},
+                                  "data": "user-agent: go-resty/2.7.0 (https://github.com/go-resty/resty)",
+                                  "siblings": [],
+                                  "type": "text"
+                                }
+                              ],
+                              "type": "element"
+                            },
+                            {
+                              "attributes": {},
+                              "data": "li",
+                              "siblings": [
+                                {
+                                  "attributes": {},
+                                  "data": "accept-encoding: gzip",
+                                  "siblings": [],
+                                  "type": "text"
+                                }
+                              ],
+                              "type": "element"
+                            }
+                          ],
+                          "type": "element"
+                        }
+                      ],
+                      "type": "element"
+                    },
+                    {
+                      "attributes": {},
+                      "data": "li",
+                      "siblings": [
+                        {
+                          "attributes": {},
+                          "data": "code: null",
+                          "siblings": [],
+                          "type": "text"
+                        }
+                      ],
+                      "type": "element"
+                    },
+                    {
+                      "attributes": {},
+                      "data": "li",
+                      "siblings": [
+                        {
+                          "attributes": {},
+                          "data": "version: 1.1",
+                          "siblings": [],
+                          "type": "text"
+                        }
+                      ],
+                      "type": "element"
+                    }
+                  ],
+                  "type": "element"
+                }
+              ],
+              "type": "element"
+            }
+          ],
+          "type": "element"
+        }
+      ],
+      "type": "element"
+    }
+  ],
+  "type": "document"
+}`),
+			method: GET,
+			err: nil,
+		},
+		{
+			args: []*data.Value{
+				{
+					Value: "http://127.0.0.1:3000?format=html",
+					Type:  data.String,
+				},
+				{
+					Value: map[string]interface{} {
+						"hello": "world",
+					},
+					Type: data.Object,
+				},
+			},
+			result: []byte(`{
+  "attributes": {},
+  "data": "",
+  "siblings": [
+    {
+      "attributes": {
+        "lang": "en"
+      },
+      "data": "html",
+      "siblings": [
+        {
+          "attributes": {},
+          "data": "head",
+          "siblings": [
+            {
+              "attributes": {},
+              "data": "title",
+              "siblings": [
+                {
+                  "attributes": {},
+                  "data": "POST: http://127.0.0.1:3000/?format=html",
+                  "siblings": [],
+                  "type": "text"
+                }
+              ],
+              "type": "element"
+            }
+          ],
+          "type": "element"
+        },
+        {
+          "attributes": {},
+          "data": "body",
+          "siblings": [
+            {
+              "attributes": {},
+              "data": "h1",
+              "siblings": [
+                {
+                  "attributes": {},
+                  "data": "POST: http://127.0.0.1:3000/?format=html",
+                  "siblings": [],
+                  "type": "text"
+                }
+              ],
+              "type": "element"
+            },
+            {
+              "attributes": {},
+              "data": "div",
+              "siblings": [
+                {
+                  "attributes": {},
+                  "data": "ul",
+                  "siblings": [
+                    {
+                      "attributes": {},
+                      "data": "li",
+                      "siblings": [
+                        {
+                          "attributes": {},
+                          "data": "method: POST",
+                          "siblings": [],
+                          "type": "text"
+                        }
+                      ],
+                      "type": "element"
+                    },
+                    {
+                      "attributes": {},
+                      "data": "li",
+                      "siblings": [
+                        {
+                          "attributes": {},
+                          "data": "url: http://127.0.0.1:3000/?format=html",
+                          "siblings": [],
+                          "type": "text"
+                        }
+                      ],
+                      "type": "element"
+                    },
+                    {
+                      "attributes": {},
+                      "data": "li",
+                      "siblings": [
+                        {
+                          "attributes": {},
+                          "data": "query_params:",
+                          "siblings": [],
+                          "type": "text"
+                        },
+                        {
+                          "attributes": {},
+                          "data": "ul",
+                          "siblings": [
+                            {
+                              "attributes": {},
+                              "data": "li",
+                              "siblings": [
+                                {
+                                  "attributes": {},
+                                  "data": "format: html",
+                                  "siblings": [],
+                                  "type": "text"
+                                }
+                              ],
+                              "type": "element"
+                            }
+                          ],
+                          "type": "element"
+                        }
+                      ],
+                      "type": "element"
+                    },
+                    {
+                      "attributes": {},
+                      "data": "li",
+                      "siblings": [
+                        {
+                          "attributes": {},
+                          "data": "headers:",
+                          "siblings": [],
+                          "type": "text"
+                        },
+                        {
+                          "attributes": {},
+                          "data": "ul",
+                          "siblings": [
+                            {
+                              "attributes": {},
+                              "data": "li",
+                              "siblings": [
+                                {
+                                  "attributes": {},
+                                  "data": "host: 127.0.0.1:3000",
+                                  "siblings": [],
+                                  "type": "text"
+                                }
+                              ],
+                              "type": "element"
+                            },
+                            {
+                              "attributes": {},
+                              "data": "li",
+                              "siblings": [
+                                {
+                                  "attributes": {},
+                                  "data": "user-agent: go-resty/2.7.0 (https://github.com/go-resty/resty)",
+                                  "siblings": [],
+                                  "type": "text"
+                                }
+                              ],
+                              "type": "element"
+                            },
+                            {
+                              "attributes": {},
+                              "data": "li",
+                              "siblings": [
+                                {
+                                  "attributes": {},
+                                  "data": "content-length: 17",
+                                  "siblings": [],
+                                  "type": "text"
+                                }
+                              ],
+                              "type": "element"
+                            },
+                            {
+                              "attributes": {},
+                              "data": "li",
+                              "siblings": [
+                                {
+                                  "attributes": {},
+                                  "data": "content-type: application/json",
+                                  "siblings": [],
+                                  "type": "text"
+                                }
+                              ],
+                              "type": "element"
+                            },
+                            {
+                              "attributes": {},
+                              "data": "li",
+                              "siblings": [
+                                {
+                                  "attributes": {},
+                                  "data": "accept-encoding: gzip",
+                                  "siblings": [],
+                                  "type": "text"
+                                }
+                              ],
+                              "type": "element"
+                            }
+                          ],
+                          "type": "element"
+                        }
+                      ],
+                      "type": "element"
+                    },
+                    {
+                      "attributes": {},
+                      "data": "li",
+                      "siblings": [
+                        {
+                          "attributes": {},
+                          "data": "code: null",
+                          "siblings": [],
+                          "type": "text"
+                        }
+                      ],
+                      "type": "element"
+                    },
+                    {
+                      "attributes": {},
+                      "data": "li",
+                      "siblings": [
+                        {
+                          "attributes": {},
+                          "data": "version: 1.1",
+                          "siblings": [],
+                          "type": "text"
+                        }
+                      ],
+                      "type": "element"
+                    },
+                    {
+                      "attributes": {},
+                      "data": "li",
+                      "siblings": [
+                        {
+                          "attributes": {},
+                          "data": "body:",
+                          "siblings": [],
+                          "type": "text"
+                        },
+                        {
+                          "attributes": {},
+                          "data": "div",
+                          "siblings": [
+                            {
+                              "attributes": {},
+                              "data": "{\"hello\":\"world\"}",
+                              "siblings": [],
+                              "type": "text"
+                            }
+                          ],
+                          "type": "element"
+                        }
+                      ],
+                      "type": "element"
+                    }
+                  ],
+                  "type": "element"
+                }
+              ],
+              "type": "element"
+            }
+          ],
+          "type": "element"
+        }
+      ],
+      "type": "element"
+    }
+  ],
+  "type": "document"
+}`),
+			method: POST,
+			err:    nil,
 		},
 	}{
 		var ok bool
+		var j interface{}
 		err, result := test.method.Call(test.args...)
 		// Check if the actual result is Equal to the expected result only if there is no error.
 		if err == nil {
-			err, ok = EqualInterface(result.Value.(map[string]interface{})["content"], test.result.Value)
+			if err = json.Unmarshal(test.result, &j); err != nil {
+				t.Error(err)
+			}
+			err, ok = EqualInterface(result.Value.(map[string]interface{})["content"], j)
 		}
 
 		if testing.Verbose() && result != nil {
@@ -697,14 +1258,18 @@ func TestMethod_Call(t *testing.T) {
 				Type:     data.Object,
 			}).String())
 			fmt.Println("========================= VS ==========================")
-			fmt.Println(test.result.String())
+			fmt.Println(string(test.result))
 			fmt.Println()
-			t.Errorf("result \"%v\" for testNo: %d does not match the required result: \"%v\"", result, testNo + 1, test.result)
+			t.Errorf("result \"%v\" for testNo: %d does not match the required result: \"%v\"", result, testNo + 1, string(test.result))
 		}
 	}
 
 	// Kill the echo chamber
-	if err := echoChamber.Process.Kill(); err != nil {
-		panic("failed to kill echo chamber")
+	pgid, err := syscall.Getpgid(echoChamber.Process.Pid)
+	if err == nil {
+		if err = syscall.Kill(-pgid, 15); err != nil {
+			t.Error("failed to kill echo chamber")
+		}
 	}
+	_ = echoChamber.Wait()
 }

@@ -75,24 +75,24 @@ func TestPath_Set(t *testing.T) {
 			err: nil,
 		},
 		{
-			path: Path{"json", "hello", 0},
-			current: "hello",
-			to: true,
+			path:    Path{"json", "hello", 0},
+			current: 3.142,
+			to:      true,
 			expected: map[string]interface{}{
-				"": "hello",
+				"": 3.142,
 				"hello": []interface{}{true},
 			},
 			err: nil,
 		},
 		{
 			path: Path{"json", 0, "hello"},
-			current: "hello",
+			current: 3.142,
 			to: true,
 			expected: []interface{}{
 				map[string]interface{}{
 					"hello": true,
 				},
-				"hello",
+				3.142,
 			},
 			err: nil,
 		},
@@ -115,14 +115,14 @@ func TestPath_Set(t *testing.T) {
 			path: Path{"json", 0, "hello", "world"},
 			current: []interface{}{
 				map[string]interface{}{
-					"hello": "world",
+					"hello": 3.142,
 				},
 			},
 			to: map[string]interface{}{"hello": "world"},
 			expected: []interface{}{
 				map[string]interface{}{
 					"hello": map[string]interface{}{
-						"": "world",
+						"": 3.142,
 						"world": map[string]interface{}{
 							"hello": "world",
 						},
@@ -215,9 +215,110 @@ func TestPath_Set(t *testing.T) {
 			expected: nil,
 			err: fmt.Errorf("cannot access array with negative index that is out of array bounds (-4)"),
 		},
+		{
+			path: Path{"json", "hello", 3},
+			current: map[string]interface{}{
+				"hello": "world",
+			},
+			to: "egg",
+			expected: map[string]interface{}{
+				"hello": "woreggd",
+			},
+			err: nil,
+		},
+		{
+			path: Path{"json", "hello", 4},
+			current: map[string]interface{}{
+				"hello": "world",
+			},
+			to: "egg",
+			expected: map[string]interface{}{
+				"hello": "worlegg",
+			},
+			err: nil,
+		},
+		{
+			path: Path{"json", "hello", -5},
+			current: map[string]interface{}{
+				"hello": "world",
+			},
+			to: "egg",
+			expected: map[string]interface{}{
+				"hello": "eggorld",
+			},
+			err: nil,
+		},
+		{
+			path: Path{"json", "hello", -6},
+			current: map[string]interface{}{
+				"hello": "world",
+			},
+			to: "egg",
+			expected: nil,
+			err: fmt.Errorf("cannot access string with negative index that is out of string bounds (-6)"),
+		},
+		{
+			path: Path{"json", "hello", 6},
+			current: map[string]interface{}{
+				"hello": "world",
+			},
+			to: "egg",
+			expected: map[string]interface{}{
+				"hello": "world egg",
+			},
+			err: nil,
+		},
+		{
+			path: Path{"json", "hello", 6},
+			current: map[string]interface{}{
+				"hello": "world",
+			},
+			to: "egg",
+			expected: map[string]interface{}{
+				"hello": "world egg",
+			},
+			err: nil,
+		},
+		{
+			path: Path{"json", "hello", 6, 0},
+			current: map[string]interface{}{
+				"hello": "world",
+			},
+			to: "egg",
+			expected: map[string]interface{}{
+				"hello": "world egg",
+			},
+			err: nil,
+		},
+		{
+			path: Path{"json", "hello", 6, 1},
+			current: map[string]interface{}{
+				"hello": "world",
+			},
+			to: "egg",
+			expected: map[string]interface{}{
+				"hello": "world  egg",
+			},
+			err: nil,
+		},
+		{
+			path: Path{"json", "hello", "world"},
+			current: map[string]interface{}{
+				"hello": "world",
+			},
+			to: "egg",
+			expected: map[string]interface{}{
+				"hello": map[string]interface{} {
+					"": "world",
+					"world": "egg",
+				},
+			},
+			err: nil,
+		},
 	}{
 		var equal bool
-		err, result := test.path.Set(test.current, test.to)
+		// Parsing in nil for VM parameter as we don't test filter blocks here.
+		err, result := test.path.Set(nil, test.current, test.to)
 		// Check if the actual result is equal to the expected result only if there is no error.
 		if err == nil {
 			err, equal = eval.EqualInterface(result, test.expected)

@@ -3,9 +3,11 @@ package parser
 import (
 	"fmt"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/data"
+	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/errors"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/eval"
+	"github.com/alecthomas/participle/v2/lexer"
 	"reflect"
-	"testing"
+	"strings"
 )
 
 // term describes the signature that all terms share. Each term has a left-hand side with a single higher precedence 
@@ -33,47 +35,57 @@ type factor interface {
 // returns the token as a data.Value.
 type protoEvalNode struct {
 	evalMethod func(vm VM) (err error, result *data.Value)
+	getPosMethod func() lexer.Position
+	stringMethod func(indent int) string
 }
 
 // Eval calls the stored evalMethod.
 func (p *protoEvalNode) Eval(vm VM) (err error, result *data.Value) { return p.evalMethod(vm) }
 
+// String calls the stored stringMethod.
+func (p *protoEvalNode) String(indent int) string { return p.stringMethod(indent) }
+
+// GetPos calls the stored getPosMethod.
+func (p *protoEvalNode) GetPos() lexer.Position { return p.getPosMethod() }
+
 // tEval evaluates an AST node which implements the term interface.
 func tEval(t term, vm VM) (err error, result *data.Value) {
+	vm.SetPos(t.GetPos())
 	err, result = t.left().Eval(vm)
 	if err != nil {
-		return err, nil
+		return errors.UpdateError(err, vm), nil
 	}
 
-	if testing.Verbose() {
-		fmt.Printf("\tLHS (%s) = %v\n", reflect.TypeOf(t.left()).String(), result)
+	if debug, ok := vm.GetDebug(); ok {
+		_, _ = fmt.Fprintf(debug, "\t%s: LHS (%s) = %v\n", t.GetPos().String(), reflect.TypeOf(t.left()).String(), result)
 	}
 
 	for _, r := range t.right() {
+		vm.SetPos(r.GetPos())
 		var right *data.Value
 		err, right = r.Eval(vm)
 
-		if testing.Verbose() {
-			fmt.Printf("\tRHS (%s) = %v\n", reflect.TypeOf(r).String(), right)
+		if debug, ok := vm.GetDebug(); ok {
+			_, _ = fmt.Fprintf(debug, "\t%s: RHS (%s) = %v\n", r.GetPos().String(), reflect.TypeOf(r).String(), right)
 		}
 
 		if err == nil {
 			err, result = eval.Compute(r.operator(), result, right)
-
-			if testing.Verbose() {
-				fmt.Println("\tnew LHS =", result)
+			if debug, ok := vm.GetDebug(); ok {
+				_, _ = fmt.Fprintf(debug, "\tnew LHS = %v\n", result)
 			}
 			if err == nil {
 				continue
 			}
 		}
-		return err, nil
+		return errors.UpdateError(err, vm), nil
 	}
 	return nil, result
 }
 
 // fEval evaluates an AST node which implements the factor interface.
 func fEval(f factor, vm VM) (err error, result *data.Value) {
+	vm.SetPos(f.GetPos())
 	return f.inner().Eval(vm)
 }
 
@@ -126,8 +138,13 @@ func (f *Factor) left() evalNode {
 			return nil, &data.Value{
 				Value:  *f.Number,
 				Type:   data.Number,
-				Global: *vm.GetScope() == 0,
 			}
+		}
+		en.stringMethod = func(indent int) string {
+			return fmt.Sprintf("%s%v", strings.Repeat("\t", indent), *f.Number)
+		}
+		en.getPosMethod = func() lexer.Position {
+			return lexer.Position{}
 		}
 		n = &en
 	case f.StringLit != nil:
@@ -136,8 +153,13 @@ func (f *Factor) left() evalNode {
 			return nil, &data.Value{
 				Value:  *f.StringLit,
 				Type:   data.String,
-				Global: *vm.GetScope() == 0,
 			}
+		}
+		en.stringMethod = func(indent int) string {
+			return fmt.Sprintf("%s\"%v\"", strings.Repeat("\t", indent), *f.StringLit)
+		}
+		en.getPosMethod = func() lexer.Position {
+			return lexer.Position{}
 		}
 		n = &en
 	case f.JSONPath != nil:

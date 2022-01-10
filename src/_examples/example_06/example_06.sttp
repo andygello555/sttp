@@ -9,35 +9,40 @@ iterators = {
     "loop5": 123
 };
 
+$print("iterators =", iterators);
+
 loop1out = "[";
 for index, char in iterators.loop1 do
-    loop1out = loop1out + ("(%v: %v)" % [index, char]);
+    loop1out = loop1out + ("(%%: %%)" % [index, char]);
     if index != (0 + iterators.loop1) - 1 then
         loop1out = loop1out + ", ";
     else
         loop1out = loop1out + "]";
     end;
 end;
+$print("loop1out =", loop1out);
 
 loop2out = "[";
 for index, value in iterators.loop2 do
-    loop2out = loop2out + ("(%v: %v)" % [index, value]);
+    loop2out = loop2out + ("(%%: %%)" % [index, value]);
     if index != (0 + iterators.loop2) - 1 then
         loop2out = loop2out + ", ";
     else
         loop2out = loop2out + "]";
     end;
 end;
+$print("loop2out =", loop2out);
 
 loop3out = "[";
 for key, value in iterators.loop3 do
-    loop3out = loop3out + ("(%v: %v)" % [key, value]);
+    loop3out = loop3out + ("(%%: %%)" % [key, value]);
     if key != "world" then
         loop3out = loop3out + ", ";
     else
         loop3out = loop3out + "]";
     end;
 end;
+$print("loop3out =", loop3out);
 
 loop4out = "[";
 for key, value in {
@@ -48,22 +53,25 @@ for key, value in {
     "e": 4,
     "c": 2
 } do
-    loop4out = loop4out + ("(%v: %v)" % [key, value]);
+    loop4out = loop4out + ("(%%: %%)" % [key, value]);
     if value != 5 then
         loop4out = loop4out + ", ";
     else
         loop4out = loop4out + "]";
     end;
 end;
+$print("loop4out =", loop4out);
 
 for index, value in [] do ohno = true; end;
+$print("ohno =", ohno);
 
 loop5out = "[";
 for index, char in iterators.loop5 do
-    loop5out = loop5out + ("(%v: %v)" % [index, char]);
-    if index != 0 + ("" + iterators.loop5) - 1 then
+    loop5out = loop5out + ("(%%: %%)" % [index, char]);
+    if index != 0 + ("a" + iterators.loop5) - 2 then
         loop5out = loop5out + ", ";
     else
         loop5out = loop5out + "]";
     end;
 end;
+$print("loop5out =", loop5out);
