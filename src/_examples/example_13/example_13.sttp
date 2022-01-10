@@ -1,0 +1,124 @@
+a = {
+    "foo": "bar",
+    "baz": {
+        "results": [
+            {
+                "no": 1,
+                "type": "string",
+                "data": "this is the data for result 1"
+            },
+            {
+                "no": 2,
+                "type": "object",
+                "data": {
+                    "msg": "this is the data for result 2"
+                }
+            },
+            {
+                "no": 3,
+                "type": "string",
+                "data": "this is the data for result 3"
+            },
+            "hello world!"
+        ]
+    }
+};
+
+a_search_schema = { "type": "string" };
+
+$print("first occurrence of %% in a =" % [a_search_schema], $find(a, a_search_schema));
+
+$print("all occurrences of %% in a (without parent nodes) =" % [a_search_schema], $find_all(a, a_search_schema));
+
+$print("all occurrences of %% in a (with parent nodes) =" % [a_search_schema], $find_all_parents(a, a_search_schema));
+
+$print();
+
+html = $GET("http://127.0.0.1:3000/this/is/html/content?format=html");
+dummy_html = {
+    "attributes": {},
+    "data": "li",
+    "siblings": [
+     {
+       "attributes": {},
+       "data": "headers:",
+       "siblings": [],
+       "type": "text"
+     },
+     {
+       "attributes": {},
+       "data": "ul",
+       "siblings": [
+         {
+           "attributes": {},
+           "data": "li",
+           "siblings": [
+             {
+               "attributes": {},
+               "data": "host: 127.0.0.1:3000",
+               "siblings": [],
+               "type": "text"
+             }
+           ],
+           "type": "element"
+         },
+         {
+           "attributes": {},
+           "data": "li",
+           "siblings": [
+             {
+               "attributes": {},
+               "data": "user-agent: go-resty/2.7.0 (https://github.com/go-resty/resty)",
+               "siblings": [],
+               "type": "text"
+             }
+           ],
+           "type": "element"
+         },
+         {
+           "attributes": {},
+           "data": "li",
+           "siblings": [
+             {
+               "attributes": {},
+               "data": "accept-encoding: gzip",
+               "siblings": [],
+               "type": "text"
+             }
+           ],
+           "type": "element"
+         }
+       ],
+       "type": "element"
+     }
+    ],
+    "type": "element"
+};
+
+html_search_schema = {
+   "data": "li",
+   "siblings": {
+       "": {"data": "user-agent"}
+   },
+   "type": "element"
+};
+
+$print("first occurrence of %% in dummy_html =" % [html_search_schema], $find(dummy_html, html_search_schema));
+
+$print("all occurrences of %% in dummy_html (without parent nodes) =" % [html_search_schema], $find_all(dummy_html, html_search_schema));
+
+$print("all occurrences of %% in dummy_html (with parent nodes) =" % [html_search_schema], $find_all_parents(dummy_html, html_search_schema));
+
+$print();
+
+$print("first occurrence of %% in html.content =" % [html_search_schema], $find(html.content, html_search_schema));
+
+$print("all occurrences of %% in html.content (without parent nodes) =" % [html_search_schema], $find_all(html.content, html_search_schema));
+
+$print("all occurrences of %% in html.content (with parent nodes) =" % [html_search_schema], $find_all_parents(html.content, html_search_schema));
+
+$print();
+
+$print("first <li> in html.content =", $find(html.content, {"data": "li"}));
+
+$print("all <li> in html.content (without parent nodes) =", $find_all(html.content, {"data": "li"}));

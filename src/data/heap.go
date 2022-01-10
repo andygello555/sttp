@@ -33,7 +33,7 @@ func (h *Heap) Assign(name string, value interface{}, global bool, ro bool) (err
 	// Check if there is an existing value and whether it's immutable
 	existing := h.Get(name)
 	if existing != nil && existing.ReadOnly {
-		return errors.ImmutableValue.Errorf(name)
+		return errors.ImmutableValue.Errorf(errors.GetNullVM(), name)
 	}
 
 	(*h)[name] = &Value{
@@ -64,6 +64,24 @@ func (v *Value) String() string {
 		panic(err)
 	}
 	return string(ss)
+}
+
+func (v *Value) Float64() float64 { return v.Value.(float64) }
+func (v *Value) Int() int { return int(v.Float64()) }
+func (v *Value) StringLit() string { return v.Value.(string) }
+func (v *Value) Map() map[string]interface{} { return v.Value.(map[string]interface{}) }
+func (v *Value) Array() []interface{} { return v.Value.([]interface{}) }
+func (v *Value) Len() int {
+	switch v.Type {
+	case Object:
+		return len(v.Map())
+	case Array:
+		return len(v.Array())
+	case String:
+		return len(v.StringLit())
+	default:
+		return 0
+	}
 }
 
 func ConstructSymbol(value interface{}, global bool) (err error, symbol *Value) {
@@ -121,8 +139,7 @@ func (t *Type) Get(value interface{}) (err error) {
 		if strings.Contains(reflect.TypeOf(value).String(), "FunctionDefinition") {
 			*t = Function
 		} else {
-			*t = NoType
-			return errors.CannotFindType.Errorf(value)
+			return errors.CannotFindType.Errorf(errors.GetNullVM(), value)
 		}
 	}
 	return nil

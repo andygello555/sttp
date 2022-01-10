@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/eval"
 	"strings"
@@ -129,7 +130,14 @@ func (p *Part) String(indent int) string {
 	if len(p.Indices) > 0 {
 		expressions := make([]string, len(p.Indices))
 		for i, expression := range p.Indices {
-			expressions[i] = fmt.Sprintf("[%s]", expression.String(0))
+			var indexOut string
+			switch {
+			case expression.ExpressionIndex != nil:
+				indexOut = fmt.Sprintf("[%s]", expression.ExpressionIndex.String(0))
+			case expression.FilterIndex != nil:
+				indexOut = fmt.Sprintf("```\n%s```", expression.FilterIndex.String(indent + 1))
+			}
+			expressions[i] = indexOut
 		}
 		part += strings.Join(expressions, "")
 	}
@@ -290,7 +298,14 @@ func (f *Factor) String(indent int) string {
 	case f.Number != nil:
 		fac = fmt.Sprintf("%v", *f.Number)
 	case f.StringLit != nil:
-		fac = fmt.Sprintf("\"%s\"", *f.StringLit)
+		var b strings.Builder
+		encoder := json.NewEncoder(&b)
+		encoder.SetEscapeHTML(false)
+		if err := encoder.Encode(*f.StringLit); err != nil {
+			panic(err)
+		} else {
+			fac = strings.TrimSuffix(b.String(), "\n")
+		}
 	case f.JSONPath != nil:
 		fac = f.JSONPath.String(0)
 	case f.JSON != nil:

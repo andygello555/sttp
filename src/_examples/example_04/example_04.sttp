@@ -17,3 +17,5 @@ while counters.a * counters.b * counters.c <= 100 do
         counters.c = counters.c + 1;
     end;
 end;
+
+$print("counters =", counters);

@@ -1,0 +1,77 @@
+batch this
+    for i = 0; i < 100; i = i + 1 do
+        result.result = $GET("http://127.0.0.1:3000/" + i);
+        result.results[i] = result.result.content;
+        $print(result.results[i]);
+    end;
+    oops_forgot_this = $GET("http://127.0.0.1:3000/" + 100);
+    $print(oops_forgot_this.content);
+end;
+
+try this
+    batch this
+        a.result = $GET("http://127.0.0.1:3000/hello/world");
+        batch this
+            for _, prefix in ["a", "b", "c", "d", "e"] do
+                a.result = $GET("http://127.0.0.1:3000/%%" % [prefix]);
+                a.results[i] = result.content;
+            end;
+        end;
+    end;
+catch as e then
+    $print(e);
+end;
+
+batch this
+    $print("no method calls in 'ere");
+end;
+
+try this
+    batch this
+        x = $GET("http://127.0.0.1:3000/the/flow/depends/on/this/request");
+        y = $GET("http://127.0.0.1:3000/the/flow/depends/on/this/request/also");
+        if x.code == 200 && y.code == 200 then
+            wont_be_batched = $GET("http://127.0.0.1:3000/wont/be/batched");
+        end;
+        uh_oh = $GET("http://127.0.0.1:3000/uh/oh");
+    end;
+catch as e then
+    $print(e);
+end;
+
+try this
+    batch this
+        x = $GET("http://127.0.0.1:3000/the/flow/depends/on/this/request");
+        y = $GET("http://127.0.0.1:3000/the/flow/depends/on/this/request/also");
+        if x.code == 200 && y.code == 200 then
+            wont_be_batched = $GET("http://127.0.0.1:3000/wont/be/batched");
+        end;
+    end;
+catch as e then
+    $print(e);
+end;
+
+function nMethodCalls(n)
+    for i = 0; i < n; i = i + 1 do
+        out.result = $GET("http://127.0.0.1:3000/" + i);
+        out.results[i] = out.result.content;
+        $print(out.results[i]);
+    end;
+    return out.results;
+end;
+
+function fibMethod(n)
+    call = $GET("http://127.0.0.1:3000/currently/on/n/equals/" + n);
+    $print(call.content);
+    if n < 2 then
+        return n;
+    end;
+    return $fibMethod(n - 1) + $fibMethod(n - 2);
+end;
+
+batch this
+    $nMethodCalls(10);
+    $nMethodCalls(20);
+    $nMethodCalls(30);
+    $print("fib %% = %%" % [7, $fibMethod(7)]);
+end;

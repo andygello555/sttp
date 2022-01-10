@@ -211,8 +211,13 @@ type JSONPath struct {
 type Part struct {
 	Pos lexer.Position
 
-	Property *string       `@Ident`
-	Indices  []*Expression `( "[" @@ "]" )*`
+	Property *string  `@Ident`
+	Indices  []*Index `@@*`
+}
+
+type Index struct {
+	ExpressionIndex *Expression `  "[" @@ "]"`
+	FilterIndex     *Block      `| Filter @@ Filter`
 }
 
 // Statement describes one of the statements that can be used in each "line" of a Block.
@@ -315,9 +320,7 @@ type Elif struct {
 // Block describes a "block" of statements which might end with a return statement.
 type Block struct {
 	Pos lexer.Position
-	Tokens []lexer.Token
 
-	//Statements []*Statement     `( @@? ";" )*`
 	Statements []*Statement     `( @@? ";" )*`
 	Return     *ReturnStatement `( @@ |`
 	Throw      *ThrowStatement  `  @@ )?`
@@ -333,13 +336,13 @@ type Program struct {
 var lex = lexer.MustSimple([]lexer.Rule{
 	{"comment", `//.*`, nil},
 
-	{"StringLit", `"(\\"|[^"])*"`, nil},
+	//{"StringLit", `"(\\"|[^"])*"`, nil},
+	{"StringLit", `(")([^"\\]*(?:\\.[^"\\]*)*)(")`, nil},
 	{"Method", `(GET|HEAD|POST|PUT|DELETE|CONNECT|OPTIONS|TRACE|PATCH)`, nil},
 	{"While", `while\s`, nil},
 	{"For", `for\s`, nil},
 	{"Do", `\sdo\s`, nil},
 	{"This", `this\s`, nil},
-	//{"This", `this\s`, nil},
 	{"Break", `break`, nil},
 	{"Then", `\sthen\s`, nil},
 	{"End", `end`, nil},
@@ -358,10 +361,11 @@ var lex = lexer.MustSimple([]lexer.Rule{
 	{"Null", `null`, nil},
 	{"Batch", `batch\s`, nil},
 	{"Try", `try\s`, nil},
+	{"Number", `[-+]?(\d*\.)?\d+`, nil},
 	{"Operators", `\|\||&&|<=|>=|!=|==|[-+*/%=!<>]`, nil},
+	{"Filter", "```", nil},
 	{"Punct", `[$;,.(){}:]|\[|\]`, nil},
 	{"Ident", `[a-zA-Z_]\w*`, nil},
-	{"Number", `([+-]?[0-9]*[.])?[0-9]+`, nil},
 	{"whitespace", `\s+`, nil},
 })
 

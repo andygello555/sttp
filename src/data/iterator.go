@@ -3,6 +3,7 @@ package data
 import (
 	"container/heap"
 	"fmt"
+	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/errors"
 	"strings"
 )
 
@@ -22,7 +23,7 @@ func (it Iterator) Less(i, j int) bool {
 	case Number:
 		return it[i].Key.Value.(float64) < it[j].Key.Value.(float64)
 	case String:
-		return strings.Compare(it[i].Key.Value.(string), it[j].Key.Value.(string)) <= 0
+		return strings.Compare(it[i].Key.StringLit(), it[j].Key.Value.(string)) <= 0
 	default:
 		panic(fmt.Errorf("cannot have iterator with keys of type: %s", it[i].Key.Type.String()))
 	}
@@ -60,7 +61,12 @@ func (it *Iterator) Next() *Element {
 func Iterate(result *Value) (err error, it *Iterator) {
 	defer func() {
 		if p := recover(); p != nil {
-			err = fmt.Errorf("%v", p)
+			switch p.(type) {
+			case struct { errors.ProtoSttpError }:
+				err = p.(struct { errors.ProtoSttpError })
+			default:
+				err = fmt.Errorf("%v", p)
+			}
 		}
 	}()
 
@@ -115,7 +121,7 @@ func Iterate(result *Value) (err error, it *Iterator) {
 			}
 		}
 	case String:
-		str := result.Value.(string)
+		str := result.StringLit()
 		iterator = make(Iterator, len(str))
 
 		for i, v := range str {
