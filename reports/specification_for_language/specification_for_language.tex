@@ -29,7 +29,7 @@ The following are all the tokens, along with their regular expressions, that the
         Number    = `[-+]?(\d*\.)?\d+'
         StringLit = `(")([^"\\]*(?:\\.[^"\\]*)*)(")'
         Ident     = `[a-zA-Z_]\w*'
-        Method    = `(GET|HEAD|POST|PUT|DELETE|CONNECT|OPTIONS|TRACE|PATCH)'
+        Method    = `(GET|HEAD|POST|PUT|DELETE|OPTIONS|PATCH)'
         While     = `while\s'
         For       = `for\s'
         Do        = `\sdo\s'
@@ -352,7 +352,7 @@ In statements that require conditions (such as `if-elif-else', `while', and `for
     \caption{Table of truthy and falsy values of each type}
 \end{figure}
 
-\subsection{Operator-value relationship}
+\subsection{Operators}
 \label{sec:operatorvaluerel}
 
 Instead of having built-in functions for operations such as appending to an array, removing from an array, merging objects, etc. Operators, perform most of these actions. The following operators remain unchanged for all types:
@@ -415,6 +415,74 @@ All operators work as expected.
 \subsubsection{Nulls}
 
 Multiply, Divide, Modulus, Addition, and Subtraction will all `nullify' the operation (result in `null'). Null cannot be compared but can be used in logical expressions where it will be cast into `false'.
+
+\subsection{Casting}
+
+All casting function are stored within a matrix, with types to cast from represented as rows of this matrix, and types to cast to represented as columns. Casting a value to the type that is the type of the value will always result in the same value.
+
+\begin{center}
+\textit{If a type is not mentioned in any of the sections below it means that the type cannot be cast to the missing type, and will return an error.}
+\end{center}
+
+\subsubsection{Casting from Objects}
+
+\begin{itemize}
+    \item \textbf{To Array}: Extracts the keys from the Object. Will always be an Array of Strings.
+    \item \textbf{To String}: Marshals the Object as a JSON string.
+    \item \textbf{To Number}: Returns the number of keys in the Object.
+    \item \textbf{To Boolean}: If the Object is not empty (length is greater than 0) then the Object is truthy, otherwise the Object is falsy.
+\end{itemize}
+
+\subsubsection{Casting from Arrays}
+
+\begin{itemize}
+    \item \textbf{To Object}: Creates an Object where each key is an index of an element in the Array, the value of which is the element that lies at that index.
+    \item \textbf{To String}: Marshals the Object as a JSON string.
+    \item \textbf{To Number}: Returns the number of elements in the Array.
+    \item \textbf{To Boolean}: If the Array is not empty then the Array is truthy, otherwise the Array is falsy.
+\end{itemize}
+
+\subsubsection{Casting from Strings}
+
+\begin{itemize}
+    \item \textbf{To Object}: Attempts to parse the String into a JSON Object.
+    \item \textbf{To Array}: Attempts to parse the String into a JSON Array.
+    \item \textbf{To Number}: Attempts to parse the String to an integer, then a float, and will finally just take the length of the String.
+    \item \textbf{To Boolean}: If the String is not empty then the String is truthy, otherwise the String is falsy.
+\end{itemize}
+
+\subsubsection{Casting from Numbers}
+
+\begin{itemize}
+    \item \textbf{To Object}: Constructs a singleton Object where the key is the String representation of the Number, and the value is Null.
+    \item \textbf{To Array}: Constructs a singleton Array where the first and only element is the Number.
+    \item \textbf{To String}: Marshals the Number as a JSON number.
+    \item \textbf{To Boolean}: Whether or not the Number is greater than 0.
+\end{itemize}
+
+\subsubsection{Casting from Boolean}
+
+\begin{itemize}
+    \item \textbf{To Object}: Constructs a singleton Object where the key is the String representation of the Boolean, and the value is Null.
+    \item \textbf{To Array}: Constructs a singleton Array where the first and only element is the Boolean.
+    \item \textbf{To String}: Marshals the Boolean as a JSON boolean.
+    \item \textbf{To Number}: 0 if false, 1 otherwise.
+\end{itemize}
+
+\subsubsection{Casting from Null}
+
+\begin{itemize}
+    \item \textbf{To Object}: Constructs a singleton Object where the key is the String representation of Null (\verb|null|), and the value is Null.
+    \item \textbf{To Array}: Constructs a singleton Array where the first and only element is Null.
+    \item \textbf{To String}: \verb|null|.
+    \item \textbf{To Number}: Returns false.
+\end{itemize}
+
+\subsubsection{Casting from Functions}
+
+\begin{itemize}
+    \item \textbf{To String}: \verb|function:JSON_PATH:SAFE_PTR|.
+\end{itemize}
 
 \section{Functions}
 
@@ -546,6 +614,8 @@ Definition of a variable to store the exception within is mandatory and has to b
 
 \subsubsection{Subset: Runtime}
 
+Table of errors that occur at runtime.
+
 \begin{center}
     \small
     \begin{tabular}{| m{5cm} | m{5cm} |}
@@ -581,6 +651,22 @@ Definition of a variable to store the exception within is mandatory and has to b
 \normalsize
 
 \subsubsection{Subset: Structure}
+
+\begin{center}
+    \small
+    \begin{tabular}{| m{5cm} | m{5cm} |}
+        \hline
+        ImmutableValue & The value being assigned on the heap is read-only. Occurs when trying to set an uncopied Function.\\
+        \hline
+        BatchWithinBatch & When a batch statement occurs within a batch statement.\\
+        \hline
+        NoTestSuite & Cannot execute a test statement as the test results array has not yet been initialised.\\
+        \hline
+        HeapEntryDoesNotExist & Root JSONPath property does not exist within the heap.\\
+        \hline
+    \end{tabular}
+\end{center}
+\normalsize
 
 \section{Builtins}
 
@@ -1494,6 +1580,75 @@ You cannot use a \verb|batch| block within a \verb|batch| block. This inner batc
 If an exception occurs in the first or second pass and there is a try-catch surrounding the batch block, then the batch block will be canceled from that point onwards.
 
 If the exception occurs in the thread execution phase then the exception is thrown after all requests are made, in the second pass, in the MethodCall AST node which produced the error.
+
+\cprotect\section{Test suites and the \verb|test| statement}
+
+When running the interpreter from the command line, you can execute entire directory structures of sttp source code. All \verb|test| statements within these source code files will be tested and reported back to the user. A possible use case for this would be testing flows and nested actions within a web API. For instance, take the following directory structure:
+
+\begin{verbatim}
+test-web-api/
+    user/
+        create.sttp
+        delete.sttp
+        login.sttp
+    article/
+        create.sttp
+        delete.sttp
+        retrieve.sttp
+        list.sttp
+    comment/
+        create.sttp
+        delete.sttp
+        list.sttp
+\end{verbatim}
+
+The top level directory encompasses all action sets of the API. For instance, the request \verb|POST /user/login| might be tested with the \verb|test-web-api/user/login.sttp| sttp code. Within this source code file the user could test whether the response from the server is correct, whether the user has been logged in, error cases, etc.
+
+\cprotect\subsection{\verb|test| statement}
+
+The VM keeps an array of the results to all the evaluated test statements in the source code. To evaluate a test, you use the \verb|test| statement. The expression following a \verb|test| statement is evaluated and cast to a Boolean. If the value is \verb|true| then the test has passed, otherwise the test has failed. The result of this test, plus a pointer back to the test statement in the AST, is added to the array of test results within the VM.
+
+A test statement AST node can lie anywhere within a Block AST node, and there can be as many test statements as the user wants within the entire source code. The expression after a test statement \textbf{must exist}, otherwise a parse error will occur.
+
+\subsection{Execution}
+
+When executing a test suite, the directory structure will be walked in no particular order. Each time a new directory occurs within the current directory, new suite will be created, with the config parameters used to create the current suite, and linked back up to its parent test suite. Each time an sttp source code file is found (\verb|*.sttp|), a new VM is created with the stdout, stderr, and debug file handlers passed to the test suite.
+
+\cprotect\subsubsection{\verb|BreakOnFailure|}
+
+If the \verb|BreakOnFailure| flag is set on the test suite, then the execution of the test suite will exit if any sttp script has a test that fails. Within this failed sttp script, all test statements not yet evaluated by the interpreter, will not be executed whatsoever. Internally, this is achieved by the failed test statement throwing an uncatchable error.
+
+\subsection{Output}
+
+Once a test suite has been executed, an output will be written to stdout similar to the following:
+
+\begin{verbatim}
+PENTHOUSE SUITE: test-web-api  (PASS)
+    SUB SUITE: test-web-api/user  (PASS)
+        test-web-api/user/create.sttp:2:1 - "test a.code == 201" (PASS)
+        test-web-api/user/delete.sttp:2:1 - "test a.code == 200" (PASS)
+        test-web-api/user/login.sttp:2:1 - "test a.code == 200" (PASS)
+    SUB SUITE: test-web-api/article  (PASS)
+        test-web-api/article/create.sttp:2:1 - "test a.code == 201" (PASS)
+        test-web-api/article/delete.sttp:2:1 - "test a.code == 200" (PASS)
+        test-web-api/article/retrieve.sttp:2:1 - "test a.code == 200" (PASS)
+        test-web-api/article/list.sttp:2:1 - "test a.code == 200" (PASS)
+    SUB SUITE: test-web-api/comment  (PASS)
+        test-web-api/comment/create.sttp:2:1 - "test a.code == 201" (PASS)
+        test-web-api/comment/delete.sttp:2:1 - "test a.code == 200" (PASS)
+        test-web-api/comment/list.sttp:2:1 - "test a.code == 200" (PASS)
+\end{verbatim}
+
+Each directory is treated as a test suite, all inner suites and test statements within the source code is indented. Each line ends with either \verb|(PASS)| or \verb|(FAIL)| indicating whether or not the suite/test statement has passed or failed. If all the test statements within all the source code files and test suites within a suite have passed then that suite will be marked as passing. However, if there is at least one failure, then it will be marked as failing.
+
+\section{External libraries}
+
+\begin{enumerate}
+    \item The \href{https://github.com/alecthomas/participle}{participle parser generator} by Alec Thomas. Used for parser and AST generation.
+    \item \href{https://pkg.go.dev/github.com/andygello555/gotils}{gotils}: a set of utility functions for Go by Jakab Zeller. Mostly used for some helpful string interpolation functions.
+    \item The \href{https://github.com/go-resty/resty}{resty} HTTP/REST client for Go. Used for HTTP Method Calls within sttp.
+    \item \href{https://pkg.go.dev/golang.org/x/net}{golang.org/x/net}. Used for its HTML5 compliant parser.
+\end{enumerate}
 
 % \begin{center}
 %     \begin{verbatim}
