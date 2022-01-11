@@ -147,8 +147,8 @@ func (ts *TestSuite) String() string {
 
 // Run will create a new VM for each test script in the current and any sub-directories and will also construct a new 
 // TestSuite for any sub-directories. The results of the test suite will be output at the end of the procedure. You can
-// also specify the io.Writer for stdout and stderr, if these are nil then these will default to os.Stdout and os.Stderr
-// respectfully.
+// also specify the io.Writer for stdout, stderr, and debug, if these are nil then these will default to os.Stdout, 
+// os.Stderr, and ioutil.Discard respectively.
 func (ts *TestSuite) Run(stdout io.Writer, stderr io.Writer, debug io.Writer) error {
 	if files, err := ioutil.ReadDir(ts.Path); err != nil {
 		return err
