@@ -23,6 +23,16 @@ const (
 	PATCH
 )
 
+// MethodStrings returns an Array of all accepted HTTP methods as strings.
+func MethodStrings() []string {
+	ms := make([]string, PATCH + 1)
+	for i := 0; i <= int(PATCH); i++ {
+		method := Method(i)
+		ms[i] = method.String()
+	}
+	return ms
+}
+
 var methodMap = map[string]Method{
 	"GET":     GET,
 	"HEAD":    HEAD,

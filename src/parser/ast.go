@@ -1,9 +1,11 @@
 package parser
 
 import (
+	"fmt"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/eval"
 	"github.com/alecthomas/participle/v2"
 	"github.com/alecthomas/participle/v2/lexer"
+	"strings"
 )
 
 type Null bool
@@ -336,9 +338,8 @@ type Program struct {
 var lex = lexer.MustSimple([]lexer.Rule{
 	{"comment", `//.*`, nil},
 
-	//{"StringLit", `"(\\"|[^"])*"`, nil},
 	{"StringLit", `(")([^"\\]*(?:\\.[^"\\]*)*)(")`, nil},
-	{"Method", `(GET|HEAD|POST|PUT|DELETE|CONNECT|OPTIONS|TRACE|PATCH)`, nil},
+	{"Method", fmt.Sprintf("(%s)", strings.Join(eval.MethodStrings(), "|")), nil},
 	{"While", `while\s`, nil},
 	{"For", `for\s`, nil},
 	{"Do", `\sdo\s`, nil},
