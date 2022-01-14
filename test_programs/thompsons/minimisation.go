@@ -92,14 +92,26 @@ func (ms *MergedStates) Find(find StateKeyString) (StateKeyString, *StateSetExis
 // TransitionTable represents the table of all moves from all states with the given language, including the dead state.
 // Rows represent the language input strings, and Cols represent the possible states from a DFA.
 type TransitionTable struct {
-	Table    		[][]StateKeyString
-	Rows     		int
-	Cols     		int
-	States   		[]StateKey
+	// Table is transition table itself.
+	Table           [][]StateKeyString
+	// Rows is the number of rows in the TT.
+	Rows            int
+	// Cols is the number of columns in the TT.
+	Cols            int
+	// States is an array of all states from the DFA including the DeadState.
+	States          []StateKey
+	// StateCols is a lookup for where each of the current StateKeyStrings 
+	// that span the columns of the TT are stored as column indices.
 	StateCols       map[StateKeyString]int
-	Language 		[]string
+	// Language is the possible inputs for the DFA.
+	Language        []string
+	// AcceptingStates are all the states that are accepting states. These 
+	// are found by doing a lookup within the NFA.
 	AcceptingStates StateSetExistence
+	// MergedStates is a mapping of StateKeyStrings to StateSetExistences 
+	// that indicates which states have been merged during Dead State Minimisation.
 	MergedStates    MergedStates
+	// Verbose signifies whether debugging information should be printed.
 	Verbose         bool
 }
 
