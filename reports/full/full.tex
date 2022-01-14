@@ -6,6 +6,7 @@
 \usepackage{array}
 \usepackage{minted}
 \usepackage{cprotect}
+\usepackage{caption}
 \usepackage{import}
 \usepackage[style=ieee]{biblatex}
 
@@ -120,10 +121,298 @@ I chose the participle parser generator, as it was (and still is) being actively
 
 As explained in the \hyperref[chap:motivations]{motivations introduction}, much of my professional life and pastimes involve creating and testing web APIs. Therefore, \verb|sttp| is something that I would hope to use in both domains. I plan on continuing development on \verb|sttp| in the background to add newer features that will solve issues that occur frequently in my work life. Go is also rising in popularity within the web API space, and now that I am fairly fluent in it, I hope to use it within the workplace soon.
 
-As I enjoyed learning the theory behind programming language design and engineering as much as I enjoyed creating \verb|sttp|. I hope I can make better use of this knowledge in the appropriate field of work. I have found the material covered within \textit{CS3480 Software Language Engineering}, quite eye-opening as to the number of different Domain Specific Languages (DSL), in use and in development. There is a DSL for everything from CAD 3D modelling to programming robots\textsuperscript{\cite{nordmann_hochgeschwender_wrede_2014}}. A job within this area could have work that I find rewarding and interesting.
+As I enjoyed learning the theory behind programming language design and engineering as much as I enjoyed creating \verb|sttp|. I hope I can make better use of this knowledge in the appropriate field of work. I have found the material covered within \textit{CS3480: Software Language Engineering}, quite eye-opening as to the number of different Domain Specific Languages (DSL), in use and in development. There is a DSL for everything from CAD 3D modelling to programming robots\textsuperscript{\cite{nordmann_hochgeschwender_wrede_2014}}. A job within this area could have work that I find rewarding and interesting.
 
 \chapter{Development}
 \label{chap:development}
+
+Before development began I wrote a few test programs to get back up to speed with programming in Go, as well as familiarising myself with participle.
+
+\section{Four-function calculator and participle}
+
+When declaring a \verb|struct| in Go, the programmer can encode custom annotations (tags) for each field within the structure. These can be accessed using the native \verb|reflect| package. Usually, these are used for denoting how a value will be encoded by an encoder, but can be anything. In participle, you first define the AST nodes, in the form of structures, that will be produced by the generated parser. Then embed the grammar of the language within said AST nodes as Go structure tags. This is reminiscent of an attribute grammar, but in reverse. Where you define the attributes, then implement the grammar on top of them. For instance, consider the following Go code for the \verb|Statement| AST node within the four-function calculator.
+
+\begin{figure}[H]
+    \begin{minted}{go}
+// Statement can either be an expression, variable assignment or variable clear.
+// The EBNF for this non-terminal:
+//  ( Clear | Assignment | Expression ) ( EOL | ";" | EOF )
+type Statement struct {
+    // Pointer to Clear statement node. Can be nil of not matched.
+    Clear      *Clear      `(   @@`  // "@@" denotes the capture of the type 
+                                     // of the field. In this case the Clear
+                                     // non-terminal.
+
+    // Pointer to Assignment statement node. Can be nil if not matched.
+    Assignment *Assignment `  | @@`
+
+    // Pointer to Expression statement node. Can be nil if not matched.
+    // EOL and EOF are passed into the parser from lexer.
+    // Each statement can be finished by either an EOL, semicolon or EOF.
+    Expression *Expression `  | @@ ) (EOL | ";" | EOF)`
+}
+
+// Each node implements the same Eval function signature.
+// This means each node implements an interface which defines
+// such a signature.
+// The Memory type is a map containing the current values of each defined
+// variable and is passed to each Eval function.
+func (s *Statement) Eval(ctx Memory) (float64, *Memory) {
+    // Nil switch as we have three alternates.
+    switch {
+    case s.Clear != nil:
+        s.Clear.Eval(ctx)
+        return 0, &ctx
+    case s.Assignment != nil:
+        s.Assignment.Eval(ctx)
+        return 0, &ctx
+    }
+    return s.Expression.Eval(ctx), &ctx
+}
+    \end{minted}
+    \label{fig:four-func-calc-statement-ast-node}
+    \cprotect\caption{The \verb|Statement| AST node/non-terminal from the four-function calculator test program, along with its \verb|Eval| instance method.}
+\end{figure}
+
+When defining an AST node within participle it is treated as a non-terminal within the grammar. Each field is a terminal/non-terminal that is part of the EBNF for the parent non-terminal. The EBNF for the \verb|Statement| non-terminal above would be:
+
+\begin{minted}{ebnf}
+Statement = ( Clear | Assignment | Expression ) ( EOL | ";" | EOF );
+\end{minted}
+
+\verb|Clear|, \verb|Assignment|, and \verb|Expression| are all other AST nodes/non-terminals that are defined with their own structures within the code base. Whereas, \verb|EOL|, \verb|";"|, and \verb|EOF| are tokens passed from the participle lexer. This EBNF is taken and split across all the fields within the \verb|Statement| structure by the programmer. The types of the field within AST nodes/non-terminals will either be:
+
+\begin{itemize}
+    \item Pointers to other AST nodes/non-terminals. These can also be contained within an array when used in conjunction with an EBNF repetition operator. These can be \verb|nil| if the non-terminal is not matched.
+    \item Any other type of value, which can be set by in-built tokens or custom tokens. For instance the in-built token \verb|Number| will match any integer, or floating point number and returns a pointer to a \verb|float64|.
+\end{itemize}
+
+Once the parser is generated, and an input within the language is parsed, an AST will be produced that will contain the user declared AST nodes as explained above. This means that any AST node can be given any user defined instance method (using Go's receiver syntax). For instance, in the \hyperref[fig:four-func-calc-statement-ast-node]{example above} I also defined an \verb|Eval| instance method which will recursively evaluate either the \verb|Clear| node, \verb|Assignment| node, or the \verb|Expression| node. The result of which will be returned by the \verb|Statement| node. This allows the programmer to encode the semantics of every non-terminal, and hence every AST node, for their grammar. To evaluate the AST then, you would just call the \verb|Eval| instance method on the root of the AST. This would traverse and evaluate each node within it.
+
+To encapsulate the behavior of multiple AST nodes, the programmer could define an \verb|interface| which implements the necessary instance methods for a set of AST node types. For instance, the following interface could be declared to define all AST nodes that can be evaluated.
+
+\begin{minted}{go}
+// Evaluatable defines all the AST nodes within the four-function 
+// calculator that can be evaluated.
+type Evaluatable interface {
+    Eval(ctx Memory) float64
+}
+\end{minted}
+
+This allows the programmer to enforce some sort of ambiguity within their AST, which makes the evaluation of things such as expression trees, much easier. The four-function calculator's AST nodes also implement Go's \verb|Stringer| interface which allows for the code to be pretty-printed.
+
+The four-function calculator supports expression evaluation, variable assignment and deletion, and also has an interactive Repeat-Eval-Print Loop (REPL) mode. Its grammar, semantics and pretty-printer, are all defined within the \verb|test_programs/four_func_calc/calc.go| file.
+
+\begin{figure}[H]
+    \begin{minted}{ebnf}
+(*              Tokens               *)
+(* Number     = `([0-9]*[.])?[0-9]+` *)
+(* Ident      = `[a-zA-Z_]\w*`       *)
+(* EOL        = `[\n\r]+`            *)
+(* Punct      = `[()*+-/=;]`         *)
+(* Lowercase tokens are matched but  *)
+(* are not passed to the parser      *)
+(* whitespace = `\s*`                *)
+
+(* Grammar *)
+Script     = { Statement } ;
+Statement  = ( Clear | Assignment | Expression ) (EOL | ";" | EOF) ;
+Assignment = "let" Ident "=" Expression ;
+Clear      = "clear" Ident ;
+Expression = Term { OpTerm } ;
+OpTerm     = ("+" | "-") Term ;
+Term       = Factor { Product } ;
+Product    = ("*" | "/") Factor ;
+Factor     = Number | Ident | "(" Expression ")" ;
+    \end{minted}
+    \cprotect\caption{The tokens and grammar for the four-function calculator unwrapped from the Go code.}
+\end{figure}
+
+More information on how to use the four-function calculator can be found in the \verb|README|.
+
+\section{Regex minimiser}
+
+After writing the four-function calculator implementation I decided to translate some of the algorithms and methods used within lexical analysis described by the \textit{CS3470: Compilers And Code Generation} course. I did this mainly to supplement my learning and to understand how the algorithms worked. The implementation consists of a participle attribute grammar which accepts a language of simple regular expressions. The accepted notation includes: concatenation, alternation, grouping, and Kleene Closure and is described by the following EBNF grammar:
+
+\begin{figure}[H]
+    \begin{minted}{ebnf}
+(*         Tokens        *)
+(* Punct      = `[()*|]` *)
+(* Char       = `[a-z]`  *)
+(* whitespace = `\s*`    *)
+
+(* Grammar *)
+Base = Char | "(" Regex ")" ;
+Factor = Base [ "*" ] ;
+Term = { Factor } - ;
+Regex = Term [ "|" Regex ] ;
+    \end{minted}
+    \cprotect\caption{The tokens and grammar for the regular expression parser test program unwrapped from the Go code.}
+\end{figure}
+
+The implementation minifies an input regular expression in three phases.
+
+\subsection{Thompson's Construction}
+\cprotect\textit{Source located in: \verb|test_programs/thompsons/thompsons.go|}
+
+Thompson's construction is carried out in a single traversal of the produced AST. This is done by having each AST node implement the following interface:
+
+\begin{minted}{go}
+type Thompsons interface {
+    Thompson(graph *Graph) (start State, end State)
+}
+\end{minted}
+
+The \verb|Thompsons| instance method takes a pointer to a \verb|Graph| type, which is represented as an adjacency list internally, and returns a start node and an end node. This is because each one of Thompson's constructions modifies the NFA and can also introduce a new start point and end point to the NFA. For instance, in the case of alternation (\verb+"|"+) the new start and end point will be set to the created nodes that join to the existing nodes using the epsilon transition.
+
+\begin{figure}[H]
+    \begin{minted}{go}
+// Thompson construction for a Regex symbol.
+func (r *Regex) Thompson(graph *Graph) (start State, end State) {
+    start, end = r.Term.Thompson(graph)
+    if r.Regex != nil {
+        // If the Regex symbol exists then we construct the union
+        // between the Term and the Regex symbol.
+        start2, end2 := r.Regex.Thompson(graph)
+        start, end = graph.Union(start, end, start2, end2)
+    }
+    return start, end
+}
+    \end{minted}
+    \cprotect\caption{An example taken from \verb|test_programs/thompsons/thompsons.go| showing the \verb|Thompson| instance method for the \verb|Regex| AST node/non-terminal.}
+\end{figure}
+
+In the example shown above, the \verb|Term| node will be executed first. This will produce a sub-NFA that has a start, and an end point. If the \verb|Regex| field is not nil, this means that there is an alternation (\verb+"|"+) within the regular expression. This \verb|Regex| AST node/non-terminal will first be evaluated, and the alternation/union of the two will be constructed in the \verb|Graph| (using the \verb|Union| instance method). Due to \verb|Regex| being the start non-terminal of the grammar, it is possible that this method could return the finished start and end points of the fully constructed NFA.
+
+\subsection{Subset Construction}
+\cprotect\textit{Source located in: \verb|test_programs/thompsons/subset.go|}
+
+After the NFA has been produced, the \verb|Graph| instance mentioned above is then passed to the subset construction algorithm to construct a (non-minimal) DFA. It is important to note that the \verb|AdjacencyList| type, that is used within the \verb|Graph| type, has the signature:
+
+\begin{minted}{go}
+type AdjacencyList map[StateKey][]Edge
+
+// StateKey represents the key used within AdjacencyLists.
+// It wraps both State and StateSet to provide a string key usable in maps.
+type StateKey interface {
+	// Key generates a key from a State or StateSet.
+	Key() string
+}
+\end{minted}
+
+The \verb|StateKey| interface is used within the \verb|AdjacencyList| type so that both a single state (represented as the \verb|State|), and a set of states (represented as the \verb|StateSet| type) can be easily hashed and used within Go's native \verb|map| type. This is useful when carrying out the subset construction, as it merges multiple states from the NFA into a smaller number of sets of states.
+
+Another type used extensively whilst calculating the subset construction is the \verb|StateSetExistence| type. \verb|StateSetExistence| denotes a unique set of states, and is used when calculating the possible inputs accepted by the regular expression as well as the epsilon closure.
+
+\begin{minted}{go}
+// StateSetExistence represents a unique set of States.
+type StateSetExistence map[StateKeyString]bool
+
+// NOTE: A StateKeyString is the stringified version 
+//       of a StateKey, derived using StateKey.Key.
+\end{minted}
+
+It makes use of an interesting side effect of Go's \verb|map| type. In that, when accessing a \verb|map| with a key that does not exist within the \verb|map|, the default value of the value type will be returned. The default value for \verb|bool|s is \verb|false|. This creates a succinct way of checking whether an element exists within a set.
+
+I will not be explaining how the \verb|Subset| and \verb|EClosure| instance methods for the \verb|Graph| type work, as they are effectively just implementations of the algorithms showcased in \textit{CS3470}. Their source code can be found in the \verb|test_programs/thompsons/subset.go| file.
+
+\subsection{Dead State Minimisation}
+
+Dead State minimisation requires the DFA to translated into a transition table. To do this, I first created a \verb|TransitionTable| type. This type is essentially a matrix of \verb|StateKeyString| values, so I also created a constructor (\verb|InitTT|) along with it, which takes a \verb|Graph| and returns a newly allocated \verb|TransitionTable|.
+
+\begin{figure}[H]    
+    \begin{minted}{go}
+// TransitionTable represents the table of all moves from all states with the
+// given language, including the dead state. Rows represent the language input
+// strings, and Cols represent the possible states from a DFA.
+type TransitionTable struct {
+    // Table is transition table itself.
+    Table           [][]StateKeyString
+    // Rows is the number of rows in the TT.
+    Rows            int
+    // Cols is the number of columns in the TT.
+    Cols            int
+    // States is an array of all states from the DFA including the DeadState.
+    States          []StateKey
+    // StateCols is a lookup for where each of the current StateKeyStrings 
+    // that span the columns of the TT are stored as column indices.
+    StateCols       map[StateKeyString]int
+    // Language is the possible inputs for the DFA.
+    Language        []string
+    // AcceptingStates are all the states that are accepting states. These 
+    // are found by doing a lookup within the NFA.
+    AcceptingStates StateSetExistence
+    // MergedStates is a mapping of StateKeyStrings to StateSetExistences 
+    // that indicates which states have been merged during Dead State Minimisation.
+    MergedStates    MergedStates
+    Verbose         bool
+}
+    \end{minted}
+\end{figure}
+
+\begin{figure}[H]\ContinuedFloat
+    \begin{minted}{go}
+// InitTT constructs a TransitionTable from the given Graph instance.
+func InitTT(graph *Graph, verbose bool) *TransitionTable {
+    // Setup the basic metadata for the transition table
+    // Truncated to make space...
+
+    // Then fill out the table itself
+    for i := range tt.Table {
+        tt.Table[i] = make([]StateKeyString, tt.Cols)
+        // Set each value accordingly in relation to the DFAs adjacency list.
+        for j := range tt.Table[i] {
+            if j == 0 {
+                // We insert the dead state at col 0 (the dead state)
+                tt.Table[i][j] = DeadState
+                tt.StateCols[DeadState] = 0
+            } else {
+                state := tt.States[j]
+                tt.StateCols[StateKeyString(state.Key())] = j
+                // Then we find out if the state is an accepting state by
+                // comparing the key to the NFA
+                if graph.CheckIfAccepting(state) {
+                    tt.AcceptingStates.Mark(state)
+                }
+
+                // Find out which inputs the state can accept
+                possibleInputs := make(map[string]*Edge)
+                for _, edge := range graph.DFA.Get(state) {
+                    possibleInputs[edge.Read] = &edge
+                }
+
+                // We set the transition to a dead state by default
+                tt.Table[i][j] = DeadState
+                for _, edge := range graph.DFA.Get(state) {
+                    if edge.Read == tt.Language[i] {
+                        tt.Table[i][j] = StateKeyString(edge.Ingoing.Key())
+                        break
+                    }
+                }
+            }
+        }
+    }
+    return &tt
+}
+    \end{minted}
+    \cprotect\caption{The \verb|TransitionTable| type and its constructor, that are used within the Dead State minimisation algorithm. This is taken from the \verb|test_programs/thompsons/minimisation.go| file.}
+\end{figure}
+
+The \verb|MergedStates| type is important to the execution of the Dead State minimisation algorithm. This is because it includes an instance method that can check if the given merged state differs from the instanced merged state, which is the main condition that must hold for Dead State minimisation to continue. Once this instance method returns \verb|false|, this means that Dead State minimisation is complete and the DFA is minimal.
+
+The source code for the algorithm itself is implemented as an instance method for the \verb|TransitionTable| type, and can be found in the \verb|test_programs/thompsons/minimisation.go| file.
+
+\subsection{Visualisation}
+
+As well as computing the minimal DFA, the regex minimiser also renders the each phase of the execution using the \verb|graphviz| library. This Go version of the graphviz library (\href{https://github.com/goccy/go-graphviz}{go-graphviz}) comes pre-bundled with the C code for graphviz, which will be compiled through Go's compiler using the default C compiler on the target machine. Each time the regex minimiser is called it produces six output files:
+
+\begin{itemize}
+    \item \verb|thomspons.png| and \verb|thompsons.dot|: the NFA after carrying out Thompson's construction. \verb|thomspons.dot| is a text file containing code written in graphviz's DSL that can be passed to the graphviz executable to render the NFA. This is the same with the other \verb|*.dot| files below.
+    \item \verb|subset.png| and \verb|thompsons.dot|: the non-minimal DFA produced by the subset construction.
+    \item \verb|deadstate.png| and \verb|deadstate.dot|: the minimal DFA produced by the Dead State minimisation algorithm.
+\end{itemize}
+
+More information on how to run the regex minimiser can be found in the \verb|README|.
 
 \section{The Grammar and the AST}
 
