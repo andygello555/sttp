@@ -1589,6 +1589,8 @@ The VM keeps an array of the results to all the evaluated test statements in the
 
 A test statement AST node can lie anywhere within a Block AST node, and there can be as many test statements as the user wants within the entire source code. The expression after a test statement \textbf{must exist}, otherwise a parse error will occur.
 
+If a test statement is evaluated within a script that is not executed as a part of a TestSuite, a `temporary' set of TestResults will be created for the duration of the script. This will be used to store the result of any subsequent test statement, so that an error need not be thrown.
+
 \subsection{Execution}
 
 When executing a test suite, the directory structure will be walked in no particular order. Each time a new directory occurs within the current directory, new suite will be created, with the config parameters used to create the current suite, and linked back up to its parent test suite. Each time an sttp source code file is found (\verb|*.sttp|), a new VM is created with the stdout, stderr, and debug file handlers passed to the test suite.

@@ -48,7 +48,9 @@ func (p *protoEvalNode) String(indent int) string { return p.stringMethod(indent
 // GetPos calls the stored getPosMethod.
 func (p *protoEvalNode) GetPos() lexer.Position { return p.getPosMethod() }
 
-// tEval evaluates an AST node which implements the term interface.
+// tEval evaluates an AST node which implements the term interface. This is done by first evaluating the left evalNode 
+// and then iterating over all right-hand factors, using eval.Compute to compute the result of each operand and 
+// accumulating the value in the data.Value that is returned.
 func tEval(t term, vm VM) (err error, result *data.Value) {
 	vm.SetPos(t.GetPos())
 	err, result = t.left().Eval(vm)
