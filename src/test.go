@@ -119,6 +119,8 @@ func (ts *TestSuite) CheckPass() bool {
 	return passed
 }
 
+// String will return an indented output representing the entire directory structure of the TestSuite. Should not be 
+// called before Run has been called.
 func (ts *TestSuite) String() string {
 	var b strings.Builder
 	tabs := strings.Repeat("\t", ts.NestLevel)
@@ -184,6 +186,7 @@ func (ts *TestSuite) Run(stdout io.Writer, stderr io.Writer, debug io.Writer) er
 	}
 }
 
+// TestConfig is passed to a TestSuite to describe which features are enabled within the TestSuite.
 type TestConfig struct {
 	BreakOnFailure bool
 }
