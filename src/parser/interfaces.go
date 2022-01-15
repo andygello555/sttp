@@ -25,6 +25,7 @@ type VM interface {
 	GetScope() *int
 	GetParentStatement() interface{}
 	CheckTestResults() bool
+	CreateTestResults()
 	GetTestResults() TestResults
 	GetStdout() io.Writer
 	GetStderr() io.Writer
