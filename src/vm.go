@@ -112,6 +112,13 @@ func (vm *VM) CheckTestResults() bool {
 	return vm.TestResults != nil
 }
 
+func (vm *VM) CreateTestResults() {
+	vm.TestResults = &TestResults{
+		Results: make([]*TestResult, 0),
+		Config:  defaultTestConfig,
+	}
+}
+
 func (vm *VM) GetTestResults() parser.TestResults {
 	return vm.TestResults
 }
