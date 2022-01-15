@@ -196,3 +196,8 @@ func (tc *TestConfig) Get(name string) interface{} {
 	}
 	return field.Interface()
 }
+
+// defaultTestConfig should be used as the default config for TestSuites.
+var defaultTestConfig = &TestConfig{
+	BreakOnFailure: false,
+} 

@@ -239,31 +239,62 @@ func (m *MethodCall) Eval(vm VM) (err error, result *data.Value) {
 	}
 }
 
+//func (t *TestStatement) Eval(vm VM) (err error, result *data.Value) {
+//	vm.SetPos(t.GetPos())
+//	if vm.CheckTestResults() {
+//		// We defer the addition of the test to simplify the logic within this node a bit
+//		passed := false
+//		defer func() {
+//			vm.GetTestResults().AddTest(t, passed)
+//		}()
+//
+//		if err, result = t.Expression.Eval(vm); err == nil {
+//			if result.Type != data.Boolean {
+//				if err, result = eval.Cast(result, data.Boolean); err != nil {
+//					return errors.UpdateError(err, vm), nil
+//				}
+//			}
+//
+//			passed = result.Value.(bool) == true
+//			// If the test has not passed and the BreakOnFailure flag has been set in the TestConfig, then we'll set the 
+//			// error to FailedTest.
+//			if vm.GetTestResults().GetConfig().Get("BreakOnFailure").(bool) && !passed {
+//				err = errors.FailedTest
+//			}
+//		}
+//	} else {
+//		err = errors.NoTestSuite.Errorf(vm, t.String(0))
+//	}
+//	return err, result
+//}
+
 func (t *TestStatement) Eval(vm VM) (err error, result *data.Value) {
 	vm.SetPos(t.GetPos())
+	// If we don't have any TestResults, this means that we are not running in a test suite. We still want to create 
+	// TestResults to store results in just for this script.
+	if !vm.CheckTestResults() {
+		vm.CreateTestResults()
+	}
+
 	// We defer the addition of the test to simplify the logic within this node a bit
-	if vm.CheckTestResults() {
-		passed := false
-		defer func() {
-			vm.GetTestResults().AddTest(t, passed)
-		}()
+	passed := false
+	defer func() {
+		vm.GetTestResults().AddTest(t, passed)
+	}()
 
-		if err, result = t.Expression.Eval(vm); err == nil {
-			if result.Type != data.Boolean {
-				if err, result = eval.Cast(result, data.Boolean); err != nil {
-					return errors.UpdateError(err, vm), nil
-				}
-			}
-
-			passed = result.Value.(bool) == true
-			// If the test has not passed and the BreakOnFailure flag has been set in the TestConfig, then we'll set the 
-			// error to FailedTest.
-			if vm.GetTestResults().GetConfig().Get("BreakOnFailure").(bool) && !passed {
-				err = errors.FailedTest
+	if err, result = t.Expression.Eval(vm); err == nil {
+		if result.Type != data.Boolean {
+			if err, result = eval.Cast(result, data.Boolean); err != nil {
+				return errors.UpdateError(err, vm), nil
 			}
 		}
-	} else {
-		err = errors.NoTestSuite.Errorf(vm, t.String(0))
+
+		passed = result.Value.(bool) == true
+		// If the test has not passed and the BreakOnFailure flag has been set in the TestConfig, then we'll set the 
+		// error to FailedTest.
+		if vm.GetTestResults().GetConfig().Get("BreakOnFailure").(bool) && !passed {
+			err = errors.FailedTest
+		}
 	}
 	return err, result
 }

@@ -31,6 +31,7 @@ type example struct {
 	script string
 	stdout string
 	stderr string
+	tests  string
 	heap   *data.Heap
 }
 
@@ -80,6 +81,8 @@ func init() {
 								e.stdout = string(fileBytes)
 							case ".stderr":
 								e.stderr = string(fileBytes)
+							case ".tests":
+								e.tests = string(fileBytes)
 							}
 						}
 					}
@@ -119,6 +122,27 @@ func BenchmarkParse(b *testing.B) {
 	}
 }
 
+func checkOut(key string, e *example, vm *VM) (ok bool, actual string, expected string) {
+	switch key {
+	case "stdout":
+		actual = vm.Stdout.(*strings.Builder).String()
+		if e.stdout == "" { break }
+		return e.stdout == actual, actual, e.stdout
+	case "stderr":
+		actual = vm.Stderr.(*strings.Builder).String()
+		if e.stderr == "" { break }
+		return e.stderr == actual, actual, e.stderr
+	case "tests":
+		if !vm.CheckTestResults() { break }
+		actual = vm.TestResults.String(0)
+		if e.tests == "" { break }
+		return e.tests == actual, actual, e.tests
+	default:
+		return false, "", ""
+	}
+	return true, actual, expected
+}
+
 func TestVM_Eval(t *testing.T) {
 	skip := []int{}
 	skipPtr := 0
@@ -137,28 +161,24 @@ func TestVM_Eval(t *testing.T) {
 				fmt.Println(testNo + 1, "vm Eval:", err, result)
 			}
 
-			// If the example's stdout field is not empty then we'll check if it matches the actual stdout
-			if e.stdout != "" {
-				if stdout.String() != e.stdout {
+			// For each output that a test we can produce, we check if there is an expected output for it. If there is,
+			// then we check if the actual output of that kind matches the expected output for that kind. If not, we 
+			// error.
+			for _, output := range []string{"stdout", "stderr", "tests"} {
+				ok, actual, expected := checkOut(output, e, vm)
+				if !ok {
 					if testing.Verbose() {
 						fmt.Println()
 						fmt.Println()
 						fmt.Println(">>>>>>>", testNo+1, e.name)
-						fmt.Println(e.stdout)
+						fmt.Println(expected)
 						fmt.Println("=========================== VS ===============================")
-						fmt.Println(stdout.String())
+						fmt.Println(actual)
 						fmt.Println()
 					}
 					if t != nil {
-						t.Errorf("example %d's stdout does not match the expected stdout", testNo+1)
+						t.Errorf("example %d's %s does not match the expected %s", testNo+1, output, output)
 					}
-				}
-			}
-
-			// Same for stderr
-			if e.stderr != "" {
-				if stderr.String() != e.stderr {
-					t.Errorf("example %d's stderr does not match the expected stderr", testNo+1)
 				}
 			}
 
