@@ -14,41 +14,36 @@ import (
 
 // VM represents the current state of the sttp virtual machines.
 type VM struct {
-	// Symbols contains the symbols for global variables and functions.
-	Symbols         *data.Heap
 	// Pos is the current position of the interpreter. This is used when throwing errors.
-	Pos             lexer.Position
-	// Scope is the current scope that the VM is in.
-	Scope           int
-	// ParentStatement is a pointer to the first parent of the currently evaluated node.
-	ParentStatement interface{}
+	Pos          lexer.Position
+	// Scope is the current scope that the VM is in. It is used to check if a data.Value should be defined as global.
+	Scope        int
 	// CallStack contains the current call stack state.
-	CallStack       *CallStack
+	CallStack    *CallStack
 	// TestResults contains the tests that have been run.
-	TestResults     *TestResults
+	TestResults  *TestResults
 	// Stdout is the io.Writer written to for print calls.
-	Stdout          io.Writer
+	Stdout       io.Writer
 	// Stderr is the io.Writer written to for error calls.
-	Stderr			io.Writer
+	Stderr		 io.Writer
 	// Debug is the io.Writer to write debugging information to. If this is ioutil.Discard then there will be no 
 	// debugging information written (or evaluated).
-	Debug           io.Writer
+	Debug        io.Writer
 	// The BatchSuite used for parser.Batch statements. If nil then the VM is not currently in a parser.Batch statement.
-	Batch           parser.BatchSuite
-	BatchResults    heap.Interface
+	Batch        parser.BatchSuite
+	// BatchResults contains the results of the executed BatchSuite. If nil then the VM is not currently in a 
+	// parser.Batch statement, or the BatchSuite has not yet been executed.
+	BatchResults heap.Interface
 }
 
 func New(testResults *TestResults, stdout io.Writer, stderr io.Writer, debug io.Writer) *VM {
-	h := make(data.Heap)
 	cs := make(CallStack, 0)
 
 	if stdout == nil { stdout = os.Stdout }
 	if stderr == nil { stderr = os.Stderr }
 	if debug  == nil { debug  = ioutil.Discard }
 	return &VM{
-		Symbols: &h,
 		Scope: 0,
-		ParentStatement: nil,
 		CallStack: &cs,
 		TestResults: testResults,
 		Stdout: stdout,
@@ -80,10 +75,6 @@ func (vm *VM) Eval(filename, s string) (err error, result *data.Value) {
 	return program.Eval(vm)
 }
 
-func (vm *VM) GetSymbols() *data.Heap {
-	return vm.Symbols
-}
-
 func (vm *VM) GetPos() lexer.Position {
 	return vm.Pos
 }
@@ -94,10 +85,6 @@ func (vm *VM) SetPos(position lexer.Position) {
 
 func (vm *VM) GetScope() *int {
 	return &vm.Scope
-}
-
-func (vm *VM) GetParentStatement() interface{} {
-	return vm.ParentStatement
 }
 
 func (vm *VM) GetCallStack() parser.CallStack {
