@@ -8,6 +8,7 @@ import (
 	"strings"
 )
 
+// Heap stores variable values on a stack frame.
 type Heap map[string]*Value
 
 // Exists will check whether the variable of the given name is on the heap.
@@ -51,6 +52,9 @@ func (h *Heap) Get(name string) *Value {
 	return (*h)[name]
 }
 
+// Value represents a value stored on the Heap. It can take any value that is capable of being marshalled to JSON. The
+// Global flag indicates whether to reference the Value on all frames that are added to the stack. The ReadOnly flag
+// indicates whether or not the value is mutable.
 type Value struct {
 	Value    interface{} `json:"value"`
 	Type     Type        `json:"type"`
@@ -115,6 +119,7 @@ func ConstructSymbol(value interface{}, global bool) (err error, symbol *Value) 
 	}
 }
 
+// Type denotes the type of a value. It is defined by a set of constants.
 type Type int
 
 func (t *Type) Get(value interface{}) (err error) {
@@ -157,8 +162,10 @@ const (
 	// Array is a standard JSON array.
 	Array
 	String
+	// Number can be either floating point or an integer.
 	Number
 	Boolean
+	// Null is a falsy value that indicates nothing.
 	Null
 	// Function cannot be stored in a variable per-say but is put on the heap as a symbol. A symbol which has a Function
 	// type has a value which points to a FunctionBody struct.

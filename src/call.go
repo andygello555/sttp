@@ -69,7 +69,7 @@ func (cs *CallStack) Call(caller *parser.FunctionCall, current *parser.FunctionD
 		},
 	})
 
-	// We only do this if this isn't our last stack frame
+	// We only do this if this isn't our first stack frame
 	if caller != nil && current != nil {
 		params := current.Body.Parameters
 		previous := (*cs)[len(*cs) - 2]
@@ -115,18 +115,13 @@ func (cs *CallStack) Call(caller *parser.FunctionCall, current *parser.FunctionD
 				return err
 			}
 
-			var pathVal *data.Value
-			if path[0].(string) == "self" {
-				pathVal = heap.Get("self")
-			} else {
-				// If the root property doesn't exist on the heap then we will create a null value
-				if !heap.Exists(path[0].(string)) {
-					if err = heap.Assign(path[0].(string), nil, false, false); err != nil {
-						return err
-					}
+			// If the root property doesn't exist on the heap then we will create a null value
+			if !heap.Exists(path[0].(string)) {
+				if err = heap.Assign(path[0].(string), nil, false, false); err != nil {
+					return err
 				}
-				pathVal = heap.Get(path[0].(string))
 			}
+			pathVal := heap.Get(path[0].(string))
 
 			// Then finally we set the value of the *data.Value
 			if err, pathVal.Value = path.Set(vm, pathVal.Value, val.Value); err != nil {
