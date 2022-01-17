@@ -356,6 +356,7 @@ If the function call is to a user-defined function within the AST. The arguments
 If the function call is to a builtin or is a HTTP method call, then no stack frame is allocated. The corresponding Golang code is executed instead. At the beginning of each sttp program an initial stack frame is assigned which points to nil for both FunctionCall and FunctionDefinition pointers.
 
 \subsection{Heap}
+\label{sec:function-heap}
 
 Along with these pointers a new heap is assigned. This contains a mapping of variable names to sttp values. All values defined as a global variable from the previous stack frame are copied over to the new stack stack frame. Each argument is assigned to the JSONPath defined in the function's parameters and placed on this heap. If there is no argument for a defined function parameter, then that parameter will be set to `null'. If there are more arguments provided then there are parameters, then a MoreArgsThanParams error is thrown. A `self' value is also placed on the heap which contains the value pointed to by the root property of the JSONPath of the function. This value is defined as global, the reason for which will be discussed later. For instance:
 
