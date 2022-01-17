@@ -63,7 +63,7 @@ This will parse the given input regex and produce the following files (in the cu
 
 *Located in: `test_programs/test-web-api/`*<br/>
 
-A simple node.js based web API server which echoes back information about any HTTP request made to it. This was created in order to have a web-API for testing `sttp` with.<br/>
+A simple node.js based web API server which echoes back information about any HTTP request made to it. This was created in order to have a web-API for testing `sttp` with. If the query param `format=html` is provided in the request then the response will be a mirror of the JSON response but will be returned as HTML. The server is forked 6 times creating 6 worker processes to create a rudimentary form of load balancing. This is in the hope that multiple requests can be handled at once.<br/>
 
 The following are examples of some requests and responses:
 
@@ -110,6 +110,43 @@ POST 127.0.0.1:3000/helloworld {"hello": "world"}
     "url": "http://127.0.0.1:3000/helloworld",
     "version": "1.1"
 }
+```
+
+```
+GET 127.0.0.1:3000/api/hello?format=html
+
+<html lang="en">
+    <head>
+        <title>GET: http://127.0.0.1:3000/api/hello?format=html</title>
+    </head>
+    <body>
+        <h1>GET: http://127.0.0.1:3000/api/hello?format=html</h1>
+        <div>
+            <ul>
+                <li>method: GET</li>
+                <li>url: http://127.0.0.1:3000/api/hello?format=html</li>
+                <li>
+                    query_params:
+                    <ul>
+                        <li>format: html</li>
+                    </ul>
+                </li>
+                <li>
+                    headers:
+                    <ul>
+                        <li>host: 127.0.0.1:3000</li>
+                        <li>user-agent: HTTPie/2.6.0</li>
+                        <li>accept-encoding: gzip, deflate</li>
+                        <li>accept: */*</li>
+                        <li>connection: keep-alive</li>
+                    </ul>
+                </li>
+                <li>code: null</li>
+                <li>version: 1.1</li>
+            </ul>
+        </div>
+    </body>
+</html>
 ```
 
 #### Prerequisites
