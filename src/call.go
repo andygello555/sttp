@@ -147,33 +147,6 @@ func (cs *CallStack) Return(vm parser.VM) (err error, frame parser.Frame) {
 	frame = (*cs)[len(*cs) - 1]
 	(*cs)[len(*cs) - 1] = nil
 	*cs = (*cs)[:len(*cs) - 1]
-
-	if len(*cs) > 0 {
-		heap := cs.Current().GetHeap()
-		// Copy the globals back to the current stack frame
-		for name, val := range *frame.GetHeap() {
-			if val.Global {
-				// If the variable is self we'll copy back the value into the variable denoted by the root property of the 
-				// old frame's JSONPath.
-				if name == "self" {
-					var path parser.Path
-					if err, path = frame.GetCurrent().JSONPath.Convert(vm); err != nil {
-						return err, frame
-					}
-					name = path[0].(string)
-
-					if debug, ok := vm.GetDebug(); ok {
-						_, _ = fmt.Fprint(debug, "SELF: ")
-					}
-				}
-				(*heap)[name].Value = val.Value
-
-				if debug, ok := vm.GetDebug(); ok {
-					_, _ = fmt.Fprintf(debug, "copying back %s to %s in function %s\n", name, val.String(), frame.GetCurrent().JSONPath.String(0))
-				}
-			}
-		}
-	}
 	return nil, frame
 }
 
