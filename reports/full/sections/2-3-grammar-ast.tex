@@ -1,0 +1,283 @@
+\section{The Grammar and the AST}
+
+\begin{center}
+    \textbf{Diary Entry}\\[0.5em]
+    \textit{``This week I focussed on writing up the grammar for my interpreted programming language. I ended starting the write-up of a grammar and semantics specification as well as the grammar implementation within the participle parser generator. The specification can be found in the reports directory and the go implementation can be found in the src directory. Even though this counts as one of my test programs it will become a part of my finished product, hence why it is located in src."}\\[0.5em]
+    \tiny{3:33 pm on October 24, 2021}
+\end{center}
+
+After creating the test programs described above, I moved onto starting a formal specification for the programming language. In particular the grammar of the language. The majority of the syntax is based on the syntax of Lua \textsuperscript{\cite{lua_syntax_specification}}. The syntax has been heavily modified in order to make it use tail recursion and some of the other constructs within the language, such as JSONPath and HTTP request methods. It also differs from the Lua syntax specification, as the 5 levels of operator precedence are encoded into the grammar itself. Whereas, Lua's operator precedence is evaluated after parsing. This decision was made after writing a report on \textit{`The use derivation rules, and grammar idioms to capture notions of associativity and precedence in arithmetic expressions'}.
+
+\begin{figure}[H]
+    \begin{verbatim}
+# Tokens passed to the parser
+Number    = `[-+]?(\d*\.)?\d+'
+StringLit = `(")([^"\\]*(?:\\.[^"\\]*)*)(")'
+Ident     = `[a-zA-Z_]\w*'
+Method    = `(GET|HEAD|POST|PUT|DELETE|OPTIONS|PATCH)'
+While     = `while\s'
+For       = `for\s'
+Do        = `\sdo\s'
+This      = `this\s'
+Break     = `break'
+Then      = `\sthen\s'
+End       = `end'
+Function  = `function\s'
+Return    = `return'
+Throw     = `throw'
+If        = `if\s'
+Elif      = `elif\s'
+Else      = `else\s'
+Catch     = `catch\s'
+Test      = `test\s'
+In        = `\sin\s'
+As        = `\sas\s'
+True      = `true'
+False     = `false'
+Null      = `null'
+Batch     = `batch\s'
+Try       = `try\s'
+Operators = `\|\||&&|<=|>=|!=|==|[-+*/%=!<>]'
+Punct     = `[$;,.(){}:]|\[|\]'
+# Ignored tokens
+comment    = `//.*'
+whitespace = `\s+'
+    \end{verbatim}
+    
+    All capitalised symbols are tokens that are passed from the lexical analyser to the parser. Whereas, the uncapitalised symbols are read by the lexical analyser and ignored by the parser.
+\end{figure}
+
+\begin{figure}[H]\ContinuedFloat
+    \begin{minted}{ebnf}
+Program  = Block ;
+Block    = { [ Stmt ] ";" } [ RetStmt | ThrwStmt ] ;
+Stmt     = Ass
+            | FuncCall
+            | MethCall
+            | Break
+            | Test Exp
+            | While Exp Do Block End
+            | For Ass ";" Exp [ ";" Ass ] Do Block End
+            | For Ident [ "," Ident ] In Exp Do Block End
+            | Batch This Block End
+            | Try This Block Catch As Ident Then End
+            | Function JSONPath FuncBody
+            | If Exp Then Block { ElifSeg } [ ElseSeg ] End ;
+
+Ass      = JSONPath "=" Exp ;
+ElifSeg  = Elif Exp Then Block ;
+ElseSeg  = Else Block ;
+
+(* JSON Path *)
+JSONPath = Part { "." Part } ;
+Part     = Ident { "[" Exp "]" } ;
+
+(* Return and Throw statements can only come at the end of a block *)
+RetStmt  = Return [ Exp ] ";" ;
+ThrwStmt = Throw [ Exp ] ";" ;
+
+(* Function calls and Method calls must be prefixed by a dollar sign *)
+FuncCall = "$" JSONPath Args ;
+MethCall = "$" Method Args ;
+FuncBody = "(" [Params] ")" Block End ;
+Params   = JSONPath { "," JSONPath } ;
+Args     = "(" [ExpList] ")" ;
+ExpList  = Exp { "," Exp } ;
+
+(* Our "arithmetic expressions" have 5 levels of precedence *)
+(* "||": lowest precedence *)
+Exp      = Prec5T { Prec5 } ;
+Prec5    = Prec5Op Prec5T ;
+Prec5Op  = "||" ;
+
+(* "&&": 2nd lowest precedence *)
+Prec5T   = Prec4T { Prec4 } ;
+Prec4    = Prec4Op Prec4T ;
+Prec4Op  = "&&" ;
+
+(* "==" and "!=": 3rd lowest precedence *)
+Prec4T   = Prec3T { Prec3 } ;
+Prec3    = Prec3Op Prec3T ;
+Prec3Op  = "==" | "!=" ;
+
+(* "<", ">", "<=", and ">=": 4th lowest precedence *)
+Prec3T   = Prec2T { Prec2 } ;
+Prec2    = Prec2Op Prec2T ;
+Prec2Op  = "<" | ">" | "<=" | ">=" ;
+    \end{minted}
+\end{figure}
+
+\begin{figure}[H]\ContinuedFloat
+    \begin{minted}{ebnf}
+(* "+" and "-": 5th lowest precedence *)
+Prec2T   = Prec1T { Prec1 } ;
+Prec1    = Prec1Op Prec1T ;
+Prec1Op  = "+" | "-" ;
+
+(* "*", "/", and "%": Highest precedence *)
+Prec1T   = Factor { Prec0 } ;
+Prec0    = Prec0Op Factor ;
+Prec0Op  = "*" | "/" | "%" ;
+
+(* The factors are our base values *)
+Factor   = Null
+            | False
+            | True
+            | Number
+            | StringLit
+            | JSONPath
+            | JSON
+            | FuncCall
+            | MethodCall
+            | "(" Exp ")" ;
+
+(* JSON literal *)
+JSON     = Object | Array ;
+Object   = "{" [ Members ] "}" ;
+Members  = Pair { "," Pair } ;
+Pair     = Exp ":" Exp ;
+Array    = "[" [ ExpList ] "]" ;
+    \end{minted}
+    \cprotect\caption{The Tokens and Grammar of \verb|sttp|}
+\end{figure}
+
+After defining the grammar, I started manipulating it into AST nodes so that participle could generate a parser for the language. Below is a summary of all AST nodes and what they denote within the grammar. For a more in-depth description of the semantics of the grammar, see the \hyperref[appendix:sttp-specification]{specification}.
+
+\begin{enumerate}
+    \item \verb|JSON|: JSON literal.
+    \begin{enumerate}
+        \item \verb|Object|: JSON Object within a JSON literal.
+        \begin{enumerate}
+            \item \verb|Pair|: a key-value pair within an \verb|Object|.
+        \item \verb|Array|: JSON Array within a JSON literal.
+        \end{enumerate}
+    \end{enumerate}
+    \item \verb|Factor|: base factor within an expression. Can be one of the following:
+    \begin{itemize}
+        \item \verb|Null|: token that matches \verb|null|.
+        \item \verb|Boolean|: token that matches \verb|true| or \verb|false|, setting a flag.
+        \item \verb|Number|: floating point or integer number stored in a \verb|float64|.
+        \item \verb|StringLit|: a string literal, stored in a \verb|string|.
+        \item \verb|JSONPath|: pointer to a JSONPath AST node. This will get a value pointed to by the JSONPath.
+        \item \verb|JSON|: pointer to a JSON AST node.
+        \item \verb|FunctionCall|: pointer to a FunctionCall AST node. The return value of the function will be used within the expression.
+        \item \verb|MethodCall|: pointer to a MethodCall AST node. The response of the HTTP request will be used within the expression.
+        \item \verb|SubExpression|: pointer to an inner Expression AST node. Parenthesised sub-expression.
+    \end{itemize}
+    \item \verb|PrecNTerm| where \verb|N| is $1-5$: denotes a left hand branch, and right hand branche\textbf{s}, of an expression at the precedence level \verb|N|. Operator precedence from high to low is as follows:
+    \begin{enumerate}
+        \item \verb|*|, \verb|/|, \verb|%|: Multiplication, division, and modulus.
+        \item \verb|+|, \verb|-|: Addition and subtraction.
+        \item \verb|<|, \verb|>|, \verb|<=|, \verb|>=|: Less than, greater than, less than or equal to, and greater than or equal to.
+        \item \verb|!=|, \verb|==|: Not equal and equal. \textbf{Arithmetic operators and logical operators share expression trees}, this is because \verb|sttp| will employ casting for these operations.
+        \item \verb|&&|: Logical AND.
+        \item \verb+||+: Logical OR.
+    \end{enumerate}
+    \item \verb|PrecN| where \verb|N| is $0-5$: denotes the right-hand side of a sub-expression, including the operator for that sub-expression.
+    \item \verb|Expression|: represents the AST node at the top level of an expression. Grammatically, this is equal to the \verb|PrecNTerm|s described above.
+    \item \verb|FunctionBody|: represents the parameters and body of a function definition. Parameters are comma-separated JSONPath AST nodes. The body of a function is described by a Block AST node.
+    \item \verb|MethodCall|: represents a HTTP request using the method after the prefix dollar sign. MethodCalls are syntactically identical to FunctionCalls but the only supported callables are:
+    \begin{itemize}
+        \item \verb|GET|: Does not take a request body.
+        \item \verb|HEAD|: Does not take a request body.
+        \item \verb|OPTIONS|: Does not take a request body.
+        \item \verb|POST|: Takes a request body.
+        \item \verb|PUT|: Takes a request body.
+        \item \verb|DELETE|: Takes a request body.
+        \item \verb|PATCH|: Takes a request body.
+    \end{itemize}
+    \item \verb|FunctionCall|: any JSONPath can be `called'. Arguments are pointer to Expression AST nodes.
+    \item \verb|ReturnStatement|: denotes a \verb|return| statement that can only be used at the end of a Block. The return value is optional, if not given, \verb|null| is returned.
+    \item \verb|ThrowStatement|: denotes a \verb|throw| statement that can only be used at the end of a Block. The value being thrown is optional, if not given, \verb|null| is returned.
+    \item \verb|TestStatement|: used to test an expression for a truthy value. Primarily, this is used within a directory of test scripts, but can also be used within individual scripts.
+    \item \verb|JSONPath|: used to get the value given at the given JSONPath. It is constructed from Parts separated by `\verb|.|'.
+    \begin{enumerate}
+        \item \verb|Part|: represents a property within a JSONPath, that can be followed by any number of indices.
+        \begin{enumerate}
+            \item \verb|Index|: can either be square brackets surrounding an Expression, evaluated to a String, or a Number. Can also be a filter Block, which is a Block AST node executed on each node within the current level of the value that the JSONPath is accessing. If the Block returns a truthy value for that node, then that node will be added to the result Array.
+        \end{enumerate}
+    \end{enumerate}
+    \item \verb|Statement|: a statement exists within a Block and can be one of the following:
+    \begin{enumerate}
+        \item \verb|Assignment|: setting the JSONPath on the LHS to the Expression on the RHS.
+        \item \verb|FunctionCall|: the return value from a function call.
+        \item \verb|MethodCall|: the response from HTTP request.
+        \item \verb|Break|: the break keyword. Breaks out of any loop.
+        \item \verb|TestStatement|: a test statement.
+        \item \verb|While|: a while loop. Checks a condition and evaluates a Block.
+        \item \verb|For|: an `old style' for loop. Define an iterator value, a predicate, and an assignment to carry out at the end of each iteration.
+        \item \verb|ForEach|: a `new style' for-each loop. Two iterator values can be defined for key-value iteration.
+        \item \verb|Batch|: executes all MethodCalls within it concurrently.
+        \item \verb|TryCatch|: try-catch-as structure. The error caught in \verb|try| will be stored in an identifier and not a JSONPath.
+        \item \verb|FunctionDefinition|: define a function that will be stored in the given JSONPath with the given FunctionBody.
+        \item \verb|IfElifElse|: a conventional if-elif-else statement for control flow.
+    \end{enumerate}
+    \item \verb|Block|: a list (or `block') or Statements, each of which must be terminated with a semicolon. A ReturnStatement or ThrowStatement can be added at the end of a Block.
+    \item \verb|Program|: the start non-terminal of the grammar. Matches a Block.
+\end{enumerate}
+
+The implementation of the AST within Go will be skipped as this has been discussed extensively when discussing the \hyperref[sec:four-function-calc]{four-function calculator} test program. The type definitions for each AST node within \verb|sttp| can be found within \verb|src/parser/ast.go|. However, an interesting feature to note is that any AST node type definition can be given a \verb|Pos lexer.Position| field. This will automatically be populated by the position (filename, line, column) of that non-terminal within the input.
+
+I found that defining the behaviour of each AST node sequentially, allowed me to create examples for that AST node easily. This allowed me to thoroughly test the behaviour of each AST node.
+
+\subsection{Pretty-printer}
+
+\begin{center}
+    \textbf{Git commit}
+    \begin{minted}{markdown}
+Language spec: String() referrers + grammar tweaks
+- Had to tweak grammar some more as well as lexer regex (21/10/2021 - 22:23:07)
+- Modified grammar rules in spec as well (21/10/2021 - 22:23:30)
+- One tweak was adding a 'set' string before assignments so that the grammar
+  can be parsed with a lookahead of 2 (21/10/2021 - 22:25:17)
+- Wrote a prelimenary example to do a little test (21/10/2021 - 22:25:40)
+- Added a test so that I could visualise parse (21/10/2021 - 22:26:00)
+- Added string.go file which has referrers for symbol structs to enable the
+  printing of the structure of a program (21/10/2021 - 22:26:38)
+    \end{minted}
+    \vspace{-1em}
+    \tiny{October 21, 2021}
+\end{center}
+
+Before starting on the implementation of the interpreter itself, I first created a pretty-printer for the AST. This is done in a similar way as to the one used in the \hyperref[sec:four-function-calc]{four-function calculator}. However, rather than implementing Go's native \verb|Stringer| interface, I implement my own interface:
+
+\begin{minted}{go}
+type indentString interface {
+    String(indent int) string
+}
+\end{minted}
+
+The \verb|String| instance method takes the level of indentation to apply to the node. This is so statements such as \verb|IfElifElse|, \verb|While|, \verb|For|, etc. can be indented properly. Then when stringing an inner \verb|Block|, \verb|indent| can be incremented to visually indent that block, such as the following for the \verb|TryCatch| statement.
+
+\begin{minted}{go}
+func (tc *TryCatch) String(indent int) string {
+    // tabs is a function which returns the given number as "\t" chars
+    return fmt.Sprintf(
+        "%stry this\n%s%scatch as %s then\n%s%send",
+        tabs(indent),
+        tc.Try.String(indent + 1),
+        tabs(indent),
+        *tc.CatchAs,
+        tc.Caught.String(indent + 1),
+        tabs(indent),
+    )
+}
+\end{minted}
+
+These \verb|String| instance methods can be found in the \verb|src/parser/string.go| file. The pretty-printer allowed me to debug some of the early mistakes within the grammar and AST nodes. This test case is \verb|TestParse| and is located within \verb|src/main_test.go|.
+
+\subsection{A problem with the grammar}
+
+\begin{center}
+    \textbf{Diary Entry}\\[0.5em]
+    \cprotect\textit{``Just found a mistake within the sttp grammar. The non-terminal for function calls is: \verb|JSONPath "(" (@@ ( "," @@ )*)? ")"|, and the non-terminal for variable access is: \verb|JSONPath|. Because both function calls and variable access can both derive a Factor within an expression this leads to function calls being misidentified as function calls. To fix this I added a ``\verb|$|" token as syntactic sugar before the JSONPath for function calls so that there is no clash between the two non-terminals."}\\[0.5em]
+    \tiny{5:05 pm on December 8, 2021}
+\end{center}
+
+As described by the diary entry above. There was a mistake within the grammar for the non-terminals: \verb|FunctionCall| and \verb|JSONPath|. This mistake lead to a $FIRST$ set clash, which lead to FunctionCalls being parsed as JSONPaths within Expressions, as both can derive Factor. To solve this, I added `\verb|$|' as a suffix for FunctionCalls (and MethodCalls for consistency), which solves the $FIRST$ set clash.
+
+Solving this also allowed me to change the grammar of assignment statements. The original grammar for \verb|Assignment| was:
+
+\begin{minted}{ebnf}
+Assignment = "set" JSONPath "=" Expression ;
+\end{minted}

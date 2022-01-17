@@ -1,0 +1,102 @@
+\section{Four-function calculator and participle}
+\label{sec:four-function-calc}
+
+When declaring a \verb|struct| in Go, the programmer can encode custom annotations (tags) for each field within the structure. These can be accessed using the native \verb|reflect| package. Usually, these are used for denoting how a value will be encoded by an encoder, but can be anything. In participle, you first define the AST nodes, in the form of structures, that will be produced by the generated parser. Then embed the grammar of the language within said AST nodes as Go structure tags. This is reminiscent of an attribute grammar, but in reverse. Where you define the attributes, then implement the grammar on top of them. For instance, consider the following Go code for the \verb|Statement| AST node within the four-function calculator.
+
+\begin{figure}[H]
+    \begin{minted}{go}
+// Statement can either be an expression, variable assignment or variable clear.
+// The EBNF for this non-terminal:
+//  ( Clear | Assignment | Expression ) ( EOL | ";" | EOF )
+type Statement struct {
+    // Pointer to Clear statement node. Can be nil of not matched.
+    Clear      *Clear      `(   @@`  // "@@" denotes the capture of the type 
+                                     // of the field. In this case the Clear
+                                     // non-terminal.
+
+    // Pointer to Assignment statement node. Can be nil if not matched.
+    Assignment *Assignment `  | @@`
+
+    // Pointer to Expression statement node. Can be nil if not matched.
+    // EOL and EOF are passed into the parser from lexer.
+    // Each statement can be finished by either an EOL, semicolon or EOF.
+    Expression *Expression `  | @@ ) (EOL | ";" | EOF)`
+}
+
+// Each node implements the same Eval function signature.
+// This means each node implements an interface which defines
+// such a signature.
+// The Memory type is a map containing the current values of each defined
+// variable and is passed to each Eval function.
+func (s *Statement) Eval(ctx Memory) (float64, *Memory) {
+    // Nil switch as we have three alternates.
+    switch {
+    case s.Clear != nil:
+        s.Clear.Eval(ctx)
+        return 0, &ctx
+    case s.Assignment != nil:
+        s.Assignment.Eval(ctx)
+        return 0, &ctx
+    }
+    return s.Expression.Eval(ctx), &ctx
+}
+    \end{minted}
+    \label{fig:four-func-calc-statement-ast-node}
+    \cprotect\caption{The \verb|Statement| AST node/non-terminal from the four-function calculator test program, along with its \verb|Eval| instance method.}
+\end{figure}
+
+When defining an AST node within participle it is treated as a non-terminal within the grammar. Each field is a terminal/non-terminal that is part of the EBNF for the parent non-terminal. The EBNF for the \verb|Statement| non-terminal above would be:
+
+\begin{minted}{ebnf}
+Statement = ( Clear | Assignment | Expression ) ( EOL | ";" | EOF );
+\end{minted}
+
+\verb|Clear|, \verb|Assignment|, and \verb|Expression| are all other AST nodes/non-terminals that are defined with their own structures within the code base. Whereas, \verb|EOL|, \verb|";"|, and \verb|EOF| are tokens passed from the participle lexer. This EBNF is taken and split across all the fields within the \verb|Statement| structure by the programmer. The types of the field within AST nodes/non-terminals will either be:
+
+\begin{itemize}
+    \item Pointers to other AST nodes/non-terminals. These can also be contained within an array when used in conjunction with an EBNF repetition operator. These can be \verb|nil| if the non-terminal is not matched.
+    \item Any other type of value, which can be set by in-built tokens or custom tokens. For instance the in-built token \verb|Number| will match any integer, or floating point number and returns a pointer to a \verb|float64|.
+\end{itemize}
+
+Once the parser is generated, and an input within the language is parsed, an AST will be produced that will contain the user declared AST nodes as explained above. This means that any AST node can be given any user defined instance method (using Go's receiver syntax). For instance, in the \hyperref[fig:four-func-calc-statement-ast-node]{example above} I also defined an \verb|Eval| instance method which will recursively evaluate either the \verb|Clear| node, \verb|Assignment| node, or the \verb|Expression| node. The result of which will be returned by the \verb|Statement| node. This allows the programmer to encode the semantics of every non-terminal, and hence every AST node, for their grammar. To evaluate the AST then, you would just call the \verb|Eval| instance method on the root of the AST. This would traverse and evaluate each node within it.
+
+To encapsulate the behavior of multiple AST nodes, the programmer could define an \verb|interface| which implements the necessary instance methods for a set of AST node types. For instance, the following interface could be declared to define all AST nodes that can be evaluated.
+
+\begin{minted}{go}
+// Evaluatable defines all the AST nodes within the four-function 
+// calculator that can be evaluated.
+type Evaluatable interface {
+    Eval(ctx Memory) float64
+}
+\end{minted}
+
+This allows the programmer to enforce some sort of ambiguity within their AST, which makes the evaluation of things such as expression trees, much easier. The four-function calculator's AST nodes also implement Go's \verb|Stringer| interface which allows for the code to be pretty-printed.
+
+The four-function calculator supports expression evaluation, variable assignment and deletion, and also has an interactive Repeat-Eval-Print Loop (REPL) mode. Its grammar, semantics and pretty-printer, are all defined within the \verb|test_programs/four_func_calc/calc.go| file.
+
+\begin{figure}[H]
+    \begin{minted}{ebnf}
+(*              Tokens               *)
+(* Number     = `([0-9]*[.])?[0-9]+` *)
+(* Ident      = `[a-zA-Z_]\w*`       *)
+(* EOL        = `[\n\r]+`            *)
+(* Punct      = `[()*+-/=;]`         *)
+(* Lowercase tokens are matched but  *)
+(* are not passed to the parser      *)
+(* whitespace = `\s*`                *)
+
+(* Grammar *)
+Script     = { Statement } ;
+Statement  = ( Clear | Assignment | Expression ) (EOL | ";" | EOF) ;
+Assignment = "let" Ident "=" Expression ;
+Clear      = "clear" Ident ;
+Expression = Term { OpTerm } ;
+OpTerm     = ("+" | "-") Term ;
+Term       = Factor { Product } ;
+Product    = ("*" | "/") Factor ;
+Factor     = Number | Ident | "(" Expression ")" ;
+    \end{minted}
+    \cprotect\caption{The tokens and grammar for the four-function calculator unwrapped from the Go code.}
+\end{figure}
+
+More information on how to use the four-function calculator can be found in the \verb|README|.
