@@ -1,4 +1,5 @@
 \section{Casting}
+\label{sec:development-casting}
 
 \begin{center}
     \textbf{Diary Entry}\\[0.5em]
@@ -7,3 +8,60 @@
 \end{center}
 
 Casting is a large part of \verb|sttp| as it is a dynamically-typed programming language. Expressions within \verb|sttp| often use casting to make sure that an operation can be carried out successfully. In most cases, the \verb|sttp| interpreter will choose to behave `dynamically' rather than `erroring-out'.
+
+All cast functions are implemented within a two-dimensional array of functions with the signature: \mintinline{go}{func(symbol *data.Value) (err error, cast *data.Value)}. As the \verb|Type| type actually has an underlying type of \mintinline{go}{int}, the rows and columns of this array can be accessed after converting a \verb|Type| to \mintinline{go}{int} (e.g. \mintinline{go}{int(data.Number) == 4}). We define the \verb|Type| to cast from as the rows of this array, and the \verb|Type| to cast to as the columns of the array, creating an eight-by-eight grid. We also define a function that performs the lookup for the given value and return the value cast to the given \verb|Type|.
+
+\inputminted[firstline=26, lastline=43, autogobble, breaklines, tabsize=4]{go}{../../src/eval/casting.go}
+
+The \verb|Castable| method checks whether the cast function in the given cell within the cast table, is a pointer to the variable \verb|e|. \verb|e| is a variable containing a reference to the function: \verb|eFunc|. If this variable lies within the cast table in a given cell for a given \verb|from| type and \verb|to| type. It means that the cast from \verb|from| to \verb|to| cannot be done. The package global variable \verb|e| is used to store the reference to the function \verb|eFunc| as the pointers to function's in Go cannot be compared, even with the \verb|reflect| package. This is because Go disallows equivalence comparisons between function pointers. The \verb|reflect| package can compare pointer equivalence of functions, but the Go compiler can and might merge multiple functions into a single implementation. Therefore, there is no guarantee that this will provide the correct behaviour. In order to compare functions properly, one must first define a \textbf{unique} variable that points to the function. The reference to this variable can then be compared with another variable to check whether the variable points to the same function.
+
+% Please add the following required packages to your document preamble:
+% \usepackage[table,xcdraw]{xcolor}
+% If you use beamer only pass "xcolor=table" option, i.e. \documentclass[xcolor=table]{beamer}
+\begin{table}[H]
+    \begin{tabular}{|l|l|l|l|l|l|l|l|l|}
+    \hline
+    \cellcolor[HTML]{000000} &                             NotType &                              Object &                               Array &                              String &                              Number &                             Boolean &                                Null &                            Function \\ \hline
+    NoType                   & \cellcolor[HTML]{C0C0C0}\verb|same| &                            \verb|e| &                            \verb|e| &                            \verb|e| &                            \verb|e| &                            \verb|e| &                            \verb|e| &                            \verb|e| \\ \hline
+    Object                   &                            \verb|e| & \cellcolor[HTML]{C0C0C0}\verb|same| &                      \verb|obArray| &                            \verb|s| &                            \verb|l| &                        \verb|lBool| &                            \verb|e| &                            \verb|e| \\ \hline
+    Array                    &                            \verb|e| &                     \verb|arObject| & \cellcolor[HTML]{C0C0C0}\verb|same| &                            \verb|s| &                            \verb|l| &                        \verb|lBool| &                            \verb|e| &                            \verb|e| \\ \hline
+    String                   &                            \verb|e| &                     \verb|stObject| &                      \verb|stArray| & \cellcolor[HTML]{C0C0C0}\verb|same| &                     \verb|stNumber| &                        \verb|lBool| &                            \verb|e| &                            \verb|e| \\ \hline
+    Number                   &                            \verb|e| &                       \verb|obSing| &                       \verb|arSing| &                            \verb|s| & \cellcolor[HTML]{C0C0C0}\verb|same| &                    \verb|nuBoolean| &                            \verb|e| &                            \verb|e| \\ \hline
+    Boolean                  &                            \verb|e| &                       \verb|obSing| &                       \verb|arSing| &                            \verb|s| &                     \verb|boNumber| & \cellcolor[HTML]{C0C0C0}\verb|same| &                            \verb|e| &                            \verb|e| \\ \hline
+    Null                     &                            \verb|e| &                       \verb|obSing| &                       \verb|arSing| &                            \verb|s| &                     \verb|nlNumber| &                    \verb|nlBoolean| & \cellcolor[HTML]{C0C0C0}\verb|same| &                            \verb|e| \\ \hline
+    Function                 &                            \verb|e| &                            \verb|e| &                            \verb|e| &                            \verb|s| &                            \verb|e| &                            \verb|e| &                            \verb|e| & \cellcolor[HTML]{C0C0C0}\verb|same| \\ \hline
+    \end{tabular}
+    \cprotect\caption{The \verb|sttp| cast table.}
+\end{table}
+
+Within the cast table, there are multiple different types of cast functions. Some of which are used in multiple different cells.
+
+\begin{itemize}
+    \item \verb|e|: as described above, \verb|e| tells the \verb|Cast| function to return an error, as the cast from the given type to the given type cannot be carried out.
+    \item \verb|same|: returns the value `as is' (returns the pointer to the given \verb|Value|).
+    \item \verb|obSing|: constructs a singleton Object where the key is the JSON representation of the \verb|Value|, and the value is \verb|null|.
+    \item \verb|arSing|: constructs a singleton Array where the first and only element is the given \verb|Value|.
+    \item \verb|s|: the JSON representation of the \verb|Value|.
+    \item \verb|l|: the length of the \verb|Value|.
+    \item \verb|lBool|: the length of the \verb|Value| converted to a Boolean (\verb|true| if $l > 0$, \verb|false| otherwise).
+\end{itemize}
+
+Many of the other cast functions work as expected although there are a few which have more interesting behaviour, such as:
+
+\begin{itemize}
+    \item \verb|stNumber|: will try to parse the \verb|Value| to an integer, then a float, and finally will just take the length of the String.
+    \item \verb|obArray|: extracts the keys from the Object.
+    \item Functions prefixed with \verb|st|: will try to parse the \verb|Value| as JSON into the type required.
+\end{itemize}
+
+It is also worth noting why casting \verb|Object|s, \verb|Array|s, and \verb|String|s to a \verb|Number| returns the length of the \verb|Value|. This is because, \verb|sttp| was initially designed so that the semantics of what would usually be designated to a builtin function or a property of a value, such as the length of a value, can be fetched by manipulating the casting system. For instance, fetching the length of an \verb|Array| can be done via:
+
+\begin{verbatim}
+a = [1, 2, 3];
+print(0 + a);
+// Output: 3
+\end{verbatim}
+
+This is because the addition \verb|Operator| acting on a left-hand \verb|Value| that is of \verb|Type|: \verb|Number|, will first cast the right-hand side to a \verb|Number|, and then perform the addition. This allows the programmer to fetch the length of an \verb|Array| without the use of a builtin or property.
+
+Not much has changed since the original implementation of the casting system, apart from a few additions and changes to certain cast functions. The cast table is located in the \verb|src/eval/casting.go| file, whereas the cast functions used within it are located in \\\verb|src/eval/cast_funcs.go|.

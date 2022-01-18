@@ -1,0 +1,94 @@
+\section{Operators}
+
+\begin{center}
+    \textbf{Git commit}
+    \begin{minted}{markdown}
+Language: operation action table + operation action tests
+- Added a few more operation actions (29/11/2021 - 14:21:02)
+- Added some test cases for the Compute function (29/11/2021 - 14:21:16)
+- Added more tests (29/11/2021 - 21:25:06)
+- Finished operator action table (29/11/2021 - 21:25:58)
+    \end{minted}
+    \vspace{-1em}
+    \tiny{November 29, 2021}
+\end{center}
+
+All operators within \verb|sttp| are binary operators (take two operands), and return a \verb|Value|. They usually will cast the right-hand operand into whatever type the left-hand operand is and then perform the computation. However, there are a few exceptions to this rule that will be discussed later on.
+
+The \verb|Operator| token is a type with the the following definition: \mintinline{go}{type Operator int}, with a set of constants (of type \verb|Operator|) that define an enumeration. \verb|Operator| implements the \verb|Capture| interface of the participle parser generator library. This allows the programmer to create custom tokens that will be captured by the lexer. Hence, each instance of an \verb|Operator| that occurs within an input \verb|sttp| script will automatically looked up within the enumeration, and the resulting field within that AST node will be set accordingly. The relevant code for this can be found below:
+
+\inputminted[firstline=13, lastline=71, autogobble, breaklines, tabsize=4]{go}{../../src/eval/operators.go}
+
+As all the operators within the grammar are left-associative, it means that we can easily construct a lookup table for the functions that will compute each operation for each type that occurs on the left-hand side of an expression. The \verb|operatorTable| within \verb|src/eval/operators.go| does just this. The \verb|Operator|s are represented as rows within the lookup, whereas each \verb|Type| is given a column. As both \verb|Operator| and \verb|Type| both have \mintinline{go}{int} as their underlying type, it means this lookup table can be accessed by casting the \verb|Operator| and \verb|Type| to \mintinline{go}{int} and accessing the appropriate row and column. This is identical to how the \hyperref[sec:development-casting]{cast table} works, except the signature of the functions contained within each cell is \mintinline[breaklines]{go}{func(op1 *data.Value, op2 *data.Value) (err error, result *data.Value)}, and there are 13 rows (number of \verb|Operator|s) and 8 columns (number of \verb|Type|s). Again, like the cast table, this lookup is package private and must be accessed via the \mintinline[breaklines]{go}{Compute(operator Operator, left *data.Value, right *data.Value) (err error, result *data.Value)} function (or the \verb|Operator.Compute| instance method). Similarly to the cast table, we use a variable \verb|o| containing a reference to the function \verb|oFunc| to define which operations for what \verb|Type|s are invalid operations.
+
+\inputminted[firstline=84, lastline=85, autogobble, breaklines, tabsize=4]{go}{../../src/eval/operators.go}
+
+\inputminted[firstline=106, lastline=118, autogobble, breaklines, tabsize=4]{go}{../../src/eval/operators.go}
+
+% Please add the following required packages to your document preamble:
+% \usepackage[table,xcdraw]{xcolor}
+% If you use beamer only pass "xcolor=table" option, i.e. \documentclass[xcolor=table]{beamer}
+% \usepackage[normalem]{ulem}
+% \useunder{\uline}{\ul}{}
+\begin{table}[H]
+    \begin{tabular}{|l|l|l|l|l|l|l|l|l|}
+    \hline
+    \cellcolor[HTML]{000000}{\color[HTML]{000000} } &   NoType &          Object &          Array &          String &          Number &          Boolean &          Null & Function \\ \hline
+    Mul                                             & \verb|o| &        \verb|o| &       \verb|o| & \verb|muString| & \verb|muNumber| & \verb|anBoolean| &    \verb|op1| & \verb|o| \\ \hline
+    Div                                             & \verb|o| & \verb|diObject| &       \verb|o| &        \verb|o| & \verb|diNumber| & \verb|diBoolean| &    \verb|op1| & \verb|o| \\ \hline
+    Mod                                             & \verb|o| &        \verb|o| &       \verb|o| & \verb|moString| & \verb|moNumber| & \verb|moBoolean| &    \verb|op1| & \verb|o| \\ \hline
+    Add                                             & \verb|o| & \verb|adObject| & \verb|adArray| & \verb|adString| & \verb|adNumber| & \verb|orBoolean| &    \verb|op1| & \verb|o| \\ \hline
+    Sub                                             & \verb|o| & \verb|suObject| & \verb|suArray| & \verb|suString| & \verb|suNumber| & \verb|suBoolean| &    \verb|op1| & \verb|o| \\ \hline
+    Lt                                              & \verb|o| & \verb|ltObject| & \verb|ltArray| & \verb|ltString| & \verb|ltNumber| & \verb|ltBoolean| &      \verb|o| & \verb|o| \\ \hline
+    Gt                                              & \verb|o| & \verb|gtObject| & \verb|gtArray| & \verb|gtString| & \verb|gtNumber| & \verb|gtBoolean| &      \verb|o| & \verb|o| \\ \hline
+    Lte                                             & \verb|o| & \verb|leObject| & \verb|leArray| & \verb|leString| & \verb|leNumber| & \verb|leBoolean| &      \verb|o| & \verb|o| \\ \hline
+    Gte                                             & \verb|o| & \verb|geObject| & \verb|geArray| & \verb|geString| & \verb|geNumber| & \verb|geBoolean| &      \verb|o| & \verb|o| \\ \hline
+    Eq                                              & \verb|o| & \verb|eqObject| & \verb|eqArray| & \verb|eqString| & \verb|eqNumber| & \verb|eqBoolean| & \verb|eqNull| & \verb|o| \\ \hline
+    Ne                                              & \verb|o| & \verb|neObject| & \verb|neArray| & \verb|neString| & \verb|neNumber| & \verb|neBoolean| & \verb|neNull| & \verb|o| \\ \hline
+    And                                             & \verb|o| & \verb|anObject| & \verb|anArray| & \verb|anString| & \verb|anNumber| & \verb|anBoolean| & \verb|anNull| & \verb|o| \\ \hline
+    Or                                              & \verb|o| & \verb|orObject| & \verb|orArray| & \verb|orString| & \verb|orNumber| & \verb|orBoolean| & \verb|orNull| & \verb|o| \\ \hline
+    \end{tabular}
+    \cprotect\caption{The \verb|sttp| operator table.}
+\end{table}
+
+There are not many operation functions that are reused multiple times within the table. This is because the semantics of each operation for each type on the left-hand side are too different. However, there are two functions that are reused multiple times.
+
+\begin{itemize}
+    \item \verb|o|: denotes that the operation for the given \verb|Type| is invalid.
+    \item \verb|op1|: returns the pointer to the first \verb|Value| operand.
+\end{itemize}
+
+Many similar behaviours, shared between operator and their \verb|Type|s, are implemented using a functional abstraction of the behaviour that takes more parameters than are allowed within the operator table. The functions within the operator table then call these abstractions by passing the appropriate parameters. This is demonstrated well by the \verb|comparison| function which is reused within all comparison functions, apart from \verb|Eq| and \verb|Ne|.
+
+\inputminted[firstline=544, lastline=607, autogobble, breaklines, breakafter=., tabsize=4]{go}{../../src/eval/op_funcs.go}
+
+The \verb|comparison| function is then called by any appropriate operator function used within the operator table, such as: \mintinline[breaklines]{go}{func ltString(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) { return comparison(op1, op2, Lt) }}. The \verb|comparison| function works by first casting the input operands to the same \verb|Type|, that must be either \verb|Number| or \verb|String|. Then, comparing the operands in a way that returns the same representation for both \verb|String|s and \verb|Number|s. The representation used is:
+
+\[ \begin{cases} 
+    -1 & LHS < RHS \\
+    0  & LHS = RHS \\
+    1  & LHS > RHS 
+ \end{cases}
+\]
+
+From this intermediate representation, we can then return the correct boolean value for the given \verb|Operator| using a switch statement.
+
+As with casting, most of the semantics of the operators are self-explanatory. However, there are a few interesting cases.
+
+\begin{itemize}
+    \item \verb|suString| (Subtract from \verb|String|): depending on the type of the RHS the following will happen:
+    \begin{itemize}
+        \item \verb|Number|: Remove the last $n$ digits from the \verb|String|.
+        \item \verb|String|: Remove all occurrences of the RHS from the LHS.
+        \item \verb|Object|: Replaces all occurrences of RHS's keys with \verb|String| versions of their values.
+        \item \verb|Array|: Casts each element in the \verb|Array| to a \verb|String| and removes all occurrences of each from the LHS.
+        \item Other: Casts RHS to \verb|String| and removes all occurrences of each from the LHS.
+    \end{itemize}
+    \item \verb|suArray| (Subtract from \verb|Array|): Casts RHS to \verb|Array|. All elements on a copy of the LHS that are equal to the elements in the RHS \verb|Array| will be removed. If the element is \verb|Null| then the head of the \verb|Array| is removed.
+    \item \verb|adArray| (Add to \verb|Array|): If the RHS is not an \verb|Array| then append the RHS to a copy of the LHS. If RHS is an \verb|Array| then a copy of the LHS will be `extended' with the RHS (elements of RHS will be added to LHS).
+    \item \verb|adObject| (Add to \verb|Object|): Casts RHS to \verb|Object|. Will then merge the RHS into a copy of the LHS, overriding any values with the same key.
+\end{itemize}
+
+A description of each operator in combination with each left-hand \verb|Type| can be found in the \hyperref[sec:operatorvaluerel]{specification}. As with the casting system, the operator system has not changed much since its original implementation. The only operator function that has been changed substantially, was the \verb|moString| (Mod \verb|String|) function. Originally, this carried out a format string operation using Go's string interpolation verbs\textsuperscript{\cite{go_fmt_package}}. But was changed to use a custom written interpolation algorithm which only makes use of a single verb: \verb|%%|.
+
+The operator table can be found in the \verb|src/eval/operators.go| file, and the operator functions can be found in \verb|src/eval/op_funcs.go|.
