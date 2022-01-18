@@ -13,7 +13,7 @@ var e = eFunc
 // cast from. Whereas, the columns represent the Type to cast to.
 var castTable = [8][8]func(symbol *data.Value) (err error, cast *data.Value) {
 	/*                NoType    Object    Array    String    Number    Boolean    Null    Function                    */
-	/* NoType   */ {       e,        e,       e,        e,        e,         e,      e,          e},
+	/* NoType   */ {    same,        e,       e,        e,        e,         e,      e,          e},
 	/* Object   */ {       e,     same, obArray,        s,        l,     lBool,      e,          e},
 	/* Array    */ {       e, arObject,    same,        s,        l,     lBool,      e,          e},
 	/* String   */ {       e, stObject, stArray,     same, stNumber,     lBool,      e,          e},
