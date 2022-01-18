@@ -7,6 +7,7 @@ import (
 	"reflect"
 )
 
+// Operator token captured by the lexer.
 type Operator int
 
 const (
@@ -25,6 +26,7 @@ const (
 	Or
 )
 
+// operatorMap is a mapping of Operator symbols to their respective enumeration value.
 var operatorMap = map[string]Operator{
 	"*":  Mul,
 	"/":  Div,
@@ -41,6 +43,7 @@ var operatorMap = map[string]Operator{
 	"||": Or,
 }
 
+// operatorSymbolMap is a mapping of Operator enumeration values to their respective symbols.
 var operatorSymbolMap = map[Operator]string{
 	Mul: "*",
 	Div: "/",
@@ -57,6 +60,7 @@ var operatorSymbolMap = map[Operator]string{
 	Or:  "||",
 }
 
+// Capture will capture the appropriate Operator within the referred to Operator.
 func (o *Operator) Capture(s []string) error {
 	var ok bool
 	*o, ok = operatorMap[s[0]]
@@ -66,6 +70,7 @@ func (o *Operator) Capture(s []string) error {
 	return nil
 }
 
+// String will return the appropriate symbol for the Operator using a lookup.
 func (o *Operator) String() string {
 	return operatorSymbolMap[*o]
 }
@@ -105,7 +110,6 @@ var operatorTable = [13][8]func(op1 *data.Value, op2 *data.Value) (err error, re
 // returned.
 func Compute(operator Operator, left *data.Value, right *data.Value) (err error, result *data.Value) {
 	// If the operatorTable entry points to o then we will return an InvalidOperation error.
-	//fmt.Printf("%s (%s) %s %s (%s)\n", left.String(), left.Type.String(), operator.String(), right.String(), right.Type.String())
 	if reflect.ValueOf(operatorTable[operator][left.Type]).Pointer() == reflect.ValueOf(o).Pointer() {
 		return errors.InvalidOperation.Errorf(errors.GetNullVM(), operator.String(), left.Type.String(), right.Type.String()), nil
 	}
