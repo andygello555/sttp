@@ -103,6 +103,7 @@ Parts that evaluate to Numbers can also be negative if \verb|abs(i) - 1| is less
 \end{verbatim}
 
 \subsubsection{Setting}
+\label{sec:jsonpath-setting}
 
 JSON paths can be assigned to. This sets the appropriate property of the variable. This is done recursively by reconstructing the entire value from the bottom-up. Each recursive call takes the current value, the value to set to, as well as the path remaining to evaluate (an array of properties and parts).
 
@@ -115,21 +116,31 @@ JSON paths can be assigned to. This sets the appropriate property of the variabl
         \begin{itemize}
             \item If the current value is an \textbf{Object}...
             \begin{itemize}
-                \item \textbf{If the current path item is a String}, then we will treat it as a key of the Object. We will set the value of the key in the current Object to be the output of a recursive call of the setter function. The current value to pass into the recursive call depends on whether the key already exists in the Object. If it does then we will pass in the value of the key. If it doesn't then we will pass in `null'.
-                \item \textbf{If the current path item is a Number}, then we will order the keys within the Object lexicographically and set the \verb|i|-th key's value using the technique described above. Where \verb|i| is the current path item.
+                \item \textbf{If the current path item is not a filter expression...}
+                \begin{itemize}
+                    \item \textbf{If the current path item is a String}, then we will treat it as a key of the Object. We will set the value of the key in the current Object to be the output of a recursive call of the setter function. The current value to pass into the recursive call depends on whether the key already exists in the Object. If it does then we will pass in the value of the key. If it doesn't then we will pass in `null'.
+                    \item \textbf{If the current path item is a Number}, then we will order the keys within the Object lexicographically and set the \verb|i|-th key's value using the technique described above. Where \verb|i| is the current path item.
+                \end{itemize}
+                \item \textbf{Otherwise}, each key-value pair within the Object will be iterated over. At the beginning of each iteration, \verb|curr| will be set to an Object (\verb|{"key": ..., "value": ...}|) containing the key and the value of the currently iterated node. The Block defined within the filter will then be executed, with the value returned by this Block, being cast to a Boolean. If \verb|true|, the currently iterated node will be recursed down using the node's value.
             \end{itemize}
-            \item If the current value is an \textbf{Array} and the current path item is a Number.
+            \item If the current value is an \textbf{Array}...
             \begin{itemize}
-                \item Check if a negative index lookup can be performed as described in the `\hyperref[sec:jsonpath-getting]{Getting}' section...
+                \item \textbf{If the current path item is a Number}, then we will first check if a negative index lookup can be performed as described in the `\hyperref[sec:jsonpath-getting]{Getting}' section...
                 \begin{itemize}
                     \item If so, then we will set the index of the Array to be the output of the recursive call to the setter function called with the element currently at that index.
                     \item If not, then we will set each element of the Array up to the index described by the Number to `null' and finally recurse down the index to set, calling the recursive function with `null'.
                 \end{itemize}
+                \item \textbf{If the current path item is a Filter and not a String}, then we will execute the filter in a very similar way to how it executed on an Object. However, instead we supply the current index of the node as the \verb|key| of the \verb|curr| Object.
             \end{itemize}
             \item If the current value has \textbf{any other type}...
             \begin{itemize}
                 \item \textbf{If the current path item is a String}, then we will wrap the current value into an Object with the value residing in a key-value pair of the key \verb|""|. We will then recurse down the key with the value of the current path item, calling the recursive function with `null'. \verb|""| was chosen as the `default key', because it will always be sorted lexicographically as the first key. This means that the value which used to reside there can be accessed by a part such as \verb|[""]| or \verb|[0]|.
-                \item \textbf{If the current path item is a Number}, then we will wrap the current value into an Array. If we let the current path value be denoted by \verb|i|, then first we will create an Array with \verb|i + 2| spaces. Inserting the existing value in space \verb|i + 1| and recursing down the \verb|i|-th space, calling the recursive function with `null'.
+                \item \textbf{If the current path item is not a String}...
+                \begin{itemize}
+                    \item If the current value is a \textbf{String} and the \textbf{current path item is a Filter}, then we will execute the filter in a similar way to Arrays. For every character within the String we recurse down, we will also cast the returned value to a String and append it to a temporary set. We will also mark the current index. After iterating over all the characters in the String, a bulk replacement of all the characters at the marked indices will be replaced by the Strings in the temporary set.
+                    \item If the current value is a \textbf{String} and the \textbf{current path item is a Number}, then we will find the correct character within the String. If the Number is negative, we take the absolute of it minus one to get \verb|i|. Otherwise, the Number is \verb|i|. If \verb|i < len(String)| then we will set \verb|i| to \verb|i % len(String)| and get the character at position \verb|i|, otherwise if Number is negative then we will return an error. Otherwise, we will use the default character value: \verb|" "|. We then recurse down this character value. The return of this recursive call is cast to a String. If \verb|i| is greater than or equal to the length of the String, we will insert whitespace up until the \verb|i|-th position, at which point we will write the value that was just cast to a String. If \verb|i| is less than the length of the String, then we set the \verb|i|-th character to be the value that was just cast to a String.
+                    \item \textbf{Otherwise}, we will wrap the current value into an Array. If we let the current path value be denoted by \verb|i|, then first we will create an Array with \verb|i + 2| spaces. Inserting the existing value in space \verb|i + 1| and recursing down the \verb|i|-th space, calling the recursive function with `null'.
+                \end{itemize}
             \end{itemize}
         \end{itemize}
     \end{itemize}
