@@ -548,8 +548,7 @@ func (j *JSONPath) Convert(vm VM) (err error, path Path) {
 
 // Convert will convert a Part AST node into a Path.
 func (p *Part) Convert(vm VM) (err error, path Path) {
-	path = make(Path, 0)
-	path = append(path, *p.Property)
+	path = Path{*p.Property}
 	for _, i := range p.Indices {
 		switch {
 		case i.ExpressionIndex != nil:
