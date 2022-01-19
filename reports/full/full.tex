@@ -134,13 +134,18 @@ Before development began I wrote a few test programs to get back up to speed wit
 
 \section{Evaluating AST nodes}
 
-\subsection{JSONPath and Assignment}
+\begin{center}
+    \textbf{Diary Entry}\\[0.5em]
+    \textit{``Made final touches to interim report before handing in. Completed all operator actions as well as defining agnostic evaluation methods for all precedence levels. I also implemented assignment statements as well as if-elif-else statements. Along with JSONPath setting and getting. I had to rewrite my Heap data structure and my Value structure."}\\[0.5em]
+    \tiny{11:51 am on December 6, 2021}
+\end{center}
 
-\subsubsection{JSONPath}
+Each AST node within \verb|sttp| implements the \verb|evalNode| interface. This defines the \mintinline[breaklines]{go}{Eval(vm VM) (err error, result *data.Value)} instance method (among other things), that will be called on the root AST node (\verb|Program|) with a fresh \verb|VM| instance. The \verb|Eval| instance method of each lower AST node will be called, passing this \verb|VM| instance to each. The \verb|err| return parameter is used to `bubble' up an error/exception if one occurs in any of the AST nodes. This error will either float up to the \verb|Program| root, or to a \verb|TryCatch| AST node. The \verb|evalNode| interface was mainly implemented to improve readability and reduce complexity with the evaluation of AST nodes within \hyperref[sec:development-ast-nodes-expressions]{expression subtrees}.
 
-\subsubsection{Assignment}
+\import{sections}{2-7-1-jsonpath-assignment.tex}
 
 \subsection{Expressions}
+\label{sec:development-ast-nodes-expressions}
 
 \subsection{If-Elif-Else}
 

@@ -1,0 +1,78 @@
+\subsection{JSONPath and Assignment}
+
+\begin{center}
+    \textbf{Git commit}
+    \begin{minted}{markdown}
+Language: json path setter + assignment ast node
+- Added beginnings of json path setters and getters (02/12/2021 - 12:30:37)
+- Added some more eval referrers for different AST nodes (02/12/2021 - 12:31:03)
+- Added the Current referrer to the CallStack interface which returns the topmost frame (02/12/2021 - 12:31:33)
+- Added the Exception and JSONPathError RuntimeErrors (02/12/2021 - 12:31:55)
+    \end{minted}
+    \vspace{-1em}
+    \tiny{December 2, 2021}
+\end{center}
+
+JSONPath setting and the \verb|Eval| instance method for the \verb|Assignment| AST node are what I implemented next.
+
+\subsubsection{JSONPath}
+
+JSONPath's are comprised of three different types of AST node:
+
+\begin{enumerate}
+    \item \verb|JSONPath|: describes the root of the JSONPath expression. Matches a one or more dot separated \verb|Part|s. The first \verb|Part| of the JSONPath is know within \verb|sttp| as the \textbf{root property}. This is the \textbf{variable} that is being accessed.
+    \item \verb|Part|: an alphanumeric identifier followed by any number of \verb|Index|.
+    \item \verb|Index|: square bracket Array/Object access that contains an expression, or a filter expression that takes a \verb|Block|.
+\end{enumerate}
+
+Whenever JSONPath's are used, they are first converted to the \mintinline[breaklines]{go}{type Path []interface{}}. This is an intermediary format that has a \verb|Set| and \verb|Get| instance methods. The \verb|Path| type acts as a queue whenever these two methods are called. It is easier to treat it is such rather than to use tree traversal to find each property, index, and filter block. The \verb|JSONPath| and \verb|Part| AST nodes implement the \verb|Convert| instance method that allows for the conversion of a JSONPath AST subtree, to a \verb|Path| instance. \verb|Index| does not implement this instance method, as it acts as a leaf node of a JSONPath expression, does not need to be traversed down, and can be dealt with within \verb|Part.Convert|.
+
+\inputminted[firstline=529, lastline=581, autogobble, breaklines, tabsize=4]{go}{../../src/parser/json_path.go}
+
+\verb|JSONPath.Convert| will enqueue the \verb|Path|s constructed by each of its \verb|Part|s. Whereas, \verb|Part.Convert| will iterate over its indices and either evaluate the expression within the square brackets, or simply add the reference to the filter's \verb|Block| AST node.
+
+\mintinline[breaklines]{go}{func (p *Path) Set(vm VM, current interface{}, to interface{}) (err error, new interface{})} works by traversing the \verb|current| parameter whilst dequeuing and following the components of the \verb|Path|. Once there is nothing left within the \verb|Path|, the \verb|current| value will be set to the \verb|to| parameter. Due to the recursive nature of the function, the \verb|current| value will be reconstructed using the return of the function, embedding the \verb|to| value within the original value. The \verb|Set| function calls the \mintinline[breaklines]{go}{func set(vm VM, current interface{}, to interface{}, path *Path) interface{}} internally. The source code for this function is too large to input within the report, but it can be located within the \verb|src/parser/json_path.go| file. Some interesting features of the \verb|Set| function are described below.
+
+\begin{enumerate}
+    \item JSONPath setting will produce sparse Objects/Arrays if the \verb|current| parameter does not exist (is \verb|nil|). Usually, the \verb|set| function would first dequeue the next element within the \verb|Path|. However, if the \verb|current| value is \verb|nil| this will be skipped. Instead, \verb|set| will be called recursively with a newly constructed Object given as its \verb|current| parameter if the first element in the \verb|Path| is a String. If the first element is not a String, then \verb|set| will be called with a newly constructed Array given as its \verb|current| parameter. This is explained in more depth within the \hyperref[sec:jsonpath-setting]{specification}.
+    \item Objects can be set via numerical indices. This sets the $i$-th key after the keys within the Object are sorted lexicographically.
+    \item Arrays and Strings can be set using negative integers. \verb|-1| will point to the last element/character in the Array/String, and all preceding elements/characters will have indices decremented from \verb|-1|.
+    \item If a filter block or Number index is used to set a String, then the effect will be to perform a String replacement on the characters that were marked by the filter block, or the index given.
+\end{enumerate}
+
+The \verb|Get| instance method is semantically similar to \verb|Set|, but instead of setting the value pointed to by the \verb|Path| they retrieve it. If the JSONPath does not point to anything then \verb|null| will be returned. \verb|Get| is implemented iteratively instead of via recursion. Again, the source code for \verb|Get| is too long to include within the report, but it can be found in: \verb|src/parser/json_path.go|.
+
+The \verb|Set| and \verb|Get| methods have gone through many iterations, but the two most important were:
+
+\begin{enumerate}
+    \item Array and Object access via Numbers and Strings. Commit:
+    \begin{minted}{markdown}
+Language: JSONPath Set + tests
+- Extended set JSONPath Set procedure (02/12/2021 - 17:20:42)
+- Added JSONPath Set tests in new test file (02/12/2021 - 17:21:26)
+- Moved example file read into the init() method inside the test to
+  populate a global array (02/12/2021 - 17:23:43)
+- Updated example 1 and 2 (03/12/2021 - 01:11:43)
+    \end{minted}
+    \item Array, Object, and String access via Numbers, Strings and Filters. Filter expressions were implemented as I thought they would be useful when trying to find certain information within HTML that had been parsed into an \verb|sttp| Object. They are supported within the original syntax for JSONPath\textsuperscript{\cite{goessner_2007}}. However, \verb|sttp|'s version of filter expressions are syntactically different from the original specification, using the `\verb|```|' token to enclose a Block of code hanging off of a JSONPath. I added setting and getting to String Objects as I remembered that there was no way to retrieve and set character information within a String. Commit:
+    \begin{minted}{markdown}
+Language: JSONPath filter + JSONPath string getting/setting
+- Added the grammar for a JSONPath filter expression (30/12/2021 - 17:31:41)
+- Added the getter method for the JSONPath filter
+  expression (30/12/2021 - 17:32:01)
+- Fixed debug output nil pointer error within tEval (30/12/2021 - 21:04:18)
+- Added filter expression to JSONPath getter (30/12/2021 - 21:35:43)
+- Also added a way of getting characters from string (30/12/2021 - 21:35:58)
+- Updated example 2 with usages of filter blocks (30/12/2021 - 21:39:22)
+- Changed the semantics of setter for string
+  in JSONPath (30/12/2021 - 22:25:00)
+- The above change meant I had to change the TestPath_Set
+  test (30/12/2021 - 22:25:24)
+- Also added some new tests to TestPath_Set to test this new string
+  setting feature (30/12/2021 - 23:04:49)
+- JSONPath setting can be used to concatenate and insert
+  within strings now (30/12/2021 - 23:05:18)
+    \end{minted}
+\end{enumerate}
+
+\subsubsection{Assignment}

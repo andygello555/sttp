@@ -60,7 +60,7 @@ There are not many operation functions that are reused multiple times within the
 
 Many similar behaviours, shared between operator and their \verb|Type|s, are implemented using a functional abstraction of the behaviour that takes more parameters than are allowed within the operator table. The functions within the operator table then call these abstractions by passing the appropriate parameters. This is demonstrated well by the \verb|comparison| function which is reused within all comparison functions, apart from \verb|Eq| and \verb|Ne|.
 
-\inputminted[firstline=544, lastline=607, autogobble, breaklines, breakafter=., tabsize=4]{go}{../../src/eval/op_funcs.go}
+\inputminted[firstline=537, lastline=600, autogobble, breaklines, breakafter=., tabsize=4]{go}{../../src/eval/op_funcs.go}
 
 The \verb|comparison| function is then called by any appropriate operator function used within the operator table, such as: \mintinline[breaklines]{go}{func ltString(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) { return comparison(op1, op2, Lt) }}. The \verb|comparison| function works by first casting the input operands to the same \verb|Type|, that must be either \verb|Number| or \verb|String|. Then, comparing the operands in a way that returns the same representation for both \verb|String|s and \verb|Number|s. The representation used is:
 
@@ -90,5 +90,7 @@ As with casting, most of the semantics of the operators are self-explanatory. Ho
 \end{itemize}
 
 A description of each operator in combination with each left-hand \verb|Type| can be found in the \hyperref[sec:operatorvaluerel]{specification}. As with the casting system, the operator system has not changed much since its original implementation. The only operator function that has been changed substantially, was the \verb|moString| (Mod \verb|String|) function. Originally, this carried out a format string operation using Go's string interpolation verbs\textsuperscript{\cite{go_fmt_package}}. But was changed to use a custom written interpolation algorithm which only makes use of a single verb: \verb|%%|.
+
+\inputminted[firstline=185, lastline=233, autogobble, breaklines, tabsize=4]{go}{../../src/eval/op_funcs.go}
 
 The operator table can be found in the \verb|src/eval/operators.go| file, and the operator functions can be found in \verb|src/eval/op_funcs.go|.
