@@ -9,6 +9,7 @@ import (
 	str "github.com/andygello555/gotils/strings"
 	"math"
 	"math/big"
+	"regexp"
 	"strings"
 )
 
@@ -181,6 +182,9 @@ func diBoolean(op1 *data.Value, op2 *data.Value) (err error, result *data.Value)
 	return nil, result
 }
 
+// formatStringRegex is the regular expression used to match verbs within format strings.
+var formatStringRegex = regexp.MustCompile(`%%`)
+
 // moString: Mod String. Checks if rhs is a string, if so will wrap the string as a singleton array, otherwise will 
 // cast RHS to Array then performs a string format by casting each value in the RHS array to a string.
 func moString(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) {
@@ -201,21 +205,6 @@ func moString(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) 
 
 	formatString := op1.StringLit()
 	replaceArray := op2Array.Array()
-	replaceIndices := make([][]int, 0)
-	for idx, char := range formatString {
-		// We check if we can "lookahead" to the character in front and behind
-		if idx <= len(formatString) - 2 {
-			// We check if the current character and the next character concatenated make "%%" and the previous 
-			// character is not an escape character.
-			if string(char) + string(formatString[idx + 1]) == "%%" {
-				if idx > 0 && string(formatString[idx - 1]) == "\\" {
-					continue
-				}
-				replaceIndices = append(replaceIndices, []int{idx, idx + 2})
-			}
-		}
-	}
-
 	replaceStrings := make([]string, len(replaceArray))
 	for idx, val := range replaceArray {
 		switch val.(type) {
@@ -233,7 +222,11 @@ func moString(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) 
 	}
 
 	return nil, &data.Value{
-		Value: str.ReplaceCharIndexRange(formatString, replaceIndices, replaceStrings...),
+		Value: str.ReplaceCharIndexRange(
+			formatString,
+			formatStringRegex.FindAllStringIndex(formatString, -1),
+			replaceStrings...
+		),
 		Type:  data.String,
 		Global: op1.Global,
 	}
