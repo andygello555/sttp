@@ -435,6 +435,54 @@ func TestCompute(t *testing.T) {
 		},
 		{
 			op1: &data.Value{
+				Value: "Give me %%%!",
+				Type:  data.String,
+			},
+			op2: &data.Value{
+				Value: float64(110),
+				Type:  data.Number,
+			},
+			operator: Mod,
+			result: &data.Value{
+				Value: "Give me 110%!",
+				Type:  data.String,
+			},
+			err: nil,
+		},
+		{
+			op1: &data.Value{
+				Value: "Give me %%%!",
+				Type:  data.String,
+			},
+			op2: &data.Value{
+				Value: []interface{}{float64(110), "uh oh"},
+				Type:  data.Array,
+			},
+			operator: Mod,
+			result: &data.Value{
+				Value: "Give me %%%!",
+				Type:  data.String,
+			},
+			err: nil,
+		},
+		{
+			op1: &data.Value{
+				Value: "Give me %%%%!",
+				Type:  data.String,
+			},
+			op2: &data.Value{
+				Value: []interface{}{float64(110), " billion%"},
+				Type:  data.Array,
+			},
+			operator: Mod,
+			result: &data.Value{
+				Value: "Give me 110 billion%!",
+				Type:  data.String,
+			},
+			err: nil,
+		},
+		{
+			op1: &data.Value{
 				Value: float64(1),
 				Type:  data.Number,
 			},
