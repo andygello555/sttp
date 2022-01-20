@@ -1,5 +1,7 @@
 \subsection{JSONPath and Assignment}
 
+\cprotect\textit{Examples can be found in: \verb|src/_examples/example_02/example_02.sttp|}
+
 \begin{center}
     \textbf{Git commit}
     \begin{minted}{markdown}
@@ -42,20 +44,9 @@ Whenever JSONPath's are used, they are first converted to the \mintinline[breakl
 
 The \verb|Get| instance method is semantically similar to \verb|Set|, but instead of setting the value pointed to by the \verb|Path| they retrieve it. If the JSONPath does not point to anything then \verb|null| will be returned. \verb|Get| is implemented iteratively instead of via recursion. Again, the source code for \verb|Get| is too long to include within the report, but it can be found in: \verb|src/parser/json_path.go|.
 
-The \verb|Set| and \verb|Get| methods have gone through many iterations, but the two most important were:
+The \verb|Set| and \verb|Get| methods have gone through many iterations, but the most important was: Array, Object, and String access via Numbers, Strings and Filters. Filter expressions were implemented as I thought they would be useful when trying to find certain information within HTML that had been parsed into an \verb|sttp| Object. They are supported within the original syntax for JSONPath\textsuperscript{\cite{goessner_2007}}. However, \verb|sttp|'s version of filter expressions are syntactically different from the original specification, using the `\verb|```|' token to enclose a Block of code hanging off of a JSONPath. I added setting and getting to String Objects as I remembered that there was no way to retrieve and set character information within a String. Commit:
 
-\begin{enumerate}
-    \item Array and Object access via Numbers and Strings. Commit:
-    \begin{minted}{markdown}
-Language: JSONPath Set + tests
-- Extended set JSONPath Set procedure (02/12/2021 - 17:20:42)
-- Added JSONPath Set tests in new test file (02/12/2021 - 17:21:26)
-- Moved example file read into the init() method inside the test to
-  populate a global array (02/12/2021 - 17:23:43)
-- Updated example 1 and 2 (03/12/2021 - 01:11:43)
-    \end{minted}
-    \item Array, Object, and String access via Numbers, Strings and Filters. Filter expressions were implemented as I thought they would be useful when trying to find certain information within HTML that had been parsed into an \verb|sttp| Object. They are supported within the original syntax for JSONPath\textsuperscript{\cite{goessner_2007}}. However, \verb|sttp|'s version of filter expressions are syntactically different from the original specification, using the `\verb|```|' token to enclose a Block of code hanging off of a JSONPath. I added setting and getting to String Objects as I remembered that there was no way to retrieve and set character information within a String. Commit:
-    \begin{minted}{markdown}
+\begin{minted}{markdown}
 Language: JSONPath filter + JSONPath string getting/setting
 - Added the grammar for a JSONPath filter expression (30/12/2021 - 17:31:41)
 - Added the getter method for the JSONPath filter
@@ -72,7 +63,17 @@ Language: JSONPath filter + JSONPath string getting/setting
   setting feature (30/12/2021 - 23:04:49)
 - JSONPath setting can be used to concatenate and insert
   within strings now (30/12/2021 - 23:05:18)
-    \end{minted}
-\end{enumerate}
+\end{minted}
 
 \subsubsection{Assignment}
+
+After implementing the methods explained above, the implementation of the \verb|Assignment| AST node became a lot easier. In fact, the execution of the \verb|Assignment.Eval| instance method can be distilled down to three steps:
+
+\begin{enumerate}
+    \item Converts the \verb|JSONPath| on the LHS to a \verb|Path| (\verb|Path.Convert|) and gets the root property from it to find the root property's value on the current \verb|Frame|'s \verb|Heap|. If the root property's value is not found, we default \verb|null|.
+    \item The RHS of the \verb|Assignment| is then evaluated. If the RHS is a \verb|Function|, then we will create a copy of the \verb|FunctionDefinition|, changing the \verb|JSONPath| to the \verb|JSONPath| of the Assignment.
+    \inputminted[firstline=189, lastline=202, autogobble, breaklines, tabsize=4]{go}{../../src/parser/eval.go}
+    \item We then set this evaluated value on the RHS using the \verb|Path| (\verb|Path.Set|) we converted earlier, and assign it to the root property found earlier.
+\end{enumerate}
+
+Step 2 is interesting as it allows the `copying' of functions into different values by creating a `floating' AST node. Initially, this was implemented this way because \verb|Function| values are displayed as Strings in the form: \verb|function:RAW_JSON_PATH:FUNCTION_DEF_UINTPTR|. Before implementing the floating node creation version of \verb|Function| copying, the copy of the \verb|Function| would have JSONPath pointing back to the original function.

@@ -11,10 +11,15 @@
 \usepackage{import}
 \usepackage[style=ieee]{biblatex}
 \usepackage[table,xcdraw]{xcolor}
+\usepackage{tcolorbox}
+\usepackage{etoolbox}
 
 \theoremstyle{definition}
 \newtheorem{definition}{Definition}[subsubsection]
 \addbibresource{ref.bib}
+
+% \BeforeBeginEnvironment{minted}{\begin{tcolorbox}}%
+% \AfterEndEnvironment{minted}{\end{tcolorbox}}%
 
 %%%%%%%%%%%%%%%%%%%%%%
 %%% Input project details
@@ -144,10 +149,9 @@ Each AST node within \verb|sttp| implements the \verb|evalNode| interface. This 
 
 \import{sections}{2-7-1-jsonpath-assignment.tex}
 
-\subsection{Expressions}
-\label{sec:development-ast-nodes-expressions}
+\import{sections}{2-7-2-expressions.tex}
 
-\subsection{If-Elif-Else}
+\import{sections}{2-7-3-if-elif-else.tex}
 
 \subsection{Iteration}
 
