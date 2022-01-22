@@ -1,0 +1,22 @@
+\subsection{Functions}
+
+\begin{center}
+    \textbf{Diary Entry}\\[0.5em]
+    \textit{``This week I worked some more on adding in features to sttp. Since last week I have added all iteration structures (while, for, foreach), as well as function definitions and function calls which required quite a major rework to the stack. Currently the CallStack.Call method will copy over references to all global values to the new stack frame’s heap as well as creating a “self” variable that is filled with the value pointed to by the function definition’s root property. On top of this I also implemented the test statement and the TestSuite, which allows for the execution of directory-based sttp test suites."}\\[0.5em]
+    \tiny{1:44 am on November 12, 2021}
+\end{center}
+
+There are two AST nodes surrounding the evaluation and definition of functions. These are: \verb|FunctionDefinition| and \verb|FunctionCall|. \verb|FunctionDefinition|s can exist in any scope. This means that non-global functions can be defined within other functions. When a \\\verb|FunctionDefinition| is evaluated, it will place a pointer to the \verb|FunctionDefinition| node on the current frame's \verb|Heap|. The \verb|FunctionDefinition| \verb|Value| can only be global and read-only if the variable does not exist in the current frame's \verb|Heap|. Global is only set when the current scope is 0, and read-only is only set if the \verb|FunctionDefinition| is being set to a root property. Otherwise, if the variable can be found then the global and read-only flags are inherited from that variable.
+
+Within \verb|sttp| \verb|FunctionDefinition| pointers (\verb|Function| type) are marshalled as a string. This is done using the following function which implements Go's \verb|json.Marshaler| interface. This function will be called by \verb|json.Marshal|.
+
+\inputminted[firstline=374, lastline=379, autogobble, breaklines, tabsize=4]{go}{../../src/parser/functions.go}
+
+The \verb|FunctionCall.Eval| instance method is more complicated than \verb|FunctionDefinition.Eval|, and follows the following order of execution:
+
+\begin{itemize}
+    \item Increment the VM scope. This will be decremented in a deferred function. Then the JSONPath is evaluated to retrieve its \verb|Value| on the \verb|Heap|
+    \item If the JSONPath returns a \verb|Value| that is not of type \verb|Function|. Builtins will be checked if there is only a root property. If neither of these conditions holds, then we will return an \verb|Uncallable| error.
+    \item If the \verb|Value| found is a pointer to a \verb|FunctionDefinition| then we will evaluate all the arguments, push a new \verb|Frame|, evaluate the \verb|FunctionDefinition|'s body, and then return from the new \verb|Frame|. The result returned will be the return \verb|Value| from the popped \verb|Frame|.
+    \item If the \verb|Value| found is a \verb|BuiltinFunction|, then we will call the \verb|BuiltinFunction| by passing all uncomputed arguments to it.
+\end{itemize}

@@ -46,6 +46,6 @@ Each expression tree within the AST, will have leaf nodes that are \verb|Factor|
 
 As you can see, when the \verb|Factor| is a \verb|Number| (\mintinline{go}{*float64}), or a \verb|StringLit| (\mintinline{go}{*string}) then we create an anonymous struct that uses \verb|protoEvalNode| as a template. We then set the \verb|evalMethod| to a function that returns either a \verb|Number| or a \verb|StringLit|, set \verb|stringMethod| to a function that returns the value as a string, and \verb|getPosMethod| to return an empty position (as we do not have context). \verb|protoEvalNode| implements the \verb|ASTNode| interface, which in turn means that it also implements \verb|evalNode|, and an instance of it can be returned from the \verb|left| instance method. In other words, we construct a temporary `faux' AST node for \verb|Factor|s that are numbers of string literals.
 
-Finally, we implement the \verb|Eval| instance method for each \verb|PrecNTerm| and \verb|PrecN|, to make them implement the \verb|evalNode| interface. The source code for expression evaluation is found within its own file: \verb|src/parser/eval_expression.go|.
+Finally, we implement the \verb|Eval| instance method for each \verb|PrecNTerm| and \verb|PrecN|, to make them all implement the \verb|evalNode| interface. The source code for expression evaluation is found within its own file: \verb|src/parser/eval_expression.go|.
 
 \inputminted[firstline=182, lastline=194, fontsize=\footnotesize, autogobble, breaklines, tabsize=4]{go}{../../src/parser/eval_expression.go}

@@ -1,0 +1,32 @@
+\subsection{Iteration}
+
+\begin{center}
+    \textbf{Git commit}
+    \begin{minted}{markdown}
+Language: ReadOnly Values + Iterator + While, For, ForEach + examples
+- Updated example_03 with some more 'advanced' if-elif-else 
+  usage (06/12/2021 - 22:57:36)
+- Added ReadOnly flag to Value struct (06/12/2021 - 22:58:04)
+- Added ImutableValue error after adding ReadOnly flag (06/12/2021 - 22:58:39)
+- Added logic for While, For, and ForEach loops (06/12/2021 - 22:59:01)
+- Also added examples for each of these loops (06/12/2021 - 22:59:17)
+- Added the Iterator type to the data package which uses the container/heap
+  package to construct an iterator from a String, Object, or Array
+  Type (06/12/2021 - 23:01:13)
+- Removed some accidental printlns (06/12/2021 - 23:02:27)
+    \end{minted}
+    \vspace{-1em}
+    \tiny{December 6, 2021}
+\end{center}
+
+There are three statements used for iteration within \verb|sttp|: \verb|While|, \verb|For|, and \verb|ForEach|. The \verb|While| and \verb|ForEach| are implemented in a similar way. Using an anonymous function to evaluate the condition/predicate, and executing a \verb|Block| until that condition/predicate is not truthy. \verb|For| also has an anonymous function to execute the `step' assignment after each loop. \verb|ForEach| works in a slightly different way. It uses the \verb|Iterator| type (\mintinline[breaklines]{go}{type Iterator []*Element}), which is an implementation of Go's \verb|heap.Interface|, as a generic priority queue for \verb|Array|s, \verb|Object|s, and \verb|String|s. Each \verb|Iterator| is just an array of \verb|Element|s, each of which has a \verb|Key| and \verb|Val| properties that are \verb|sttp| \verb|Value|s. The type of these \verb|Value|s change depending on the type that the \verb|Iterator| is iterating over.
+
+\begin{itemize}
+    \item For \verb|Array|s, the \verb|Key| is a \verb|Number| containing the index of the \verb|Val|. \verb|Val|'s type is dependant on the value of the element at \verb|Key|.
+    \item For \verb|Object|s, the \verb|Key| is a \verb|String| containing the key of the \verb|Val|. \verb|Val|'s type is dependant on the value of the element at \verb|Key|.
+    \item For \verb|String|s, the \verb|Key| is a \verb|Number| containing the index of the \verb|Val|. \verb|Val| is a single character \verb|String| containing the character at the \verb|Key|.
+\end{itemize}
+
+An instance of the \verb|Iterator| type can be constructed using the \verb|data.Iterate| function (within the \verb|data| package). This will \verb|heap.Push| \verb|Element|s, constructed via the rules above, in a new instance of an \verb|Iterator|. Aside from being used within the \verb|ForEach| loop, \verb|Iterator| is also used when evaluating filter \verb|Block|s within JSONPaths.
+
+The execution of \verb|ForEach| will first have to \verb|Cast| the \verb|Value| to iterate over, if this \verb|Value| is not an \verb|Array|, \verb|Object|, or a \verb|String|. The \verb|Value| will be attempted to be cast to a \verb|String| first, then an \verb|Array|, and finally an \verb|Object|. \verb|ForEach| will iterate as many times as there are \verb|Element|s in the \verb|Iterator|. At the beginning of each iteration, the next \verb|Element| is popped from the \verb|Iterator|. Then, the \verb|Key| of the \verb|Element| is set on the current frame's \verb|Heap| to the given identifier. If the identifier for a `value' variable is also provided in the \verb|ForEach| statement, this variable will be set to the \verb|Val| property of the currently popped \verb|Element|.
