@@ -780,25 +780,25 @@ func TestMethod_Call(t *testing.T) {
 			result: []byte(`{
   "attributes": {},
   "data": "",
-  "siblings": [
+  "children": [
     {
       "attributes": {
         "lang": "en"
       },
       "data": "html",
-      "siblings": [
+      "children": [
         {
           "attributes": {},
           "data": "head",
-          "siblings": [
+          "children": [
             {
               "attributes": {},
               "data": "title",
-              "siblings": [
+              "children": [
                 {
                   "attributes": {},
                   "data": "GET: http://127.0.0.1:3000/?format=html",
-                  "siblings": [],
+                  "children": [],
                   "type": "text"
                 }
               ],
@@ -810,15 +810,15 @@ func TestMethod_Call(t *testing.T) {
         {
           "attributes": {},
           "data": "body",
-          "siblings": [
+          "children": [
             {
               "attributes": {},
               "data": "h1",
-              "siblings": [
+              "children": [
                 {
                   "attributes": {},
                   "data": "GET: http://127.0.0.1:3000/?format=html",
-                  "siblings": [],
+                  "children": [],
                   "type": "text"
                 }
               ],
@@ -827,19 +827,19 @@ func TestMethod_Call(t *testing.T) {
             {
               "attributes": {},
               "data": "div",
-              "siblings": [
+              "children": [
                 {
                   "attributes": {},
                   "data": "ul",
-                  "siblings": [
+                  "children": [
                     {
                       "attributes": {},
                       "data": "li",
-                      "siblings": [
+                      "children": [
                         {
                           "attributes": {},
                           "data": "method: GET",
-                          "siblings": [],
+                          "children": [],
                           "type": "text"
                         }
                       ],
@@ -848,11 +848,11 @@ func TestMethod_Call(t *testing.T) {
                     {
                       "attributes": {},
                       "data": "li",
-                      "siblings": [
+                      "children": [
                         {
                           "attributes": {},
                           "data": "url: http://127.0.0.1:3000/?format=html",
-                          "siblings": [],
+                          "children": [],
                           "type": "text"
                         }
                       ],
@@ -861,25 +861,25 @@ func TestMethod_Call(t *testing.T) {
                     {
                       "attributes": {},
                       "data": "li",
-                      "siblings": [
+                      "children": [
                         {
                           "attributes": {},
                           "data": "query_params:",
-                          "siblings": [],
+                          "children": [],
                           "type": "text"
                         },
                         {
                           "attributes": {},
                           "data": "ul",
-                          "siblings": [
+                          "children": [
                             {
                               "attributes": {},
                               "data": "li",
-                              "siblings": [
+                              "children": [
                                 {
                                   "attributes": {},
                                   "data": "format: html",
-                                  "siblings": [],
+                                  "children": [],
                                   "type": "text"
                                 }
                               ],
@@ -894,25 +894,25 @@ func TestMethod_Call(t *testing.T) {
                     {
                       "attributes": {},
                       "data": "li",
-                      "siblings": [
+                      "children": [
                         {
                           "attributes": {},
                           "data": "headers:",
-                          "siblings": [],
+                          "children": [],
                           "type": "text"
                         },
                         {
                           "attributes": {},
                           "data": "ul",
-                          "siblings": [
+                          "children": [
                             {
                               "attributes": {},
                               "data": "li",
-                              "siblings": [
+                              "children": [
                                 {
                                   "attributes": {},
                                   "data": "host: 127.0.0.1:3000",
-                                  "siblings": [],
+                                  "children": [],
                                   "type": "text"
                                 }
                               ],
@@ -921,11 +921,11 @@ func TestMethod_Call(t *testing.T) {
                             {
                               "attributes": {},
                               "data": "li",
-                              "siblings": [
+                              "children": [
                                 {
                                   "attributes": {},
                                   "data": "user-agent: go-resty/2.7.0 (https://github.com/go-resty/resty)",
-                                  "siblings": [],
+                                  "children": [],
                                   "type": "text"
                                 }
                               ],
@@ -934,11 +934,11 @@ func TestMethod_Call(t *testing.T) {
                             {
                               "attributes": {},
                               "data": "li",
-                              "siblings": [
+                              "children": [
                                 {
                                   "attributes": {},
                                   "data": "accept-encoding: gzip",
-                                  "siblings": [],
+                                  "children": [],
                                   "type": "text"
                                 }
                               ],
@@ -953,11 +953,11 @@ func TestMethod_Call(t *testing.T) {
                     {
                       "attributes": {},
                       "data": "li",
-                      "siblings": [
+                      "children": [
                         {
                           "attributes": {},
                           "data": "code: null",
-                          "siblings": [],
+                          "children": [],
                           "type": "text"
                         }
                       ],
@@ -966,11 +966,11 @@ func TestMethod_Call(t *testing.T) {
                     {
                       "attributes": {},
                       "data": "li",
-                      "siblings": [
+                      "children": [
                         {
                           "attributes": {},
                           "data": "version: 1.1",
-                          "siblings": [],
+                          "children": [],
                           "type": "text"
                         }
                       ],
@@ -1010,25 +1010,25 @@ func TestMethod_Call(t *testing.T) {
 			result: []byte(`{
   "attributes": {},
   "data": "",
-  "siblings": [
+  "children": [
     {
       "attributes": {
         "lang": "en"
       },
       "data": "html",
-      "siblings": [
+      "children": [
         {
           "attributes": {},
           "data": "head",
-          "siblings": [
+          "children": [
             {
               "attributes": {},
               "data": "title",
-              "siblings": [
+              "children": [
                 {
                   "attributes": {},
                   "data": "POST: http://127.0.0.1:3000/?format=html",
-                  "siblings": [],
+                  "children": [],
                   "type": "text"
                 }
               ],
@@ -1040,15 +1040,15 @@ func TestMethod_Call(t *testing.T) {
         {
           "attributes": {},
           "data": "body",
-          "siblings": [
+          "children": [
             {
               "attributes": {},
               "data": "h1",
-              "siblings": [
+              "children": [
                 {
                   "attributes": {},
                   "data": "POST: http://127.0.0.1:3000/?format=html",
-                  "siblings": [],
+                  "children": [],
                   "type": "text"
                 }
               ],
@@ -1057,19 +1057,19 @@ func TestMethod_Call(t *testing.T) {
             {
               "attributes": {},
               "data": "div",
-              "siblings": [
+              "children": [
                 {
                   "attributes": {},
                   "data": "ul",
-                  "siblings": [
+                  "children": [
                     {
                       "attributes": {},
                       "data": "li",
-                      "siblings": [
+                      "children": [
                         {
                           "attributes": {},
                           "data": "method: POST",
-                          "siblings": [],
+                          "children": [],
                           "type": "text"
                         }
                       ],
@@ -1078,11 +1078,11 @@ func TestMethod_Call(t *testing.T) {
                     {
                       "attributes": {},
                       "data": "li",
-                      "siblings": [
+                      "children": [
                         {
                           "attributes": {},
                           "data": "url: http://127.0.0.1:3000/?format=html",
-                          "siblings": [],
+                          "children": [],
                           "type": "text"
                         }
                       ],
@@ -1091,25 +1091,25 @@ func TestMethod_Call(t *testing.T) {
                     {
                       "attributes": {},
                       "data": "li",
-                      "siblings": [
+                      "children": [
                         {
                           "attributes": {},
                           "data": "query_params:",
-                          "siblings": [],
+                          "children": [],
                           "type": "text"
                         },
                         {
                           "attributes": {},
                           "data": "ul",
-                          "siblings": [
+                          "children": [
                             {
                               "attributes": {},
                               "data": "li",
-                              "siblings": [
+                              "children": [
                                 {
                                   "attributes": {},
                                   "data": "format: html",
-                                  "siblings": [],
+                                  "children": [],
                                   "type": "text"
                                 }
                               ],
@@ -1124,25 +1124,25 @@ func TestMethod_Call(t *testing.T) {
                     {
                       "attributes": {},
                       "data": "li",
-                      "siblings": [
+                      "children": [
                         {
                           "attributes": {},
                           "data": "headers:",
-                          "siblings": [],
+                          "children": [],
                           "type": "text"
                         },
                         {
                           "attributes": {},
                           "data": "ul",
-                          "siblings": [
+                          "children": [
                             {
                               "attributes": {},
                               "data": "li",
-                              "siblings": [
+                              "children": [
                                 {
                                   "attributes": {},
                                   "data": "host: 127.0.0.1:3000",
-                                  "siblings": [],
+                                  "children": [],
                                   "type": "text"
                                 }
                               ],
@@ -1151,11 +1151,11 @@ func TestMethod_Call(t *testing.T) {
                             {
                               "attributes": {},
                               "data": "li",
-                              "siblings": [
+                              "children": [
                                 {
                                   "attributes": {},
                                   "data": "user-agent: go-resty/2.7.0 (https://github.com/go-resty/resty)",
-                                  "siblings": [],
+                                  "children": [],
                                   "type": "text"
                                 }
                               ],
@@ -1164,11 +1164,11 @@ func TestMethod_Call(t *testing.T) {
                             {
                               "attributes": {},
                               "data": "li",
-                              "siblings": [
+                              "children": [
                                 {
                                   "attributes": {},
                                   "data": "content-length: 17",
-                                  "siblings": [],
+                                  "children": [],
                                   "type": "text"
                                 }
                               ],
@@ -1177,11 +1177,11 @@ func TestMethod_Call(t *testing.T) {
                             {
                               "attributes": {},
                               "data": "li",
-                              "siblings": [
+                              "children": [
                                 {
                                   "attributes": {},
                                   "data": "content-type: application/json",
-                                  "siblings": [],
+                                  "children": [],
                                   "type": "text"
                                 }
                               ],
@@ -1190,11 +1190,11 @@ func TestMethod_Call(t *testing.T) {
                             {
                               "attributes": {},
                               "data": "li",
-                              "siblings": [
+                              "children": [
                                 {
                                   "attributes": {},
                                   "data": "accept-encoding: gzip",
-                                  "siblings": [],
+                                  "children": [],
                                   "type": "text"
                                 }
                               ],
@@ -1209,11 +1209,11 @@ func TestMethod_Call(t *testing.T) {
                     {
                       "attributes": {},
                       "data": "li",
-                      "siblings": [
+                      "children": [
                         {
                           "attributes": {},
                           "data": "code: null",
-                          "siblings": [],
+                          "children": [],
                           "type": "text"
                         }
                       ],
@@ -1222,11 +1222,11 @@ func TestMethod_Call(t *testing.T) {
                     {
                       "attributes": {},
                       "data": "li",
-                      "siblings": [
+                      "children": [
                         {
                           "attributes": {},
                           "data": "version: 1.1",
-                          "siblings": [],
+                          "children": [],
                           "type": "text"
                         }
                       ],
@@ -1235,21 +1235,21 @@ func TestMethod_Call(t *testing.T) {
                     {
                       "attributes": {},
                       "data": "li",
-                      "siblings": [
+                      "children": [
                         {
                           "attributes": {},
                           "data": "body:",
-                          "siblings": [],
+                          "children": [],
                           "type": "text"
                         },
                         {
                           "attributes": {},
                           "data": "div",
-                          "siblings": [
+                          "children": [
                             {
                               "attributes": {},
                               "data": "{\"hello\":\"world\"}",
-                              "siblings": [],
+                              "children": [],
                               "type": "text"
                             }
                           ],
