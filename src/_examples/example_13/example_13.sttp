@@ -38,25 +38,25 @@ html = $GET("http://127.0.0.1:3000/this/is/html/content?format=html");
 dummy_html = {
     "attributes": {},
     "data": "li",
-    "siblings": [
+    "children": [
      {
        "attributes": {},
        "data": "headers:",
-       "siblings": [],
+       "children": [],
        "type": "text"
      },
      {
        "attributes": {},
        "data": "ul",
-       "siblings": [
+       "children": [
          {
            "attributes": {},
            "data": "li",
-           "siblings": [
+           "children": [
              {
                "attributes": {},
                "data": "host: 127.0.0.1:3000",
-               "siblings": [],
+               "children": [],
                "type": "text"
              }
            ],
@@ -65,11 +65,11 @@ dummy_html = {
          {
            "attributes": {},
            "data": "li",
-           "siblings": [
+           "children": [
              {
                "attributes": {},
                "data": "user-agent: go-resty/2.7.0 (https://github.com/go-resty/resty)",
-               "siblings": [],
+               "children": [],
                "type": "text"
              }
            ],
@@ -78,11 +78,11 @@ dummy_html = {
          {
            "attributes": {},
            "data": "li",
-           "siblings": [
+           "children": [
              {
                "attributes": {},
                "data": "accept-encoding: gzip",
-               "siblings": [],
+               "children": [],
                "type": "text"
              }
            ],
@@ -97,7 +97,7 @@ dummy_html = {
 
 html_search_schema = {
    "data": "li",
-   "siblings": {
+   "children": {
        "": {"data": "user-agent"}
    },
    "type": "element"
