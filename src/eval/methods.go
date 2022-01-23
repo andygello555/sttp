@@ -227,15 +227,15 @@ func (m *Method) Call(args ...*data.Value) (err error, value *data.Value) {
 					}
 
 					// We recurse down each child
-					siblings := make([]interface{}, 0)
+					children := make([]interface{}, 0)
 					for c := curr.FirstChild; c != nil; c = c.NextSibling {
-						siblingMap := construct(c)
-						if siblingMap != nil {
-							siblings = append(siblings, siblingMap)
+						childrenMap := construct(c)
+						if childrenMap != nil {
+							children = append(children, childrenMap)
 						}
 					}
 
-					nodeMap["siblings"] = siblings
+					nodeMap["children"] = children
 					return nodeMap
 				}
 				return nil
