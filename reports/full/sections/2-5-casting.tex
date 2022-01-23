@@ -1,11 +1,13 @@
 \section{Casting}
 \label{sec:development-casting}
 
-\begin{center}
-    \textbf{Diary Entry}\\[0.5em]
-    \textit{``This week I worked more on the programming language I am creating. In particular I added a lookup table of cast functions which contains the functions needed for casting each type to another type. Of course you aren’t able to cast any type to any type. Then I moved onto the operator computation lookup table."}\\[0.5em]
-    \tiny{6:44 pm on November 14, 2021}
-\end{center}
+\begin{figure}[H]
+    \begin{center}
+        \textbf{Diary Entry}\\[0.5em]
+        \textit{``This week I worked more on the programming language I am creating. In particular I added a lookup table of cast functions which contains the functions needed for casting each type to another type. Of course you aren’t able to cast any type to any type. Then I moved onto the operator computation lookup table."}\\[0.5em]
+        \tiny{6:44 pm on November 14, 2021}
+    \end{center}
+\end{figure}
 
 Casting is a large part of \verb|sttp| as it is a dynamically-typed programming language. Expressions within \verb|sttp| often use casting to make sure that an operation can be carried out successfully. In most cases, the \verb|sttp| interpreter will choose to behave `dynamically' rather than `erroring-out'.
 

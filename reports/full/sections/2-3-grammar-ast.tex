@@ -1,10 +1,12 @@
 \section{The Grammar and the AST}
 
-\begin{center}
-    \textbf{Diary Entry}\\[0.5em]
-    \textit{``This week I focussed on writing up the grammar for my interpreted programming language. I ended starting the write-up of a grammar and semantics specification as well as the grammar implementation within the participle parser generator. The specification can be found in the reports directory and the go implementation can be found in the src directory. Even though this counts as one of my test programs it will become a part of my finished product, hence why it is located in src."}\\[0.5em]
-    \tiny{3:33 pm on October 24, 2021}
-\end{center}
+\begin{figure}[H]
+    \begin{center}
+        \textbf{Diary Entry}\\[0.5em]
+        \textit{``This week I focussed on writing up the grammar for my interpreted programming language. I ended starting the write-up of a grammar and semantics specification as well as the grammar implementation within the participle parser generator. The specification can be found in the reports directory and the go implementation can be found in the src directory. Even though this counts as one of my test programs it will become a part of my finished product, hence why it is located in src."}\\[0.5em]
+        \tiny{3:33 pm on October 24, 2021}
+    \end{center}
+\end{figure}
 
 After creating the test programs described above, I moved onto starting a formal specification for the programming language. In particular the grammar of the language. The majority of the syntax is based on the syntax of Lua \textsuperscript{\cite{lua_syntax_specification}}. The syntax has been heavily modified in order to make it use tail recursion and some of the other constructs within the language, such as JSONPath and HTTP request methods. It also differs from the Lua syntax specification, as the 5 levels of operator precedence are encoded into the grammar itself. Whereas, Lua's operator precedence is evaluated after parsing. This decision was made after writing a report on \textit{`The use derivation rules, and grammar idioms to capture notions of associativity and precedence in arithmetic expressions'}.
 
@@ -268,11 +270,13 @@ These \verb|String| instance methods can be found in the \verb|src/parser/string
 
 \subsection{A problem with the grammar}
 
-\begin{center}
-    \textbf{Diary Entry}\\[0.5em]
-    \cprotect\textit{``Just found a mistake within the sttp grammar. The non-terminal for function calls is: \verb|JSONPath "(" (@@ ( "," @@ )*)? ")"|, and the non-terminal for variable access is: \verb|JSONPath|. Because both function calls and variable access can both derive a Factor within an expression this leads to function calls being misidentified as function calls. To fix this I added a ``\verb|$|" token as syntactic sugar before the JSONPath for function calls so that there is no clash between the two non-terminals."}\\[0.5em]
-    \tiny{5:05 pm on December 8, 2021}
-\end{center}
+\begin{figure}[H]
+    \begin{center}
+        \textbf{Diary Entry}\\[0.5em]
+        \cprotect\textit{``Just found a mistake within the sttp grammar. The non-terminal for function calls is: \verb|JSONPath "(" (@@ ( "," @@ )*)? ")"|, and the non-terminal for variable access is: \verb|JSONPath|. Because both function calls and variable access can both derive a Factor within an expression this leads to function calls being misidentified as function calls. To fix this I added a ``\verb|$|" token as syntactic sugar before the JSONPath for function calls so that there is no clash between the two non-terminals."}\\[0.5em]
+        \tiny{5:05 pm on December 8, 2021}
+    \end{center}
+\end{figure}
 
 As described by the diary entry above. There was a mistake within the grammar for the non-terminals: \verb|FunctionCall| and \verb|JSONPath|. This mistake lead to a $FIRST$ set clash, which lead to FunctionCalls being parsed as JSONPaths within Expressions, as both can derive Factor. To solve this, I added `\verb|$|' as a suffix for FunctionCalls (and MethodCalls for consistency), which solves the $FIRST$ set clash.
 

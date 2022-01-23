@@ -1483,6 +1483,7 @@ When executing a test suite, the directory structure will be walked in no partic
 If the \verb|BreakOnFailure| flag is set on the test suite, then the execution of the test suite will exit if any sttp script has a test that fails. Within this failed sttp script, all test statements not yet evaluated by the interpreter, will not be executed whatsoever. Internally, this is achieved by the failed test statement throwing an uncatchable error.
 
 \subsection{Output}
+\label{sec:test-suites-and-the-test-statement-test-suite-output}
 
 Once a test suite has been executed, an output will be written to stdout similar to the following:
 

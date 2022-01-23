@@ -140,6 +140,7 @@ Note that the topmost element of the \verb|CallStack| is first assigned to a var
 \verb|Call| and \verb|Return| can also return an error that will be \verb|StackOverflow| and \verb|StackUnderFlow| respectively. This happens when adding a \verb|Frame| when the current stack size is equal to \verb|MaxStackFrames|, or popping a \verb|Frame| when there are no \verb|Frame|s to pop.
 
 \subsection{VM}
+\label{sec:data-structures-vm}
 
 The \verb|VM| type was created in order to manage the state of the interpreter. It will be passed down from AST node to AST node and will be the comprised of many other data structures, such as the \verb|CallStack|. All of which can be accessible through instance methods defined on the \verb|VM| type itself. As with the \verb|CallStack| type, the \verb|VM| type is declared in the \verb|main| package. This means that a \verb|VM| interface has to be defined in lower level packages, that allow access to all fields that need to be reachable from within that package. Below is the \verb|VM| type as it is declared in the \verb|main| package, as well as the \verb|VM| interface found within the \verb|parser| package.
 
