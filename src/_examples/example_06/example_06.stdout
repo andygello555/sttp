@@ -5,3 +5,8 @@ loop3out = [(!: 1), (hello: 2), (world: 3)]
 loop4out = [(a: 0), (b: 1), (c: 2), (d: 3), (e: 4), (f: 5)]
 ohno = null
 loop5out = [(0: 1), (1: 2), (2: 3)]
+Current character in "hello world!": (0, h)
+Current character in "hello world!": (1, e)
+Current character in "hello world!": (2, l)
+Current character in "hello world!": (3, l)
+Current character in "hello world!": (4, o)

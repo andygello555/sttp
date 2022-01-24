@@ -75,3 +75,10 @@ for index, char in iterators.loop5 do
     end;
 end;
 $print("loop5out =", loop5out);
+
+for index, char in "hello world!" do
+    if char == " " then
+        break;
+    end;
+    $print("Current character in \"hello world!\": (%%, %%)" % [index, char]);
+end;
