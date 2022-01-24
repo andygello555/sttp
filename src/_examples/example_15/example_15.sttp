@@ -1,0 +1,17 @@
+function foo()
+    try this
+        return $GET("http://127.0.0.1:3000/this/might/fail");
+    catch as e then
+        $print(e);
+    end;
+end;
+
+$foo();
+
+try this
+    break;
+catch as e then
+    $print(e);
+end;
+
+return 0;

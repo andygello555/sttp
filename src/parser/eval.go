@@ -36,6 +36,22 @@ func (p *Program) Eval(vm VM) (err error, result *data.Value) {
 			_, _ = fmt.Fprintf(debug, "final stack frame heap: %v\n", vm.GetCallStack().Current().GetHeap())
 		}
 		err, _ = vm.GetCallStack().Return(vm)
+	} else if purposeful, ok := err.(errors.PurposefulError); ok {
+		// We check if the error is a purposeful error
+		switch purposeful {
+		case errors.Break:
+			// Exchange the error for a more informative one
+			err = errors.BreakOutsideLoop.Errorf(vm)
+		case errors.Throw:
+			// Wrap the user error within a go error
+			errVal, _ := errors.ConstructSttpError(err, result.Value)
+			err = errors.Errorf(vm, "RuntimeError", "ThrowError", "throw not caught: %s", errVal)
+		case errors.Return:
+			// Nilify the error in case of Return
+			err = nil
+		default:
+			break
+		}
 	}
 	return err, result
 }
@@ -124,7 +140,7 @@ func (s *Statement) Eval(vm VM) (err error, result *data.Value) {
 	case s.MethodCall != nil:
 		err, result = s.MethodCall.Eval(vm)
 	case s.Break != nil:
-		return nil, nil
+		return errors.Break, nil
 	case s.Test != nil:
 		err, result = s.Test.Eval(vm)
 	case s.While != nil:
@@ -321,6 +337,11 @@ func (w *While) Eval(vm VM) (err error, result *data.Value) {
 			switch p.(type) {
 			case struct { errors.ProtoSttpError }:
 				err = p.(struct { errors.ProtoSttpError })
+			case errors.PurposefulError:
+				// We ignore any errors thrown by the break statement
+				if p.(errors.PurposefulError) == errors.Break {
+					err = nil
+				}
 			default:
 				err = fmt.Errorf("%v", p)
 			}
@@ -366,6 +387,11 @@ func (f *For) Eval(vm VM) (err error, result *data.Value) {
 			switch p.(type) {
 			case struct { errors.ProtoSttpError }:
 				err = p.(struct { errors.ProtoSttpError })
+			case errors.PurposefulError:
+				// We ignore any errors thrown by the break statement
+				if p.(errors.PurposefulError) == errors.Break {
+					err = nil
+				}
 			default:
 				err = fmt.Errorf("%v", p)
 			}
@@ -397,7 +423,7 @@ func (f *For) Eval(vm VM) (err error, result *data.Value) {
 	// Then we do our loop
 	for evalCond() {
 		if err, _ = f.Block.Eval(vm); err != nil {
-			return err, nil
+			panic(err)
 		}
 		evalStep()
 	}
@@ -441,9 +467,20 @@ func (f *ForEach) Eval(vm VM) (err error, result *data.Value) {
 		}
 	}
 
+	// Panic recovery makes returning errors a bit easier
 	defer func() {
 		if p := recover(); p != nil {
-			err = errors.UpdateError(err, vm)
+			switch p.(type) {
+			case struct { errors.ProtoSttpError }:
+				err = p.(struct { errors.ProtoSttpError })
+			case errors.PurposefulError:
+				// We ignore any errors thrown by the break statement
+				if p.(errors.PurposefulError) == errors.Break {
+					err = nil
+				}
+			default:
+				err = fmt.Errorf("%v", p)
+			}
 		}
 	}()
 
