@@ -19,3 +19,9 @@ while counters.a * counters.b * counters.c <= 100 do
 end;
 
 $print("counters =", counters);
+
+while true do
+    $print("we only execute this once...");
+    break;
+    $print("we don't execute this at all");
+end;

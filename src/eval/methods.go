@@ -182,12 +182,13 @@ func (m *Method) Call(args ...*data.Value) (err error, value *data.Value) {
 		}
 
 		var resp *resty.Response
-		resp, err = request.Execute(m.String(), args[0].StringLit())
+		if resp, err = request.Execute(m.String(), args[0].StringLit()); err != nil {
+			return err, nil
+		}
 
-		var err2 error
 		var body *data.Value
-		if err2, body = data.ConstructSymbol(string(resp.Body()), false); err2 != nil {
-			return err2, nil
+		if err, body = data.ConstructSymbol(string(resp.Body()), false); err != nil {
+			return err, nil
 		}
 
 		if strings.Contains(resp.Header().Get("content-type"), "text/html") && body.Type == data.String {
