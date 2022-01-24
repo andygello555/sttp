@@ -1,3 +1,70 @@
 \cprotect\subsection{Try-Catch and \verb|throw|}
 
+As well as returning a \verb|Value|, \verb|Eval| also can return an \mintinline[breaklines]{go}{error}. Each implementor of \verb|evalNode| will pass any errors that occur within that node or from evaluating any lower down nodes up to the parent node (the node that called the current node's \verb|Eval| method). This is true for all nodes apart from the \verb|TryCatch| node. If evaluating the \verb|Block| within the \verb|try| statement returns an error, this error will be wrapped, stored within the given identifier supplied in the \verb|catch as| statement, then the \verb|Block| nested within the \verb|catch as| statement will be executed.
+
 \subsubsection{Errors}
+
+\label{sec:development-try-catch-throw-errors-context}
+\begin{definition}[Context within sttp]
+    In \verb|sttp|, errors can be given context through a \verb|VM| instance. This is because through the \verb|VM| there is access to the position of the currently evaluated node as well as the callstack. Therefore, errors with context contain:
+    \begin{enumerate}
+        \item The position that the error occurred.
+        \item The frames on the callstack at the time that the error occurred.
+    \end{enumerate}
+\end{definition}
+
+\mintinline[breaklines]{go}{func ConstructSttpError(err error, userErr interface{}) (errVal interface{}, ret bool)} is called to wrap this Go \mintinline{go}{error} into an \verb|sttp| \verb|Value| so that it can be manipulated within the \verb|catch as| block. The generated \verb|Value| depends on the type of the \mintinline{go}{error}.
+
+\begin{itemize}
+    \item \verb|PurposefulError|: enumeration of error types that represent errors that occur to represent a state change within the interpreter. Such as: the \verb|Return| error that indicates to the interpreter to escape execution until we return to a \verb|FunctionCall|.
+    \begin{itemize}
+        \item \verb|Throw|: the interpreter will construct the error value by using the \verb|Value| of the evaluated expression after the \verb|throw| token (the \verb|userErr| parameter).
+        \item \verb|FailedTest|, \verb|Return|, and \verb|Break|: \verb|ConstructSttpError| will ignore these values and return the error `as is'. This will effectively ignore the \verb|TryCatch|, creating an `uncatchable' error.
+    \end{itemize}
+    \item \mintinline{go}{struct { ProtoSttpError }}: these are anonymous structures that use \verb|ProtoSttpError| as a prototype. \verb|ProtoSttpError| is a type that implements Go's \mintinline{go}{error} interface, as well as some other fields and methods used to give more context to errors. The error value returned by \verb|ConstructSttpError| will be an \verb|Object| with the following schema:
+    \begin{minted}[breaklines]{js}
+{
+    "type": "The name of the error (String)",
+    "error": "The description of the error (String)",
+    "subset": "The subset that the error belongs to (String)",
+    // The below two keys will only be added to the value if the 
+    "pos": {
+        // The column number that the error occurred on
+        "col": 0.0,
+        // The sttp file in which the error occurred in
+        "filename": "*.sttp",
+        // The line number that the error occurred on
+        "line": 0.0,
+    },
+    // The callstack is converted to an sttp value using CallStack.Value. It only converts the most recent couple 
+    // of stack frames
+    "callstack": [
+        {
+            "parent": {
+                "pos": {"line": ..., "col": ..., "filename": ...},
+                "function": "FunctionDeclaration pointer",
+                "string": "Pretty printed sttp code",
+            },
+            "caller": {
+                "pos": {"line": ..., "col": ..., "filename": ...},
+                "string": "Pretty printed sttp code",
+            },
+        },
+    ]
+}
+    \end{minted}
+\end{itemize}
+
+The \verb|subset| key within this constructed error value relates to the three subsets of errors that can occur within \verb|sttp|. \verb|RuntimeError|s, \verb|StructureError|s, and \verb|PurposefulError|s. These three subsets are all described as enumerations of types that have `\mintinline{go}{string}' as their underlying type. This string represents each enumeration value's format string, the filled version of which will be used as the description for the error. \verb|RuntimeError| and \verb|StructureError|, both implement the \mintinline[breaklines]{go}{Errorf(vm VM, values... interface{}) error} method. This will return an instance of an anonymous structure that implements the fields of the \verb|ProtoSttpError| type. These \verb|Errorf| methods will call the global package function \verb|Errorf|, which implements this anonymous \mintinline{go}{struct} construction logic. The code snippet below shows the \verb|RuntimeError.Errorf| method, the \verb|Errorf| function, and the \verb|ProtoSttpError| type definition.
+
+\inputminted[firstline=73, lastline=105, autogobble, breaklines, tabsize=4]{go}{../../src/errors/errors.go}
+
+\inputminted[firstline=8, lastline=23, autogobble, breaklines, tabsize=4]{go}{../../src/errors/errors.go}
+
+The \verb|ProtoSttpError| is used as a prototype for anonymous structures, any anonymous structure that uses it as a prototype will automatically implement Go's \mintinline[breaklines]{go}{type error interface { Error() string }} interface, as the \verb|errorMethod| stored within it can be called using \verb|ProtoSttpError.Error|.
+
+A \verb|VM| instance must be given to \verb|errors.Errorf| so that the \mintinline[breaklines]{go}{struct { ProtoSttpError }} constructed has context. However, there are some points in the code base where an error must be thrown that does not have access to a \verb|VM| implementation or interface. In these cases the interpreter will pass in a reference to an anonymous struct that implements the \verb|NullVM| prototype. This is a type found within the \verb|errors| package that acts as a prototype for structures that implements a cut down version of the \verb|VM| interface (also found in \verb|errors| package). In fact the only methods an \verb|errors.VM| must implement are: \mintinline[breaklines]{go}{GetPos() lexer.Position} and \mintinline[breaklines]{go}{CallStackValue() []interface{}}. \verb|GetNullVM| will return an anonymous structure that uses \verb|NullVM| as a prototype. Thus implementing the \verb|errors.VM| interface by returning empty values for both \verb|GetPos| and \verb|CallStackValue|.
+
+A \mintinline{go}{struct { ProtoSttpError }} can be given context by passing it to the \verb|errors.UpdateError| with a \verb|VM| instance that does not use \verb|NullVM| as a prototype. It will do this by setting the \verb|Pos|, \verb|CallStack|, and \verb|FromNullVM| fields. So even if an error is constructed without context, it can be given context later on in the execution.
+
+The \verb|errors| package has gone through a lot of iterations. The largest of which was done in order to give context to errors. The source code for errors is found within the \verb|errors| package: \verb|src/errors|.

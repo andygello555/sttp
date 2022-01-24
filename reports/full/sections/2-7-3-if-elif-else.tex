@@ -21,4 +21,4 @@ The AST node/non-terminal representing \verb|IfElifElse| statements are construc
 
 The \verb|elif| statements are split into their own AST node for code readability. \verb|IfElifElse.Eval| is fairly straightforward in its implementation. One thing to note is the use of anonymous functions. In this case it is used to evaluated an \verb|Expression| and return a \mintinline[breaklines]{go}{bool}. This is used to evaluate the conditions within \verb|if| and \verb|elif|.
 
-\inputminted[firstline=764, lastline=778, autogobble, breaklines, tabsize=4]{go}{../../src/parser/eval.go}
+\inputminted[firstline=801, lastline=815, autogobble, breaklines, tabsize=4]{go}{../../src/parser/eval.go}

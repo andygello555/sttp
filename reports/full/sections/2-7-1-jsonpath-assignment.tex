@@ -72,7 +72,7 @@ After implementing the methods explained above, the implementation of the \verb|
 \begin{enumerate}
     \item Converts the \verb|JSONPath| on the LHS to a \verb|Path| (\verb|Path.Convert|) and gets the root property from it to find the root property's value on the current \verb|Frame|'s \verb|Heap|. If the root property's value is not found, we default \verb|null|.
     \item The RHS of the \verb|Assignment| is then evaluated. If the RHS is a \verb|Function|, then we will create a copy of the \verb|FunctionDefinition|, changing the \verb|JSONPath| to the \verb|JSONPath| of the Assignment.
-    \inputminted[firstline=189, lastline=202, autogobble, breaklines, tabsize=4]{go}{../../src/parser/eval.go}
+    \inputminted[firstline=205, lastline=218, autogobble, breaklines, tabsize=4]{go}{../../src/parser/eval.go}
     \item We then set this evaluated value on the RHS using the \verb|Path| (\verb|Path.Set|) we converted earlier, and assign it to the root property found earlier.
 \end{enumerate}
 
