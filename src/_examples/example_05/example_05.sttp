@@ -13,3 +13,12 @@ for i = 0; i < 100; i = i + 1 do
 end;
 
 $print(out);
+
+for i = 0; i < 100; i = i + 1 do
+    if i == 50 then
+        $print("Found 50, now we take a break...");
+        break;
+    end;
+    $print("On %%..." % i);
+end;
+

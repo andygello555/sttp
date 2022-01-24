@@ -32,6 +32,7 @@ type example struct {
 	stdout string
 	stderr string
 	tests  string
+	err	   string
 	heap   *data.Heap
 }
 
@@ -83,6 +84,8 @@ func init() {
 								e.stderr = string(fileBytes)
 							case ".tests":
 								e.tests = string(fileBytes)
+							case ".err":
+								e.err = string(fileBytes)
 							}
 						}
 					}
@@ -122,7 +125,7 @@ func BenchmarkParse(b *testing.B) {
 	}
 }
 
-func checkOut(key string, e *example, vm *VM) (ok bool, actual string, expected string) {
+func checkOut(key string, e *example, vm *VM, err error) (ok bool, actual string, expected string) {
 	switch key {
 	case "stdout":
 		actual = vm.Stdout.(*strings.Builder).String()
@@ -137,6 +140,14 @@ func checkOut(key string, e *example, vm *VM) (ok bool, actual string, expected 
 		actual = vm.TestResults.String(0)
 		if e.tests == "" { break }
 		return e.tests == actual, actual, e.tests
+	case "err":
+		if err == nil && e.err == "" { break }
+		if err != nil {
+			actual = err.Error()
+		} else {
+			actual = ""
+		}
+		return actual == e.err, actual, e.err
 	default:
 		return false, "", ""
 	}
@@ -164,8 +175,8 @@ func TestVM_Eval(t *testing.T) {
 			// For each output that a test we can produce, we check if there is an expected output for it. If there is,
 			// then we check if the actual output of that kind matches the expected output for that kind. If not, we 
 			// error.
-			for _, output := range []string{"stdout", "stderr", "tests"} {
-				ok, actual, expected := checkOut(output, e, vm)
+			for _, output := range []string{"stdout", "stderr", "tests", "err"} {
+				ok, actual, expected := checkOut(output, e, vm, err)
 				if !ok {
 					if testing.Verbose() {
 						fmt.Println()
@@ -180,10 +191,6 @@ func TestVM_Eval(t *testing.T) {
 						t.Errorf("example %d's %s does not match the expected %s", testNo+1, output, output)
 					}
 				}
-			}
-
-			if err != nil && t != nil {
-				t.Error(err.Error())
 			}
 		} else {
 			skipPtr ++

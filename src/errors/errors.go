@@ -5,12 +5,20 @@ import (
 	"github.com/alecthomas/participle/v2/lexer"
 )
 
+// ProtoSttpError is what all errors in sttp should use as a prototype.
 type ProtoSttpError struct {
+	// errorMethod will be called by Error to implement the error interface.
 	errorMethod func() string
+	// Type is the name of the error.
 	Type        string
+	// Subset is the name of the subset this error is contained within.
 	Subset      string
+	// Pos is the position at which the error occurred. This can be empty.
 	Pos         lexer.Position
+	// CallStack is the result of calling the CallStack.Value method.
 	CallStack   []interface{}
+	// FromNullVM is a flag that is set when no VM was supplied when creating the error, and the interpreter fell back
+	// to the NullVM. A VM instance must be given to retrieve the Pos that the error occurred.
 	FromNullVM  bool
 }
 
@@ -104,6 +112,7 @@ const (
 	NoTestSuite           StructureError = "no test suite, cannot execute test statement: \"%s\""
 	HeapEntryDoesNotExist StructureError = "cannot %s %s (scope: %d), as \"%s\" is not an entry in symbol table"
 	HeapScopeDoesNotExist StructureError = "cannot %s %s (scope: %d), as scope: %d does not exist in the scope list for the symbol \"%s\""
+	BreakOutsideLoop      StructureError = "break statement is outside of loop"
 )
 
 var structureErrorNames = map[StructureError]string{
@@ -112,6 +121,7 @@ var structureErrorNames = map[StructureError]string{
 	NoTestSuite: "NoTestSuite",
 	HeapEntryDoesNotExist: "HeapEntryDoesNotExist",
 	HeapScopeDoesNotExist: "HeapScopeDoesNotExist",
+	BreakOutsideLoop: "BreakOutsideLoop",
 }
 
 func (se StructureError) Errorf(vm VM, values... interface{}) error {
@@ -124,12 +134,14 @@ const (
 	Return PurposefulError = iota
 	Throw
 	FailedTest
+	Break
 )
 
 var purposefulErrorName = map[PurposefulError]string{
 	Return:     "return statement",
 	Throw:      "throw statement",
 	FailedTest: "failed test statement",
+	Break:      "break statement",
 }
 
 func (pe PurposefulError) Error() string { return purposefulErrorName[pe] }
@@ -191,7 +203,9 @@ func ConstructSttpError(err error, userErr interface{}) (errVal interface{}, ret
 		switch err.(PurposefulError) {
 		case Throw:
 			errVal = userErr
-		case Return:
+		case FailedTest: fallthrough
+		case Return: fallthrough
+		case Break:
 			return err, true
 		default:
 			errVal = map[string]interface{} {
