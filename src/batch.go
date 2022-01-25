@@ -69,7 +69,8 @@ func (b *BatchResults) String() string {
 	return builder.String()
 }
 
-// BatchSuite represents a currently running parser.Batch statement. It contains a list of 
+// BatchSuite represents a currently running parser.Batch statement. It contains a list of BatchItems that can be 
+// executed using Execute.
 type BatchSuite struct {
 	BatchStatement *parser.Batch
 	Batch          []*BatchItem
