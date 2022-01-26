@@ -31,17 +31,24 @@ func (h *Heap) Assign(name string, value interface{}, global bool, ro bool) (err
 		return err
 	}
 
-	// Check if there is an existing value and whether it's immutable
+	// Check if there is an existing value to set
 	existing := h.Get(name)
-	if existing != nil && existing.ReadOnly {
-		return errors.ImmutableValue.Errorf(errors.GetNullVM(), name)
-	}
-
-	(*h)[name] = &Value{
-		Value:    value,
-		Type:     t,
-		Global:   global,
-		ReadOnly: ro,
+	if existing != nil {
+		// If it is immutable, then we return an error
+		if existing.ReadOnly {
+			return errors.ImmutableValue.Errorf(errors.GetNullVM(), name)
+		}
+		existing.Value = value
+		existing.Type = t
+		existing.Global = global
+		existing.ReadOnly = ro
+	} else {
+		(*h)[name] = &Value{
+			Value:    value,
+			Type:     t,
+			Global:   global,
+			ReadOnly: ro,
+		}
 	}
 	return nil
 }
