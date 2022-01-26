@@ -369,7 +369,7 @@ If the function call is to a builtin or is a HTTP method call, then no stack fra
 \subsection{Heap}
 \label{sec:function-heap}
 
-Along with these pointers a new heap is assigned. This contains a mapping of variable names to sttp values. All values defined as a global variable from the previous stack frame are copied over to the new stack stack frame. Each argument is assigned to the JSONPath defined in the function's parameters and placed on this heap. If there is no argument for a defined function parameter, then that parameter will be set to `null'. If there are more arguments provided then there are parameters, then a MoreArgsThanParams error is thrown. A `self' value is also placed on the heap which contains the value pointed to by the root property of the JSONPath of the function. This value is defined as global, the reason for which will be discussed later. For instance:
+Along with these pointers a new heap is assigned. This contains a mapping of variable names to sttp values. All values defined as a global variable from the previous stack frame are copied by reference over to the new stack stack frame. Each argument is assigned to the JSONPath defined in the function's parameters and placed on this heap. If there is no argument for a defined function parameter, then that parameter will be set to `null'. If there are more arguments provided then there are parameters, then a MoreArgsThanParams error is thrown. A `self' value is also placed on the heap which contains the value pointed to by the root property of the JSONPath of the function. For instance:
 
 \begin{verbatim}
 hello_world = {"name": "John Smith"};
@@ -404,7 +404,7 @@ print(foo);
 // }
 \end{verbatim}
 
-Once the function has completed execution, then the values on the heap defined as globals in the current stack frame are copied over to the previous stack frame, this includes `self' (as it is global). If the value's variable name is `self', then the value will be assigned to the root property of the currently executing function's JSONPath. Finally, the current stack frame is popped from the callstack.
+Once the function has completed execution, the current stack frame is popped from the callstack and de-allocated by Go.
 
 \section{Error handling}
 
