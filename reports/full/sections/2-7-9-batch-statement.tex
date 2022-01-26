@@ -184,3 +184,15 @@ The next benchmarks I ran used 10, 20, 30, 50, and 200 as the number \verb|%d| w
 The graph above shows a similar result to that of the \hyperref[sec:eval-ast-nodes-batch-bench-1-intro]{previous benchmark}, but also shows that the growth rate of the milliseconds that it takes to run the test script is a lot less severe when using batching then when not using it at all.
 
 \cprotect\textbf{Why is the speed increase greater when parallelising a lot of \verb|MethodCall|s, than parallelising fewer \verb|MethodCall|s?}
+
+Unfortunately, it is hard to tell. When executing a large number of HTTP requests to a known web server that can handle concurrent requests, the main source of time gains come from HTTP packets propagating through the network, or in other words: latency. However, because the benchmarks run above used the echo-chamber test web API, which was running locally, the effects of latency should be very minimal as there is no `network' to travel through. When sending many packets over the internet sequentially these could soon `build-up' causing latency. However, when making the requests concurrently there is still latency but because the requests are being sent at a similar time, it takes less time overall. The factors that I think could affect the execution speed of requests are:
+
+\begin{itemize}
+    \item \textbf{Memory allocation and garbage collection in Go}: heap memory allocation can fluctuate wildly depending on: how much of the page is left, and whether a new page needs to be allocated. Even though the Go GC works in a separate thread, it needs to sync-up all running goroutines to ensure heap data integrity. When this happens, the execution of the program will pause temporarily. If this happens frequently it could lead to build-ups when executing an operation with a lot of memory allocations many times. When executing a \verb|BatchSuite|, goroutine workers are spawned, each with their own stack. When \verb|Method.Call| is executed, the \verb|jobs| and \verb|results| \mintinline{go}{chan} will be allocated on that worker's stack, resulting in fewer allocations on the heap for the same number of HTTP requests.
+    \item \textbf{Method.Call is executed concurrently rather than the HTTP request itself}: when the \verb|BatchSuite| executes work it executes the \verb|Method.Call| instance method. \verb|Method.Call| will execute the HTTP request and also do some other, somewhat memory intensive, functions such as parsing the response and allocating a \verb|Value| for the parsed response.
+    \item \textbf{Code optimisation}: because Go was designed foremost to be used for concurrency, it makes sense for the Go compiler to optimise concurrent code.
+    \item \textbf{Operating system and hardware optimisation}: operating systems usually perform caching on TCP sockets, in order to improve TCP connection speeds. It's also important to take into account hardware optimisation
+    \item \textbf{And many more...}
+\end{itemize}
+
+In summation, there are too many factors to discern why this happens. My working theory concerns how memory allocation works within goroutines compared to single-threaded code within Go.
