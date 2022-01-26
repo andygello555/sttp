@@ -90,7 +90,7 @@ func (cs *CallStack) Call(caller *parser.FunctionCall, current *parser.FunctionD
 		if debug, ok := vm.GetDebug(); ok {
 			_, _ = fmt.Fprintf(debug, "after getting self: %s\n", self.String())
 		}
-		if err := heap.Assign("self", self.Value, true, false); err != nil {
+		if err := heap.Assign("self", self.Value, false, false); err != nil {
 			return err
 		}
 
