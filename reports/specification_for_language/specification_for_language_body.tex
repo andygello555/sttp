@@ -531,6 +531,7 @@ Table of errors that occur at runtime.
 \normalsize
 
 \section{Builtins}
+\label{sec:builtins}
 
 Unlike \hyperref[sec:method-calls]{Method Calls}, they share the same AST nodes as Function Calls. However, unlike Function Calls and Method Calls they take an array of \textbf{uncomputed arguments}. This is because some builtins, such as \verb|free|, need context of the AST nodes passed into the builtin call as expressions. Inside the Function Call AST node, if a function cannot be found at the JSONPath of the Function Call, then if the JSONPath only has a root property, the root property will be used to lookup in a map of builtins. If found, the builtin is called and \textbf{no} stack frame is allocated on the call stack.
 
