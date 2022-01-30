@@ -1,9 +1,63 @@
+<!-- omit in toc -->
 # Individual Project 2021 - Jakab Zeller
+
+- [Abstract](#abstract)
+- [`sttp`](#sttp)
+  - [Libraries used](#libraries-used)
+  - [How to use](#how-to-use)
+    - [Prerequisites](#prerequisites)
+    - [Running from the `src/` directory](#running-from-the-src-directory)
+    - [Building an executable and running it](#building-an-executable-and-running-it)
+- [Test Programs](#test-programs)
+  - [Four Function Calculator](#four-function-calculator)
+    - [Prerequisites](#prerequisites-1)
+    - [Executing a file/input](#executing-a-fileinput)
+    - [Interactive mode](#interactive-mode)
+  - [Thompsons](#thompsons)
+    - [Prerequisites](#prerequisites-2)
+    - [How to use](#how-to-use-1)
+  - [Echo-chamber Web API](#echo-chamber-web-api)
+    - [Prerequisites](#prerequisites-3)
+    - [How to use](#how-to-use-2)
 
 ## Abstract
 
 The idea for creating a simple scripting language for the development and testing of Web APIs came from my use, reliance and creation of such APIs in my work life as well as in my spare time. I’ve often found the available tools for such development (such as Postman or Insomnia) quite limited when it comes to control-flow before or after requesting a resource from an API. Thus, the idea of a scripting language for this very purpose came about.
 The language will include variable declaration/definition, control-flow (if and for statements), function definitions, short builtin functions for every HTTP method, and JSON manipulation via json-path. The language will also be dynamically typed with values being stored as JSON parsable strings. My hopes are that this will make working with JSON Web APIs (the standard when it comes to popular Web APIs) easier and more intuitive. This means that the only supported “types” will be strings, integers, floats, JSON objects and lists.
+
+## `sttp`
+
+*Located in: `src/`*
+
+### Libraries used
+
+- [participle/v2](https://github.com/alecthomas/participle) (licensed under MIT): recursive descent parser generator for Go by Alec Thomas.
+- [resty/v2](https://github.com/go-resty/resty) (licensed under MIT): a HTTP/REST client for Go.
+- [gotils v1.2.7](https://pkg.go.dev/github.com/andygello555/gotils) (licensed under GPL-3.0): a set of utility functions written for Go by me.
+- [go v1.17](https://go.dev/) (licensed under a [BSD-style](https://go.dev/LICENSE) license): programming language.
+
+### How to use
+
+You can either run the `sttp` interpreter from the `src/` directory, or by creating an executable that can be run later. You can provide the interpreter with the following inputs:
+
+- An `.sttp` file containing `sttp` source code.
+- The root of a directory containing `.sttp` files to run as a TestSuite.
+- Raw `sttp` code to execute from the terminal. E.g. `./sttp '$print("Hello World!")'`
+
+#### Prerequisites
+
+You must have `go 1.17` installed.
+
+#### Running from the `src/` directory
+
+`go run . [ FILE | DIRECTORY | INPUT ]`
+
+#### Building an executable and running it
+
+```console
+go build -o sttp
+./sttp [ FILE | DIRECTORY | INPUT ]
+```
 
 ## Test Programs
 
