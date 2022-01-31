@@ -1,0 +1,32 @@
+\chapter{Evaluation}
+\label{chap:evaluation}
+
+Overall, I am quite pleased with what I accomplished in the given amount of time. If I had planned anymore features, or changed any of the technologies that I had used, I think I would have been struggling to finish the project in time.
+
+\section{What went well}
+
+The project continued at a steady pace with no real hitches that affected the overall running of the project.
+
+I had some apprehensions of the performance of the \verb|batch| statement implementation. However, I knew that using Go to implement the interpreter would give the best shot at acquiring the required threaded performance.
+
+\verb|sttp| proved to be useful during the rewrite of the tests that were mentioned in the \hyperref[chap:motivations]{motivations}. The tests that check if the scraping targets have changed on the sources that I scrape from are stored within a single directory. This directory is then executed as a \verb|TestSuite| daily. If there are unforeseen changes the \verb|TestSuite| will fail to indicate this, and then the appropriate changes can be made to the scrape procedures.
+
+\section{Things that I would change}
+
+In the future I would like to create a frontend for a compiler that translates \verb|sttp| code into an intermediary format, such as Java bytecode or WASM, that can then have native code generated from it. Or, maybe a transpiler that compiles to another programming language such as Go or C. This isn't because the performance of the \verb|sttp| interpreter is unsatisfactory, I am just interested in creating a compiler for \verb|sttp|.
+
+\verb|sttp| uses operators to perform actions that would usually be assigned to a builtin function. Even though I think this methodology is quite interesting, it might lead to alienation amongst new users. Therefore, I think introducing builtin functions for these actions is more suitable. I would also make a few changes to the grammar of \verb|sttp|:
+
+\begin{itemize}
+    \item More assignment operators such as \verb|+=| and \verb|-=|.
+    \item Remove semi-colons from the end of statements ending with \verb|end|. Even though this makes sense grammatically and from a completeness standpoint, it is ultimately unnecessary.
+    \item Use of \verb|MethodCall|s and \verb|FunctionCall|s as the root property of JSONPath expressions. This is so that the results of these don't first need to be stored within a variable to be accessed via JSONPath.
+    \item Making most of the tokens matched by the lexer smaller, so that less typing needs to be done by the programmer and it is easier to fit onto a terminal screen.
+    \item Not a grammatical change, but lazy operation of logical operators would reduce the overhead of long logical expressions.
+\end{itemize}
+
+Most of these decisions come after realising that the grammar of the language makes it too `verbose', and there is a lot of time spent writing keywords and tokens.
+
+Another thing I would change is the algorithm used to compute the \verb|batch| statement. Since the implementation I have thought of several better, and more efficient ways of executing it. One of them involves starting the worker goroutines alongside the interpreter in the first pass. Whenever the interpreter steps into a \verb|MethodCall| AST node, it will enqueue it as a job instantly. This job will then be executed by a worker thread and then added to the result queue. The second pass would be unchanged from the original algorithm. This method leverages the speed increase from executing the HTTP requests in parallel, but is also doing the analysis pass (first pass) at the same time.
+
+Most programming languages such as Java and Go, allow you to generate formal documentation for the source code from the documentation and comments imbedded within it. This is something that I would like to add to \verb|sttp|, but instead of documenting the implementation of the source code itself, the programmer would document the API. Such as the actions and resources available for the API, and the parameters accepted by each. This documentation could then generate a set of webpages that would serve as documentation for the API itself.
