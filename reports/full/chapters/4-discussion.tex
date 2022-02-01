@@ -21,7 +21,7 @@ Most of the grammars for modern programming languages are formally left-recursiv
     \cprotect\caption{\label{fig:4.1}Here the \verb|+| operator is left-associative, and \verb|**| is right-associative. \verb|E ::= E "+" T| is left-recursive.}
 \end{figure}
 
-Fortunately, because participle uses EBNF, it means that I could encode left-associative operators within the \verb|sttp| grammar fairly easily. Using iteration instead of recursion can remove left-recursion from the grammar\textsuperscript{\cite{pattis_2021}}. This will affect the produced parse tree as now there can be multiple children for matched for a certain operator's node.
+Fortunately, because participle uses EBNF, it means that I could encode left-associative operators within the \verb|sttp| grammar fairly easily. Using iteration instead of recursion can remove left-recursion from the grammar\textsuperscript{\cite{pattis_2021}}.
 
 \begin{figure}[H]
     \begin{center}
@@ -34,6 +34,43 @@ Fortunately, because participle uses EBNF, it means that I could encode left-ass
     \vspace{-1.5em}
     \caption{\label{fig:4.2}The grammar in \hyperref[fig:4.1]{fig. 4.1} rewritten with the EBNF to remove left recursion.}
 \end{figure}
+
+This will affect the produced parse tree as this will create a child for each repetition that is found in the input string. For example, for the given input string: \verb|1 + 2 + 3 ** 4|, the following derivation tree is created\textsuperscript{\cite{scott_johnstone_1998}}.
+
+\begin{center}
+    \begin{forest}
+        for tree={
+            if n children=0{
+                font=\itshape,
+            }{},
+            }
+            [$E$
+                [$T$
+                    [$F$
+                        [Num: $1$]
+                    ]
+                ]
+                [$+$]
+                [$T$
+                    [$F$
+                        [Num: $2$]
+                    ]
+                ]
+                [$+$]
+                [$T$
+                    [$F$
+                        [Num: $3$]
+                    ]
+                    [{$**$}]
+                    [$T$
+                        [$F$
+                            [Num: $4$]
+                        ]
+                    ]
+                ]
+            ]
+    \end{forest}
+\end{center}
 
 Another quirk of \verb|sttp|'s grammar is that the precedence of operators is encoded within the grammar itself using grammar rules rather than after the parse tree is produced. This was done so that the precedence levels could be easily read from the grammar specification. However, doing so might have an impact on performance. This is because recursive descent expression parsers produce parse trees proportional in complexity to the number of operators supported, which leads to high memory usage\textsuperscript{\cite{bendersky_2012}}.
 

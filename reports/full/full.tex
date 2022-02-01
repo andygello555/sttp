@@ -14,6 +14,9 @@
 \usepackage{tcolorbox}
 \usepackage{etoolbox}
 \usepackage{mathtools}
+\usepackage[linguistics]{forest}
+\usepackage{tikz}
+\usetikzlibrary{automata, positioning, arrows}
 
 \theoremstyle{definition}
 \newtheorem{definition}{Definition}[subsubsection]
@@ -84,15 +87,15 @@ Although there exists many tools for testing and developing web-based APIs, ther
     A web API is an application programming interface that is hosted on a web server accessible via the HTTP protocol. Endpoints within a web API specify where an action or resource lies, creating a \textbf{directory like structure} of `methods'.
 \end{definition}
 
-Web APIs are in the background of most applications and services we use. Everything from requesting the weather in a certain country, accessing up to date exchange rate information, accessing personal calendar information. Can all be achieved through the use of specific web APIs. The number of web APIs has risen substantially over the last decade and a half. \href{https://www.programmableweb.com/category/all/apis}{ProgrammableWeb}, cites over 24,000 APIs (as of January 2022). A large increase from 2013: 9000, and an even larger increase from 2005: 105\textsuperscript{\cite{duvander_2013}}.
+Web APIs are in the background of most applications and services we use. Everything from requesting the weather in a certain country, accessing up to date exchange rate information, to accessing personal calendar information, can all be achieved through the use of specific web APIs. The number of web APIs has risen substantially over the last decade and a half. \href{https://www.programmableweb.com/category/all/apis}{ProgrammableWeb}, cites over 24,000 APIs (as of January 2022). A large increase from 2013: 9000, and an even larger increase from 2005: 105\textsuperscript{\cite{duvander_2013}}.
 
 \begin{definition}[Web Scraping]
     Web scraping, web harvesting, or web data extraction is data scraping used for extracting data from websites\textsuperscript{\cite{web_scraping_wikipedia_2022}}.
 \end{definition}
 
-Partly due to the ubiquity of web APIs, as well as my interest toward creating autonomous web-scraping solutions. I have gained a lot of experience using them, and have even developed a few of my own. Before beginning this project, I had been working on a large library of web scraping procedures, to track, scrape, and store information on several hundreds applications on the popular PC video game e-tailer: \href{https://store.steampowered.com/}{Steam}. This was largely achieved by using Steam's Web API, but also by scraping data from webpages, dashboards, and portals. The data retrieved by said procedures would be stored in a database, accessible via a web API. Most of the endpoints within this API perform various complex manipulations and aggregates to return a representation of the data that is easier to handle for users. This interest soon stemmed into my professional life, when I was asked to implement this system on a larger scale for a indie video game publisher. Thus increasing the workload and data throughput of the server.
+Partly due to the ubiquity of web APIs, as well as my interest toward creating autonomous web-scraping solutions. I have gained a lot of experience using them, and have even developed a few of my own. Before beginning this project, I had been working on a large library of web scraping procedures, to track, scrape, and store information on several hundreds of applications on the popular PC video game e-tailer: \href{https://store.steampowered.com/}{Steam}. This was largely achieved by using Steam's Web API, but also by scraping data directly from webpages, dashboards, and portals. The data retrieved by said procedures would be stored in a database, accessible via a web API. Most of the endpoints within this API perform various complex manipulations and aggregations to return a representation of the data that is easier to handle for users. This interest soon stemmed into my professional life, when I was asked to implement this system on a larger scale for a indie video game publisher. Thus increasing the workload and data throughput of the server.
 
-Soon, the complexity of the codebase spiralled out of control. The test suites that were written to check if the procedures were functioning properly, became large and unruly. Frequent and undocumented changes to the Steam Web API, would render some procedures out of action for several days. To deal with this issue, I moved the implementation of some of the test suites to Insomnia (a REST client that allows you to build test suites for web APIs). Whilst having an extensive feature-set for a REST client, Insomnia lacked control-flow constructs for complex request and response handling. Constructs such as conditionals, looping, and error handling, are missing/very hard to implement. Soon after, the tests written in Insomnia were abandoned in favour of refactored versions of the previous tests within the code base itself.
+Soon, the complexity of the codebase spiralled out of control. The test suites that were written to check if the procedures were functioning properly, became large and unruly. Frequent and undocumented changes to the Steam Web API, would render some procedures out of action for several days. To deal with this issue, I moved the implementation of some of the test suites to \href{https://insomnia.rest/}{Insomnia} (a REST client that allows you to build test suites for web APIs). Whilst having an extensive feature-set for a REST client, Insomnia lacked control-flow constructs for complex request and response handling. Constructs such as conditionals, looping, and error handling, are missing/very hard to implement. Soon after, the tests written in Insomnia were abandoned in favour of refactored versions of the previous tests within the code base itself.
 
 Due to this need of greater functionality, I propose a scripting language purposefully designed as a HTTP client and test suite first.
 
@@ -104,16 +107,16 @@ Due to this need of greater functionality, I propose a scripting language purpos
 
 \begin{enumerate}
     \item \textbf{Builtin HTTP client}. There must be a way to make HTTP requests.
-    \item \textbf{Concise, quick and manageable builtin testing}. Tests should be able to be easily implemented and modifiable. There should also be a way of grouping tests for actions that access a similar resource. Just like how REST APIs are designed.
-    \item \textbf{JSON values and JSONPath}. All values in \verb|sttp| can be parsed to JSON and back. As most web APIs default to JSON as their interchange format, it made sense to treat all data as JSON. \textbf{JSONPath}, is a syntax for accessing JSON values in the similar vain of XPath for XML\textsuperscript{\cite{goessner_2007}}.
+    \item \textbf{Concise, quick and manageable builtin testing}. Tests should be easily implementable and modifiable. There should also be a way of grouping tests for actions that access a similar resource. Just like how REST APIs are designed.
+    \item \textbf{JSON values and JSONPath}. All values in \verb|sttp| should be parsable to JSON and back. As most web APIs default to JSON as their interchange format, it makes sense to treat all data as JSON. \textbf{JSONPath}, is a syntax for accessing JSON values in the similar vain of XPath for XML\textsuperscript{\cite{goessner_2007}}.
     \item \textbf{Executing HTTP requests concurrently}. Concurrency should be easy and encouraged.
-    \item \textbf{Command line usage}. I regularly tinker and test endpoints on the command line. Thus I expect \verb|sttp| should be able to be run from the command line. This means creating a whitespace independent grammar that allows for input to be typed on a single line.
+    \item \textbf{Command line usage}. I regularly tinker and test endpoints on the command line. Thus I expect the \verb|sttp| interpreter to be able to be run from the command line. This means creating a \textbf{whitespace independent grammar} that allows for input to be typed on a single line.
     \item \textbf{Web scraping functionality}. Such as a HTML parser, tree search functions, and filtering.
 \end{enumerate}
 
 To achieve this, I decided to write an interpreter using Go\textsuperscript{\cite{the_go_programming_language}} and the participle parser generator\textsuperscript{\cite{thomas_2021}}. I chose Go as its accompanying toolset allows for quick testing and benchmarking. I knew this would be useful when developing the language and benchmarking the concurrency constructs within the language. This native tooling also allows for rapid development and less external dependencies. At the beginning of the project I was comfortable at writing code in Go, as I had used it for numerous other projects in the past.
 
-I chose the participle parser generator, as it was (and still is) being actively developed, and had a plethora of examples available. It also has an interesting way of defining the accepted grammar for the generated parser. Encoding EBNF within the AST type declarations, the instantiated versions of which will be returned by the generated parser (explained further in PLACEHOLDER). However, the generated parsers are recursive descent parsers. This meant I had to design my language without any left-recursion. Thankfully, the iteration operator in participle's EBNF notation, solved some of the issues, such as left-associative operators.
+I chose the participle parser generator, as it was (and still is) being actively developed, and had a plethora of examples available. It also has an interesting way of defining the accepted grammar for the generated parser. Encoding EBNF within the AST node type declarations, the instantiated versions of which will be returned by the generated parser (explained further whilst discussing the \hyperref[sec:four-function-calc]{four-function calculator}). However, the generated parsers are recursive descent parsers. This meant I had to design my language without any left-recursion. Thankfully, the iteration operator in participle's EBNF notation, solved some of the issues, such as left-associative operators.
 
 \section{The Future}
 
@@ -184,7 +187,7 @@ Each AST node within \verb|sttp| implements the \verb|evalNode| interface. This 
 \cprotect\chapter{\verb|sttp| Specification}
 \label{appendix:sttp-specification}
 
-\verb|sttp| (amalgamation of \textit{scripting} and \textit{HTTP}) is a dynamically typed, interpreted, scripting language written in Go using the participle parser generator by Alec Thomas\textsuperscript{\cite{thomas_2021}}. Below is the formal grammar definition of the language:
+\verb|sttp| (amalgamation of \textit{scripting} and \textit{HTTP}) is a dynamically typed, interpreted, scripting language written in Go using the participle parser generator by Alec Thomas\textsuperscript{\cite{thomas_2021}}. For information on how to run the \verb|sttp| interpreter, check the \verb|README|. Below is the formal grammar definition of the language:
 
 \import{../specification_for_language}{specification_for_language_body.tex}
 
@@ -192,7 +195,10 @@ Each AST node within \verb|sttp| implements the \verb|evalNode| interface. This 
 \newpage
 \label{endpage}
 
-\printbibliography
+\printbibheading
+\printbibliography[keyword=cite,heading=subbibliography,title={Cited material}]%
+\nocite{*}
+\printbibliography[keyword=nocite,heading=subbibliography,title={Supplementary material}]
 
 \end{document}
 

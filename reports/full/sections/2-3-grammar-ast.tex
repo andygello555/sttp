@@ -8,7 +8,7 @@
     \end{center}
 \end{figure}
 
-After creating the test programs described above, I moved onto starting a formal specification for the programming language. In particular the grammar of the language. The majority of the syntax is based on the syntax of Lua \textsuperscript{\cite{lua_syntax_specification}}. The syntax has been heavily modified in order to make it use tail recursion and some of the other constructs within the language, such as JSONPath and HTTP request methods. It also differs from the Lua syntax specification, as the 5 levels of operator precedence are encoded into the grammar itself. Whereas, Lua's operator precedence is evaluated after parsing. This decision was made after writing a report on \textit{`The use derivation rules, and grammar idioms to capture notions of associativity and precedence in arithmetic expressions'}.
+After creating the test programs described above, I moved onto starting a formal specification for the programming language. In particular the grammar of the language. The majority of the syntax is based on the syntax of Lua \textsuperscript{\cite{lua_syntax_specification}}. The syntax has been heavily modified in order to make it use \hyperref[chap:discussion]{tail recursion} and some of the other constructs within the language, such as JSONPath and HTTP request methods. It also differs from the Lua syntax specification, as the 5 levels of operator precedence are encoded into the grammar itself. Whereas, Lua's operator precedence is evaluated after parsing. This decision was made after writing a report on \textit{`The use derivation rules, and grammar idioms to capture notions of associativity and precedence in arithmetic expressions'} (\LaTeX \hspace{0.75mm} can be found in \verb|reports/derivations_idioms_associativity_priority/|).
 
 \begin{figure}[H]
     \begin{verbatim}
@@ -158,9 +158,9 @@ After defining the grammar, I started manipulating it into AST nodes so that par
     \begin{itemize}
         \item \verb|Null|: token that matches \verb|null|.
         \item \verb|Boolean|: token that matches \verb|true| or \verb|false|, setting a flag.
-        \item \verb|Number|: floating point or integer number stored in a \verb|float64|.
-        \item \verb|StringLit|: a string literal, stored in a \verb|string|.
-        \item \verb|JSONPath|: pointer to a JSONPath AST node. This will get a value pointed to by the JSONPath.
+        \item \verb|Number|: floating point or integer number stored in a \mintinline[breaklines]{go}{float64}.
+        \item \verb|StringLit|: a string literal, stored in a \mintinline[breaklines]{go}{string}.
+        \item \verb|JSONPath|: pointer to a JSONPath AST node. This will \textbf{get} a value pointed to by the JSONPath.
         \item \verb|JSON|: pointer to a JSON AST node.
         \item \verb|FunctionCall|: pointer to a FunctionCall AST node. The return value of the function will be used within the expression.
         \item \verb|MethodCall|: pointer to a MethodCall AST node. The response of the HTTP request will be used within the expression.
@@ -218,9 +218,9 @@ After defining the grammar, I started manipulating it into AST nodes so that par
     \item \verb|Program|: the start non-terminal of the grammar. Matches a Block.
 \end{enumerate}
 
-The implementation of the AST within Go will be skipped as this has been discussed extensively when discussing the \hyperref[sec:four-function-calc]{four-function calculator} test program. The type definitions for each AST node within \verb|sttp| can be found within \verb|src/parser/ast.go|. However, an interesting feature to note is that any AST node type definition can be given a \verb|Pos lexer.Position| field. This will automatically be populated by the position (filename, line, column) of that non-terminal within the input.
+The implementation of the AST within Go will be skipped as this has been discussed extensively when discussing the \hyperref[sec:four-function-calc]{four-function calculator} test program. The type definitions for each AST node within \verb|sttp| can be found within \verb|src/parser/ast.go|. However, an interesting feature to note is that any AST node type definition can be given a \mintinline[breaklines]{go}{Pos lexer.Position} field. This will automatically be populated by the position (filename, line, column) of that non-terminal within the input. This was useful for returning \hyperref[sec:development-try-catch-throw-errors-context]{errors}.
 
-I found that defining the behaviour of each AST node sequentially, allowed me to create examples for that AST node easily. This allowed me to thoroughly test the behaviour of each AST node.
+I found that defining the behaviour of each AST node sequentially, allowed me to create examples for that AST node easily. This allowed me to thoroughly test the behaviour of each AST node. These examples can be found in \verb|src/_examples| in the directories prefixed with: `\verb|example_|'.
 
 \subsection{Pretty-printer}
 
