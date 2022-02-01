@@ -8,6 +8,7 @@
     - [Prerequisites](#prerequisites)
     - [Running from the `src/` directory](#running-from-the-src-directory)
     - [Building an executable and running it](#building-an-executable-and-running-it)
+    - [Examples](#examples)
 - [Test Programs](#test-programs)
   - [Four Function Calculator](#four-function-calculator)
     - [Prerequisites](#prerequisites-1)
@@ -42,7 +43,7 @@ You can either run the `sttp` interpreter from the `src/` directory, or by creat
 
 - An `.sttp` file containing `sttp` source code.
 - The root of a directory containing `.sttp` files to run as a TestSuite.
-- Raw `sttp` code to execute from the terminal. E.g. `./sttp '$print("Hello World!")'`
+- Raw `sttp` code to execute from the terminal. E.g. `./sttp '$print("Hello World!");'`
 
 #### Prerequisites
 
@@ -58,6 +59,20 @@ You must have `go 1.17` installed.
 go build -o sttp
 ./sttp [ FILE | DIRECTORY | INPUT ]
 ```
+
+#### Examples
+
+Examples for `sttp` can be found within the `src/_examples` directory. Each example is stored within its own directory holding the following files:
+
+- `*.sttp` file (required): containing the source code for the example.
+- `*.stdout` file (optional): containing the expected stdout output for the example.
+- `*.stderr` file (optional): containing the expected stderr output for the example.
+- `*.tests` file (optional): containing the expected test output.
+- `*.err` file (optional): containing the expected errors that bubble up to the bottommost stack frame during execution.
+
+Some of these examples utilise the echo-chamber web API. The web server for which is located within: `src/_examples/echo_chamber` directory. The usage of which can be found [here](#echo-chamber-web-api).<br/>
+
+Unfortunately, the examples are not documented using comments. This is because these examples are also used as tests for the parser, which meant that I had to exclude comments from them.
 
 ## Test Programs
 
