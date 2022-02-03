@@ -241,7 +241,7 @@ Language spec: String() referrers + grammar tweaks
     \tiny{October 21, 2021}
 \end{center}
 
-Before starting on the implementation of the interpreter itself, I first created a pretty-printer for the AST. This is done in a similar way as to the one used in the \hyperref[sec:four-function-calc]{four-function calculator}. However, rather than implementing Go's native \verb|Stringer| interface, I implement my own interface:
+Before starting on the implementation of the interpreter itself, I first created a pretty-printer for the AST produced for \verb|sttp| scripts. This is done in a similar way as to the one used in the \hyperref[sec:four-function-calc]{four-function calculator}. However, rather than implementing Go's native \verb|Stringer| interface, I implement my own interface:
 
 \begin{minted}{go}
 type indentString interface {
@@ -249,7 +249,7 @@ type indentString interface {
 }
 \end{minted}
 
-The \verb|String| instance method takes the level of indentation to apply to the node. This is so statements such as \verb|IfElifElse|, \verb|While|, \verb|For|, etc. can be indented properly. Then when stringing an inner \verb|Block|, \verb|indent| can be incremented to visually indent that block, such as the following for the \verb|TryCatch| statement.
+The \verb|String| instance method takes the level of indentation to apply to the node. This is so statements such as \verb|IfElifElse|, \verb|While|, \verb|For|, etc. can be indented within their parent \verb|Block|. Then when stringing an inner \verb|Block|, \verb|indent| can be incremented to visually indent that block, such as the following for the \verb|TryCatch| statement.
 
 \begin{minted}{go}
 func (tc *TryCatch) String(indent int) string {

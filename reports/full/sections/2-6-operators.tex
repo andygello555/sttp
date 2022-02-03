@@ -16,7 +16,7 @@ Language: operation action table + operation action tests
 
 All operators within \verb|sttp| are binary operators (take two operands), and return a \verb|Value|. They usually will cast the right-hand operand into whatever type the left-hand operand is and then perform the computation. However, there are a few exceptions to this rule that will be discussed later on.
 
-The \verb|Operator| token is a type with the the following definition: \mintinline{go}{type Operator int}, with a set of constants (of type \verb|Operator|) that define an enumeration. \verb|Operator| implements the \verb|Capture| interface of the participle parser generator library. This allows the programmer to create custom tokens that will be captured by the lexer. Hence, each instance of an \verb|Operator| that occurs within an input \verb|sttp| script will automatically looked up within the enumeration, and the resulting field within that AST node will be set accordingly. The relevant code for this can be found below:
+The \verb|Operator| token is a type with the the following definition: \mintinline{go}{type Operator int}, with a set of constants (of type \verb|Operator|) that define an enumeration. \verb|Operator| implements the \verb|Capture| interface of the participle parser generator library. This allows the programmer to create custom tokens that will be captured by the lexer. Hence, each instance of an \verb|Operator| that occurs within an input \verb|sttp| script will be looked up within \verb|operatorMap| (a mapping of operator symbols to \verb|Operator|s), and the resulting field within that AST node will be set accordingly. The relevant code for this can be found below:
 
 \inputminted[firstline=13, lastline=71, autogobble, breaklines, tabsize=4]{go}{../../src/eval/operators.go}
 
@@ -91,6 +91,7 @@ As with casting, most of the semantics of the operators are self-explanatory. Ho
 \end{itemize}
 
 A description of each operator in combination with each left-hand \verb|Type| can be found in the \hyperref[sec:operatorvaluerel]{specification}. As with the casting system, the operator system has not changed much since its original implementation. The only operator function that has been changed substantially, was the \verb|moString| (Mod \verb|String|) function. Originally, this carried out a format string operation using Go's string interpolation verbs\textsuperscript{\cite{go_fmt_package}}. But was changed to use a custom written interpolation algorithm which only makes use of a single verb: \verb|%%|.
+\label{sec:explanation-mod-string-interpolation}
 
 \inputminted[firstline=185, lastline=233, autogobble, breaklines, tabsize=4]{go}{../../src/eval/op_funcs.go}
 
