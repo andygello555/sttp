@@ -15,7 +15,7 @@ Language: Heap rework + Symbol -> Value + IfElifElse
     \tiny{December 6, 2021}
 \end{center}
 
-The AST node/non-terminal representing \verb|IfElifElse| statements are constructed from an \verb|Expression| that acts as the condition for the first \verb|if|, which is followed by \verb|Block| to execute if the condition is truthy. \verb|elif| statements are then matched repeatedly until until an optional \verb|else| token or \verb|end|. The AST node is represented in code as follows.
+The AST node/non-terminal representing \verb|IfElifElse| statements are constructed from an \verb|Expression| that acts as the condition for the first \verb|if|, which is followed by \verb|Block| to execute if the condition is truthy. \verb|elif| statements are then matched repeatedly until an optional \verb|else| token or the \verb|end| token is matched. The AST node is represented in code as follows.
 
 \inputminted[firstline=304, lastline=320, autogobble, breaklines, tabsize=4]{go}{../../src/parser/ast.go}
 

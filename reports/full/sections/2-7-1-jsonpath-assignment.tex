@@ -15,29 +15,29 @@ Language: json path setter + assignment ast node
     \tiny{December 2, 2021}
 \end{center}
 
-JSONPath setting and the \verb|Eval| instance method for the \verb|Assignment| AST node are what I implemented next.
+JSONPath setting and the \verb|Eval| instance method for the \verb|Assignment| AST node are what I implemented first.
 
 \subsubsection{JSONPath}
 
 JSONPath's are comprised of three different types of AST node:
 
 \begin{enumerate}
-    \item \verb|JSONPath|: describes the root of the JSONPath expression. Matches a one or more dot separated \verb|Part|s. The first \verb|Part| of the JSONPath is know within \verb|sttp| as the \textbf{root property}. This is the \textbf{variable} that is being accessed.
-    \item \verb|Part|: an alphanumeric identifier followed by any number of \verb|Index|.
+    \item \verb|JSONPath|: describes the root of the JSONPath expression. Matches one or more dot separated \verb|Part|s. The first \verb|Part| of the JSONPath is know within \verb|sttp| as the \textbf{root property}. This is the \textbf{variable} that is being accessed.
+    \item \verb|Part|: an alphanumeric identifier followed by any number of \verb|Index|es.
     \item \verb|Index|: square bracket Array/Object access that contains an expression, or a filter expression that takes a \verb|Block|.
 \end{enumerate}
 
-Whenever JSONPath's are used, they are first converted to the \mintinline[breaklines]{go}{type Path []interface{}}. This is an intermediary format that has a \verb|Set| and \verb|Get| instance methods. The \verb|Path| type acts as a queue whenever these two methods are called. It is easier to treat it is such rather than to use tree traversal to find each property, index, and filter block. The \verb|JSONPath| and \verb|Part| AST nodes implement the \verb|Convert| instance method that allows for the conversion of a JSONPath AST subtree, to a \verb|Path| instance. \verb|Index| does not implement this instance method, as it acts as a leaf node of a JSONPath expression, does not need to be traversed down, and can be dealt with within \verb|Part.Convert|.
+Whenever JSONPath's are used, they are first converted to the \mintinline[breaklines]{go}{type Path []interface{}}. This is an intermediary format that has a \verb|Set| and \verb|Get| instance methods. The \verb|Path| type acts as a queue whenever these two methods are called. It is easier to treat it is such rather than to use tree traversal to find each property, index, and filter block. The \verb|JSONPath| and \verb|Part| AST nodes implement the \verb|Convert| instance method that allows for the conversion of a JSONPath AST subtree, to a \verb|Path| instance. \verb|Index| does not implement this instance method, as it acts as a leaf node of a JSONPath expression, and does not need to be traversed down. It can be dealt with within \verb|Part.Convert|.
 
 \inputminted[firstline=529, lastline=581, autogobble, breaklines, tabsize=4]{go}{../../src/parser/json_path.go}
 
 \verb|JSONPath.Convert| will enqueue the \verb|Path|s constructed by each of its \verb|Part|s. Whereas, \verb|Part.Convert| will iterate over its indices and either evaluate the expression within the square brackets, or simply add the reference to the filter's \verb|Block| AST node.
 
-\mintinline[breaklines]{go}{func (p *Path) Set(vm VM, current interface{}, to interface{}) (err error, new interface{})} works by traversing the \verb|current| parameter whilst dequeuing and following the components of the \verb|Path|. Once there is nothing left within the \verb|Path|, the \verb|current| value will be set to the \verb|to| parameter. Due to the recursive nature of the function, the \verb|current| value will be reconstructed using the return of the function, embedding the \verb|to| value within the original value. The \verb|Set| function calls the \mintinline[breaklines]{go}{func set(vm VM, current interface{}, to interface{}, path *Path) interface{}} internally. The source code for this function is too large to input within the report, but it can be located within the \verb|src/parser/json_path.go| file. Some interesting features of the \verb|Set| function are described below.
+\mintinline[breaklines]{go}{func (p *Path) Set(vm VM, current interface{}, to interface{}) (err error, new interface{})} works by traversing the \verb|current| parameter whilst dequeuing and following the components of the \verb|Path|. Once there is nothing left within the \verb|Path|, the \verb|current| value will be set to the \verb|to| parameter. Due to the recursive nature of the function, the \verb|current| value will be reconstructed as the recursive function calls return. This embeds the \verb|to| value within the original value. The \verb|Set| function calls the \mintinline[breaklines]{go}{func set(vm VM, current interface{}, to interface{}, path *Path) interface{}} internally. The source code for this function is too large to input within the report, but it can be located within the \verb|src/parser/json_path.go| file. Some interesting features of the \verb|Set| function are described below.
 
 \begin{enumerate}
     \item JSONPath setting will produce sparse Objects/Arrays if the \verb|current| parameter does not exist (is \verb|nil|). Usually, the \verb|set| function would first dequeue the next element within the \verb|Path|. However, if the \verb|current| value is \verb|nil| this will be skipped. Instead, \verb|set| will be called recursively with a newly constructed Object given as its \verb|current| parameter if the first element in the \verb|Path| is a String. If the first element is not a String, then \verb|set| will be called with a newly constructed Array given as its \verb|current| parameter. This is explained in more depth within the \hyperref[sec:jsonpath-setting]{specification}.
-    \item Objects can be set via numerical indices. This sets the $i$-th key after the keys within the Object are sorted lexicographically.
+    \item Objects can be set via numerical indices. This sets the $i$-th key, after the keys within the Object are sorted lexicographically.
     \item Arrays and Strings can be set using negative integers. \verb|-1| will point to the last element/character in the Array/String, and all preceding elements/characters will have indices decremented from \verb|-1|.
     \item If a filter block or Number index is used to set a String, then the effect will be to perform a String replacement on the characters that were marked by the filter block, or the index given.
 \end{enumerate}
@@ -64,6 +64,92 @@ Language: JSONPath filter + JSONPath string getting/setting
 - JSONPath setting can be used to concatenate and insert
   within strings now (30/12/2021 - 23:05:18)
 \end{minted}
+
+\begin{figure}[H]
+    \begin{verbatim}
+hello_world = {
+    "hello": "world",
+    "a": "a" * 6 + ("b" + "c"),              // = "aaaaaabc"
+    "format_string": "%% %% %%" % [1, 2, 3], // = "1 2 3"
+    "results": []
+};
+
+// This will first create the key: "world" within hello_world with
+// the value of an empty array. Within this newly created array the
+// element at index: 1, will be set to an empty object. Within this
+// empty object the key: "hello", will be set to the value: "world".
+hello_world.world[1].hello = "world";
+
+// Here we evaluate: ({ "no": 1 } + (3 - 2 - 1)), first:
+// 1. We evaluate the object on the LHS
+// 2. The "+" operator for objects (on the LHS) will cast the RHS to
+//    an object first.
+//   i.   We evaluate the sub-expression: (3 - 2 - 1) = 0
+//   ii.  Casting an number to an object will return an object with 
+//        that number as a key, the value of which will be null
+//   iii. { "0": null }
+// 3. The "+" operator will perform a set union of the
+//    two objects = {"0": null, "no": 1}
+// 4. The "+" operator will append the RHS value onto the array on
+//    the LHS
+hello_world.results = hello_world.results + ({ "no": 1 } + (3 - 2 - 1));
+
+// Get the value of the "hello" and "a" key within hello_world using a filter.
+filtered = hello_world```
+    return curr.key == "hello" || curr.key == "a";
+```;
+
+$print(filtered);
+// Output: ["world", "aaaaaabc"]
+
+$print(hello_world);
+// Output:
+// {
+//     "hello": "world",
+//     "a": "aaaaaabc",
+//     "format_string": "1 2 3",
+//     "results": [
+//         {
+//             "0": null,
+//             "no": 1
+//         }
+//     ],
+//     "world": [
+//         null,
+//         {"hello": "world"}
+//     ]
+// }
+    \end{verbatim}
+    \cprotect\caption{Some examples of JSONPath getting and setting within \verb|sttp|.}
+\end{figure}
+
+\begin{figure}[H]\ContinuedFloat
+    \begin{verbatim}
+// A nested JSONPath Set using a filter. This will set the value of all
+// keys that contain "a" or "w" to be "contains a or w".
+hello_world```
+    return 0 + curr.value```
+        return curr.value == "a" || curr.value == "w";
+    ``` > 0;
+``` = "contains a or w";
+
+$print(hello_world);
+// Output:
+// {
+//     "hello": "world",
+//     "a": "contains a or w",
+//     "format_string": "contains a or w",
+//     "results": [
+//         {
+//             "0": null,
+//             "no": 1
+//         }
+//     ],
+//     "world": "contains a or w"
+// }
+    \end{verbatim}
+    \cprotect\caption{Continued. Some examples of JSONPath getting and setting within \verb|sttp|.}
+\end{figure}
 
 \subsubsection{Assignment}
 
