@@ -10,7 +10,7 @@ $print("a =", a);
 
 try this
     $free("hello" / "blah" + a);
-catch as e then
+catch as e do
     $print(e);
 end;
 

@@ -33,11 +33,11 @@ func (b *Block) String(indent int) string {
 }
 
 func (e *Elif) String(indent int) string {
-	return fmt.Sprintf("%selif %s then\n%s", tabs(indent), e.Condition.String(0), e.Block.String(indent + 1))
+	return fmt.Sprintf("%selis %s?\n%s", tabs(indent), e.Condition.String(0), e.Block.String(indent + 1))
 }
 
 func (i *IfElifElse) String(indent int) string {
-	ifElifElse := fmt.Sprintf("%sif %s then\n%s", tabs(indent), i.IfCondition.String(0), i.IfBlock.String(indent + 1))
+	ifElifElse := fmt.Sprintf("%sis %s?\n%s", tabs(indent), i.IfCondition.String(0), i.IfBlock.String(indent + 1))
 	if len(i.Elifs) > 0 {
 		elifs := make([]string, len(i.Elifs))
 		for e, elif := range i.Elifs {
@@ -53,11 +53,11 @@ func (i *IfElifElse) String(indent int) string {
 }
 
 func (f *FunctionDefinition) String(indent int) string {
-	return fmt.Sprintf("%sfunction %s%s", tabs(indent), f.JSONPath.String(0), f.Body.String(0))
+	return fmt.Sprintf("%sfun %s%s", tabs(indent), f.JSONPath.String(0), f.Body.String(0))
 }
 
 func (tc *TryCatch) String(indent int) string {
-	return fmt.Sprintf("%stry this\n%s%scatch as %s then\n%s%send", tabs(indent), tc.Try.String(indent + 1), tabs(indent), *tc.CatchAs, tc.Caught.String(indent + 1), tabs(indent))
+	return fmt.Sprintf("%stry this\n%s%scatch as %s do\n%s%send", tabs(indent), tc.Try.String(indent + 1), tabs(indent), *tc.CatchAs, tc.Caught.String(indent + 1), tabs(indent))
 }
 
 func (b *Batch) String(indent int) string {
