@@ -226,10 +226,10 @@ type Index struct {
 type Statement struct {
 	Pos lexer.Position
 
-	Assignment         *Assignment         `  @@`
-	FunctionCall       *FunctionCall       `| @@`
-	MethodCall         *MethodCall         `| @@`
-	Break              *string             `| @Break`
+	Assignment         *Assignment         `  @@ ";"`
+	FunctionCall       *FunctionCall       `| @@ ";"`
+	MethodCall         *MethodCall         `| @@ ";"`
+	Break              *string             `| @Break ";"`
 	Test               *TestStatement      `| @@`
 	While              *While              `| @@`
 	For                *For                `| @@`
@@ -289,7 +289,7 @@ type TryCatch struct {
 	Pos lexer.Position
 
 	Try     *Block  `Try This @@`
-	CatchAs *string `Catch As @Ident Then`
+	CatchAs *string `Catch As @Ident Do`
 	Caught  *Block  `@@ End`
 }
 
@@ -323,7 +323,7 @@ type Elif struct {
 type Block struct {
 	Pos lexer.Position
 
-	Statements []*Statement     `( @@? ";" )*`
+	Statements []*Statement     `( @@ | ";" )*`
 	Return     *ReturnStatement `( @@ |`
 	Throw      *ThrowStatement  `  @@ )?`
 }
@@ -335,7 +335,7 @@ type Program struct {
 	Block *Block `@@`
 }
 
-var lex = lexer.MustSimple([]lexer.Rule{
+var Lex = lexer.MustSimple([]lexer.Rule{
 	{"comment", `//.*`, nil},
 
 	{"StringLit", `(")([^"\\]*(?:\\.[^"\\]*)*)(")`, nil},
@@ -345,13 +345,13 @@ var lex = lexer.MustSimple([]lexer.Rule{
 	{"Do", `\sdo\s`, nil},
 	{"This", `this\s`, nil},
 	{"Break", `break`, nil},
-	{"Then", `\sthen\s`, nil},
+	{"Then", `\?\s`, nil},
 	{"End", `end`, nil},
-	{"Function", `function\s`, nil},
+	{"Function", `fun\s`, nil},
 	{"Return", `return`, nil},
 	{"Throw", `throw`, nil},
-	{"If", `if\s`, nil},
-	{"Elif", `elif\s`, nil},
+	{"If", `is\s`, nil},
+	{"Elif", `elis\s`, nil},
 	{"Else", `else\s`, nil},
 	{"Catch", `catch\s`, nil},
 	{"Test", `test\s`, nil},
@@ -372,7 +372,7 @@ var lex = lexer.MustSimple([]lexer.Rule{
 
 func Parse(filename, s string) (error, *Program) {
 	parser := participle.MustBuild(&Program{},
-		participle.Lexer(lex),
+		participle.Lexer(Lex),
 		participle.CaseInsensitive("Ident"),
 		participle.Unquote("StringLit"),
 		participle.UseLookahead(2),

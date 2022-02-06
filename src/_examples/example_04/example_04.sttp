@@ -5,18 +5,18 @@ counters = {
 };
 
 while counters.a * counters.b * counters.c <= 100 do
-    if counters.a % 3 == 0 then
+    is counters.a % 3 == 0?
         counters.a = counters.a + 1;
-    elif counters.b % 5 == 0 then
+    elis counters.b % 5 == 0?
         counters.b = counters.b + 1;
-    elif counters.c % 7 == 0 then
+    elis counters.c % 7 == 0?
         counters.c = counters.c + 1;
     else
         counters.a = counters.a + 1;
         counters.b = counters.b + 1;
         counters.c = counters.c + 1;
-    end;
-end;
+    end
+end
 
 $print("counters =", counters);
 
@@ -24,4 +24,4 @@ while true do
     $print("we only execute this once...");
     break;
     $print("we don't execute this at all");
-end;
+end

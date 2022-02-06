@@ -1,1 +1,1 @@
-a = {"done":true,"first_if":true,"hello":"world","second_if":false}
+a = {"done":true,"first_is":true,"hello":"world","second_is":false}
