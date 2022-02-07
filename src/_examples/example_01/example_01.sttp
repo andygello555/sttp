@@ -1,25 +1,40 @@
+// Sttp supports all the types defined within JSON. This includes:
+// - JSON literals
 object = {
+// - Numbers
     "repeats": 30,
+// - Null
     "null": null,
+// - Booleans
     "false": false,
     "true": true,
     "pi": 3.142,
     "object": {
+// - Strings
         "hello": "world!",
+// - Arrays
         "array": [
             1,
             1 + 1,
             1 + 1 + 1
         ]
     },
+    // Method calls can be made by calling the supported HTTP methods
     "methodcall": $GET("http://127.0.0.1:3000/this/is/a/method/call"),
     "results": []
 };
 
+// Functions can be bound to a value within another value using JSONPath. Each function is passed a "self" parameter
+// which is the root property of the JSONPath of the function. Here, it would be the "object" variable. Each parameter
+// in the function is applied sequentially. Filling out the value sparsely if required. Here, the self.ifvar would bind
+// a key of "ifvar" within "object" to the given argument.
 fun object.execute(self.ifvar, self.var_ifwithin_self, party_variable.wow[0].a_a[0])
+    // Traditional style for loop. sttp also supports a foreach style loop.
     for i = 0; i < self.repeats; i = i + 1 do
         is i % 3 == 0?
             google = $GET("http://127.0.0.1:3000/not/google");
+            // + is used to append values to arrays.
+            // More than one semi-colon on one line is treated as a no-op.
             self.results = self.results + google.content;;;;
             is true?
                 $print(("hello" + "world")+"!");
@@ -40,11 +55,15 @@ fun object.execute(self.ifvar, self.var_ifwithin_self, party_variable.wow[0].a_a
             self.results = self.results + facebook;
         end
     end
+    // The return statement can only come at the end of a block. This is checked at parse-time rather than run-time.
     return "wow!";
 end
 
+// TryCatch statements
 try this
+    // Batch statements will execute all HTTP requests made within them in parallel.
     batch this
+        // Foreach loop
         for id in [
             "1234-1234-1234",
             "4321-4321-4321",
@@ -56,18 +75,24 @@ try this
         oops_forgot_this = $GET("http://127.0.0.1:3000/1111-1111-1111");
         $print(oops_forgot_this.content);
     end
+    // Like return statements, "throw" can also only come at the end of a block. You can throw any sttp value.
     throw {"error": "time", "ohno": true};
+// Catch takes an identifier (not a JSONPath). Will place the caught error into this root property on the heap.
 catch as err do
     $print(err);
 end
 
 this_boy = "to be this boy";
 
+// sttp is whitespace independent, so you can write it all on one line if you want.
 try this batch this for id in ["1234-1234-1234","4321-4321-4321","6666-6666-6666"] do result = $GET("http://127.0.0.1:3000/" + id);$print(result.content); end oops_forgot_this = $GET("http://127.0.0.1:3000/1111-1111-1111");$print(oops_forgot_this.content); end throw {"error": "time", "ohno": true};catch as err do $print(err); end
 
+// Function application
 wow = $object.execute();
 
 try this
+    // The test statement allows you to check if an expression is truthy. By default test statements do not break 
+    // execution on failure. Even if this flag is set, this will throw an un-catchable error.
     test object.results == 1 + 1 + 2;
 catch as err do
     $print(err);

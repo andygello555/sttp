@@ -1,5 +1,6 @@
 out = "";
 
+// Traditional for loops
 for i = 0; i < 100; i = i + 1 do
     is i % 3 == 0 && i % 5 == 0?
         out = out + "FizzBuzz";

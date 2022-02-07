@@ -1,3 +1,4 @@
+// Standard recursive n-th fibonacci function definition
 fun fib(n)
     is n < 2?
         return n;
@@ -8,11 +9,14 @@ end
 
 a = {"n": 7};
 
+// Here we define a similar fibonacci function as above but within an object.
 fun a.fib()
     is self.n < 2?
         return self.n;
     end
 
+    // We create two new object that are effectively copies of a but with the n - 1 and n - 2. We then recursively call
+    // the fib function and store it in fib1 and fib2 variables.
     b.n = self.n - 1;
     b.fib = self.fib;
     fib1 = $b.fib();

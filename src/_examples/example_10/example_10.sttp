@@ -1,3 +1,4 @@
+// TryCatch statements
 try this
     throw {"msg": "Oh no", "code": 400};
 catch as e do

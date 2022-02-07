@@ -1,2 +1,2 @@
 {"code":400,"msg":"Oh no"}
-{"callstack":[],"error":"example_10:9:13: cannot access array with negative index that is out of array bounds (-4)","pos":{"col":13,"filename":"example_10","line":9},"subset":"RuntimeError","type":"JSONPathError"}
+{"callstack":[],"error":"example_10:10:13: cannot access array with negative index that is out of array bounds (-4)","pos":{"col":13,"filename":"example_10","line":10},"subset":"RuntimeError","type":"JSONPathError"}
