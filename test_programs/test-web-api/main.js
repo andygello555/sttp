@@ -3,7 +3,7 @@ const http = require('http');
 
 const hostname = '127.0.0.1';
 const port = 3000;
-const workers = 6;
+const workers = 12;
 
 // https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods
 const REQUEST_HAS_BODY_METHODS = [
@@ -124,10 +124,5 @@ if (cluster.isMaster) {
     })
 } else {
     http.createServer(responder).listen(port)
-    //     , hostname, () => {
-    //     console.log(`Server running at http://${hostname}:${port}/`);
-    // })
-    // server.listen(port, hostname, () => {
-    // });
     console.log(`worker ${process.pid} started`)
 }

@@ -526,9 +526,59 @@ func (p *Path) String() string {
 	return b.String()
 }
 
+// ConvertAppend will first Convert the given Pathable, and then append it onto the referred Path.
+func (p *Path) ConvertAppend(pathable Pathable, vm VM) (err error) {
+	var subPath Path
+	if err, subPath = pathable.Convert(vm); err != nil {
+		return err
+	}
+	*p = append(*p, subPath...)
+	return nil
+}
+
 // Pathable defines a structure which can be converted recursively into a path.
 type Pathable interface {
 	Convert(vm VM) (err error, path Path)
+}
+
+// Convert will convert a JSONPathFactor AST node into a Path which will only be used to Get values from a value.
+func (j *JSONPathFactor) Convert(vm VM) (err error, path Path) {
+	path = make(Path, 0)
+	var root Pathable
+	switch {
+	case j.RootProperty != nil:
+		root = j.RootProperty
+	case j.RootJSON != nil:
+		root = j.RootJSON
+	}
+
+	if err = path.ConvertAppend(root, vm); err != nil {
+		return err, nil
+	}
+
+	for _, p := range j.Parts {
+		if err = path.ConvertAppend(p, vm); err != nil {
+			return err, nil
+		}
+	}
+	return nil, path
+}
+
+// Convert will convert a JSONPart AST node into a Path.
+func (jp *JSONPart) Convert(vm VM) (err error, path Path) {
+	path = make(Path, 0)
+	var value *data.Value
+	if err, value = jp.JSON.Eval(vm); err != nil {
+		return err, nil
+	}
+	path = append(path, value)
+
+	for _, i := range jp.Indices {
+		if err = path.ConvertAppend(i, vm); err != nil {
+			return err, nil
+		}
+	}
+	return nil, path
 }
 
 // Convert will convert a JSONPath AST node into a Path which can subsequently be used to Set and Get values from a 
@@ -536,12 +586,9 @@ type Pathable interface {
 func (j *JSONPath) Convert(vm VM) (err error, path Path) {
 	path = make(Path, 0)
 	for _, p := range j.Parts {
-		var subPath Path
-		err, subPath = p.Convert(vm)
-		if err != nil {
+		if err = path.ConvertAppend(p, vm); err != nil {
 			return err, nil
 		}
-		path = append(path, subPath...)
 	}
 	return nil, path
 }
@@ -550,32 +597,42 @@ func (j *JSONPath) Convert(vm VM) (err error, path Path) {
 func (p *Part) Convert(vm VM) (err error, path Path) {
 	path = Path{*p.Property}
 	for _, i := range p.Indices {
-		switch {
-		case i.ExpressionIndex != nil:
-			var idx *data.Value
-			err, idx = i.ExpressionIndex.Eval(vm)
-			switch idx.Type {
-			case data.Number:
-				path = append(path, int(idx.Value.(float64)))
-			case data.String:
-				path = append(path, idx.StringLit())
-			default:
-				// Otherwise, we try to cast it to a Number then a String
-				var idxCast *data.Value
-				err, idxCast = eval.Cast(idx, data.Number)
-				if err != nil {
-					err, idxCast = eval.Cast(idx, data.String)
-					if err != nil {
-						return errors.UpdateError(err, vm), nil
-					}
-					path = append(path, idxCast.StringLit())
-					continue
-				}
-				path = append(path, int(idxCast.Value.(float64)))
-			}
-		case i.FilterIndex != nil:
-			path = append(path, i.FilterIndex)
+		if err = path.ConvertAppend(i, vm); err != nil {
+			return err, nil
 		}
+	}
+	return nil, path
+}
+
+// Convert will convert an Index AST node into a Path. Indices act as a leaf for Pathable so all recursion will end 
+// here.
+func (i *Index) Convert(vm VM) (err error, path Path) {
+	path = make(Path, 1)
+	switch {
+	case i.ExpressionIndex != nil:
+		var idx *data.Value
+		err, idx = i.ExpressionIndex.Eval(vm)
+		switch idx.Type {
+		case data.Number:
+			path[0] = int(idx.Value.(float64))
+		case data.String:
+			path[0] = idx.StringLit()
+		default:
+			// Otherwise, we try to cast it to a Number then a String
+			var idxCast *data.Value
+			err, idxCast = eval.Cast(idx, data.Number)
+			if err != nil {
+				err, idxCast = eval.Cast(idx, data.String)
+				if err != nil {
+					return errors.UpdateError(err, vm), nil
+				}
+				path[0] = idxCast.StringLit()
+				break
+			}
+			path[0] = int(idxCast.Value.(float64))
+		}
+	case i.FilterIndex != nil:
+		path[0] = i.FilterIndex
 	}
 	return nil, path
 }

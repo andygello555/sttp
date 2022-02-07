@@ -56,15 +56,33 @@ type Array struct {
 type Factor struct {
 	Pos lexer.Position
 
-	Null          *Null         `  @Null`
-	Boolean       *Boolean      `| @(True | False)`
-	Number        *float64      `| @Number`
-	StringLit     *string       `| @StringLit`
-	JSONPath      *JSONPath     `| @@`
-	JSON          *JSON         `| @@`
-	FunctionCall  *FunctionCall `| @@`
-	MethodCall    *MethodCall   `| @@`
-	SubExpression *Expression   `| "(" @@ ")"`
+	Null           *Null           `  @Null`
+	Boolean        *Boolean        `| @(True | False)`
+	Number         *float64        `| @Number`
+	StringLit      *string         `| @StringLit`
+	JSONPathFactor *JSONPathFactor `| @@`
+	FunctionCall   *FunctionCall   `| @@`
+	MethodCall     *MethodCall     `| @@`
+	SubExpression  *Expression     `| "(" @@ ")"`
+}
+
+// JSONPathFactor acts similarly to JSONPath, in that it is the root of a JSONPath. However, on top of the root property
+// being able to be Part, it can also be a FunctionCall, a MethodCall, or a JSON literal.
+type JSONPathFactor struct {
+	Pos lexer.Position
+
+	RootProperty *Part     `(   @@`
+	RootJSON     *JSONPart `  | @@ )`
+	Parts        []*Part   `( "." @@ )*`
+}
+
+// JSONPart acts similarly to Part. However, it matches a JSON literal as an initial property. Then matches any number 
+// of Index.
+type JSONPart struct {
+	Pos lexer.Position
+
+	JSON    *JSON    `@@`
+	Indices []*Index `@@*`
 }
 
 type Prec1Term struct {
