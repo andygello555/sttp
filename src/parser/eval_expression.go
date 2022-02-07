@@ -164,10 +164,8 @@ func (f *Factor) left() evalNode {
 			return lexer.Position{}
 		}
 		n = &en
-	case f.JSONPath != nil:
-		n = f.JSONPath
-	case f.JSON != nil:
-		n = f.JSON
+	case f.JSONPathFactor != nil:
+		n = f.JSONPathFactor
 	case f.FunctionCall != nil:
 		n = f.FunctionCall
 	case f.MethodCall != nil:

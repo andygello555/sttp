@@ -39,28 +39,29 @@ func init() {
 			}
 		},
 		"free": func(vm VM, uncomputedArgs ...*Expression) (err error, value *data.Value) {
-			// For each uncomputed arg, we will find if there is a JSONPath factor terminal contained in the left-hand side
-			// of the expression.
+			// For each uncomputed arg, we will find if there is a JSONPathFactor terminal contained in the left-hand 
+			// side of the expression.
 			for _, uncomputedArg := range uncomputedArgs {
-				// We look down the left-hand side of the expression tree and see if the terminal factor is a JSONPath. We 
-				// will only consider this JSONPath, even 
+				// We look down the left-hand side of the expression tree and see if the terminal factor is a 
+				// JSONPathFactor. We will only consider this JSONPathFactor 
 				var t term = uncomputedArg
 				var e evalNode
 				for {
 					// We first get the evalNode from the left() method of the current argument.
 					e = t.left()
 					if t == nil {
-						// We return an error if we cannot continue down the left path before finding a JSONPath terminal.
+						// We return an error if we cannot continue down the left path before finding a JSONPathFactor terminal.
 						return errors.InvalidOperation.Errorf(vm, "builtin:delete", fmt.Sprintf("non-JSONPath value: \"%s\"", uncomputedArg.String(0)), "delete"), nil
 					} else {
-						// We do a type switch for the evalNode to find out if the underlying type is a JSONPath. If so we
-						// can stop iteration. Otherwise, we cast the evalNode to a term interface and assign the t var.
+						// We do a type switch for the evalNode to find out if the underlying type is a JSONPathFactor.
+						// If so we can stop iteration. Otherwise, we cast the evalNode to a term interface and assign
+						// the t var.
 						stop := false
 						switch e.(type) {
-						case *JSONPath:
+						case *JSONPathFactor:
 							stop = true
 						case *Null, *Boolean, *JSON, *FunctionCall, *MethodCall, *Expression, *struct { protoEvalNode }:
-							// We found an expression terminal/factor before finding a JSONPath.
+							// We found an expression terminal/factor before finding a JSONPathFactor.
 							return errors.InvalidOperation.Errorf(vm, "builtin:delete", fmt.Sprintf("non-JSONPath value: \"%s\"", e.(ASTNode).String(0)), "delete"), nil
 						default:
 							break
@@ -72,35 +73,42 @@ func init() {
 					}
 				}
 
-				// e should be a *JSONPath value, so we convert it into a Path.
-				var path Path
-				if err, path = e.(*JSONPath).Convert(vm); err != nil {
-					return err, nil
-				}
+				// e will be a *JSONPathFactor value
+				jsonPathFactor := e.(*JSONPathFactor)
+				switch {
+				// We will only free the variable if the JSONPathFactor's root property is pointing to a variable...
+				case jsonPathFactor.RootProperty != nil:
+					// We convert the JSONPathFactor to a Path
+					var path Path
+					if err, path = jsonPathFactor.Convert(vm); err != nil {
+						return err, nil
+					}
+					// We get the name of the variable as well as the value of the variable.
+					variableName := path[0].(string)
+					heap := vm.GetCallStack().Current().GetHeap()
 
-				// We get the name of the variable as well as the value of the variable.
-				variableName := path[0].(string)
-				heap := vm.GetCallStack().Current().GetHeap()
-
-				if len(path) > 1 {
-					variableVal := heap.Get(variableName)
-					if variableVal == nil {
-						variableVal = &data.Value{
-							Value:  nil,
-							Type:   data.Null,
+					if len(path) > 1 {
+						variableVal := heap.Get(variableName)
+						if variableVal == nil {
+							variableVal = &data.Value{
+								Value:  nil,
+								Type:   data.Null,
+							}
 						}
-					}
 
-					// We set the value at the path to nil if we have more than element in the path.
-					if err, variableVal.Value = path.Set(vm, variableVal.Value, nil); err != nil {
-						return err, nil
+						// We set the value at the path to nil if we have more than element in the path.
+						if err, variableVal.Value = path.Set(vm, variableVal.Value, nil); err != nil {
+							return err, nil
+						}
+						if err = heap.Assign(variableName, variableVal.Value, variableVal.Global, variableVal.ReadOnly); err != nil {
+							return err, nil
+						}
+					} else {
+						// If we only have one element then we will delete the Value from the heap.
+						heap.Delete(variableName)
 					}
-					if err = heap.Assign(variableName, variableVal.Value, variableVal.Global, variableVal.ReadOnly); err != nil {
-						return err, nil
-					}
-				} else {
-					// If we only have one element then we will delete the Value from the heap.
-					heap.Delete(variableName)
+				default:
+					break
 				}
 			}
 			return nil, &data.Value{

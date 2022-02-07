@@ -23,3 +23,11 @@ hello_world```
 ``` = "contains a or 1";
 
 $print(hello_world);
+
+fun hello_world(name)
+    return "Hello %%" % name;
+end
+
+$print({ "hw": "Hello World" }.hw);
+$print({"func": $hello_world("World")}.func);
+$print({"": $hello_world("World")}[0]);

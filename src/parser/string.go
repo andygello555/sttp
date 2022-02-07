@@ -152,6 +152,40 @@ func (j *JSONPath) String(indent int) string {
 	return strings.Join(parts, ".")
 }
 
+func (j *JSONPathFactor) String(indent int) string {
+	parts := make([]string, len(j.Parts) + 1)
+	switch {
+	case j.RootProperty != nil:
+		parts[0] = j.RootProperty.String(0)
+	case j.RootJSON != nil:
+		parts[0] = j.RootJSON.String(0)
+	}
+
+	for i, part := range j.Parts {
+		parts[i + 1] = part.String(0)
+	}
+	return strings.Join(parts, ".")
+}
+
+func (jp *JSONPart) String(indent int) string {
+	part := jp.JSON.String(0)
+	if len(jp.Indices) > 0 {
+		expressions := make([]string, len(jp.Indices))
+		for i, expression := range jp.Indices {
+			var indexOut string
+			switch {
+			case expression.ExpressionIndex != nil:
+				indexOut = fmt.Sprintf("[%s]", expression.ExpressionIndex.String(0))
+			case expression.FilterIndex != nil:
+				indexOut = fmt.Sprintf("```\n%s```", expression.FilterIndex.String(indent + 1))
+			}
+			expressions[i] = indexOut
+		}
+		part += strings.Join(expressions, "")
+	}
+	return part
+}
+
 func (r *ReturnStatement) String(indent int) string {
 	returnStmt := fmt.Sprintf("%sreturn", tabs(indent))
 	if r.Value != nil {
@@ -306,10 +340,8 @@ func (f *Factor) String(indent int) string {
 		} else {
 			fac = strings.TrimSuffix(b.String(), "\n")
 		}
-	case f.JSONPath != nil:
-		fac = f.JSONPath.String(0)
-	case f.JSON != nil:
-		fac = f.JSON.String(0)
+	case f.JSONPathFactor != nil:
+		fac = f.JSONPathFactor.String(0)
 	case f.FunctionCall != nil:
 		fac = f.FunctionCall.String(0)
 	case f.MethodCall != nil:
