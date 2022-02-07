@@ -8,16 +8,16 @@
     \end{center}
 \end{figure}
 
-There are two AST nodes surrounding the evaluation and definition of functions. These are: \verb|FunctionDefinition| and \verb|FunctionCall|. \verb|FunctionDefinition|s can exist in any scope. This means that non-global functions can be defined within other functions. When a \\\verb|FunctionDefinition| is evaluated, it will place a pointer to the \verb|FunctionDefinition| node on the current frame's \verb|Heap|. The \verb|FunctionDefinition| \verb|Value| can only be global and read-only if the variable does not exist in the current frame's \verb|Heap|. Global is only set when the current scope is 0, and read-only is only set if the \verb|FunctionDefinition| is being set to a root property. Otherwise, if the variable can be found then the global and read-only flags are inherited from that variable.
+There are two AST nodes surrounding the evaluation and definition of functions. These are: \verb|FunctionDefinition| and \verb|FunctionCall|. \verb|FunctionDefinition|s can exist in any scope, but only function's defined in the global scope ($0$) can be global. This means that non-global functions can be defined within other functions. When a \verb|FunctionDefinition| is evaluated, it will place a pointer to the \verb|FunctionDefinition| node on the current frame's \verb|Heap|. The \verb|FunctionDefinition| \verb|Value| can only be global and read-only if the variable/root property does not exist in the current frame's \verb|Heap|. Global is only set when the current scope is 0, and read-only is only set if the \verb|FunctionDefinition| is being set to a root property only (e.g. \verb|function foo(...) ... end;|). Otherwise, if the root property is already set in the current frame's \verb|Heap|, then the global and read-only flags are inherited from that variable.
 
-Within \verb|sttp| \verb|FunctionDefinition| pointers (\verb|Function| type) are marshalled as a string. This is done using the following function which implements Go's \verb|json.Marshaler| interface. This function will be called by \verb|json.Marshal|.
+Within \verb|sttp| \verb|FunctionDefinition| pointers (\verb|Function| type) are marshalled as strings. This is done using the following function which implements Go's \verb|json.Marshaler| interface. This function will be called by \verb|json.Marshal|.
 
 \inputminted[firstline=374, lastline=379, autogobble, breaklines, tabsize=4]{go}{../../src/parser/functions.go}
 
 The \verb|FunctionCall.Eval| instance method is more complicated than \verb|FunctionDefinition.Eval|, and follows the following order of execution:
 
 \begin{itemize}
-    \item Increment the VM scope. This will be decremented in a deferred function. Then the JSONPath is evaluated to retrieve its \verb|Value| on the \verb|Heap|. Depending on the type of this \verb|Value| and the structure of this JSONPath, we will do one of the following:
+    \item Increment the VM scope. This will be decremented in a deferred function. Then the JSONPath is evaluated to retrieve its \verb|Value| on the \verb|Heap|. Depending on the type of this \verb|Value|, and the structure of this JSONPath, we will do one of the following:
     \begin{itemize}
         \item If the \verb|Value| found is not of type \verb|Function|, and there is only a root property: we will check the builtins for this root property (builtins and builtin-lookups will be discussed further in a \hyperref[sec:development-builtins]{later section}). If we cannot find a builtin, or if the JSONPath is comprised of more than just the root property: then we will return an \verb|Uncallable| error.
         \begin{itemize}
