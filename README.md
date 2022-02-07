@@ -72,8 +72,6 @@ Examples for `sttp` can be found within the `src/_examples` directory. Each exam
 
 Some of these examples utilise the echo-chamber web API. The web server for which is located within: `src/_examples/echo_chamber` directory. The usage of which can be found [here](#echo-chamber-web-api).<br/>
 
-Unfortunately, the examples are not documented using comments. This is because these examples are also used as tests for the parser, which meant that I had to exclude comments from them.
-
 ## Test Programs
 
 There are instructions on how to run each program in their respective sections. These instructions require you to be in the test program's respective directory.

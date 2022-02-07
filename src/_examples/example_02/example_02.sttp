@@ -1,12 +1,27 @@
 hello_world = {
+    // Object keys can contain escaped characters
     "\"hello\"": "world",
     "a": "a" * 6 + ("b" + "c"),
+    // Format strings only support a single verb: %%. An array of values can be formatted to that format string using 
+    // the % operator.
     "format_string": "%% %% %%" % [1, 2, 3],
     "results": []
 };
+
+// JSONPath will fill a value out sparsely. For instance, the following line will create a new empty object at the 
+// "world" key. The value of this key will be a new empty array, the 2nd element of which will be another empty object 
+// containing the "hello" key. The value of this key will be "world".
 hello_world.world[1].hello = "world";
+
+// As mentioned in the previous example, + appends to an array. Here, an object union is performed (using the + 
+// operator) between {"no": 1} and {"0": null}. A number is converted to an object by creating an object with a single 
+// key: the number converted to a string. The value of which will be "null".
 hello_world.results = hello_world.results + ({ "no": 1 } + (3 - 2 - 1));
 
+// JSONPath also supports filtering using the "```" syntax. Within these filter tokens the user can supply a block that
+// returns a boolean. This block is run against each key-value pair within the currently accessed value. This node will
+// be passed to the block in the "curr" variable. This variable has a "key" and a "value" key. Here, the filter block
+// is being used to Get rather than Set. This will return an array of all the accepted nodes.
 filtered = hello_world```
     return curr.key == "\"hello\"" || curr.key == "a";
 ```;
@@ -14,6 +29,8 @@ filtered = hello_world```
 $print(filtered);
 $print(hello_world);
 
+// Here the filter block is being used to set all the values of the keys within hello_world, that contain either an "a"
+// or a "1", with a "contains a or 1".
 hello_world```
     $print("%% outer:" % [curr.key], curr);
     return 0 + curr.value```

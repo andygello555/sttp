@@ -2,6 +2,7 @@ a = {
     "hello": "world"
 };
 
+// If statements. Enuff said.
 if a then
     a.first_if = true;
 end;
