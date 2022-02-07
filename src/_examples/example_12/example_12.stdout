@@ -1,11 +1,11 @@
 a = {"b":{"c":"hello","foo":"bar"},"baz":"bor"}
 a = {"b":{"c":null,"foo":null},"baz":"bor"}
-{"callstack":[],"error":"example_12:12:6: cannot carry out operation \"builtin:delete\" for non-JSONPath value: \"\"hello\"\" and delete","pos":{"col":6,"filename":"example_12","line":12},"subset":"RuntimeError","type":"InvalidOperation"}
+{"callstack":[],"error":"example_12:16:6: cannot carry out operation \"builtin:delete\" for non-JSONPath value: \"\"hello\"\" and delete","pos":{"col":6,"filename":"example_12","line":16},"subset":"RuntimeError","type":"InvalidOperation"}
 before:
 a = {"b":{"c":null,"foo":null},"baz":"bor"}
 b = null
 c = this is the variable c
-e = {"callstack":[],"error":"example_12:12:6: cannot carry out operation \"builtin:delete\" for non-JSONPath value: \"\"hello\"\" and delete","pos":{"col":6,"filename":"example_12","line":12},"subset":"RuntimeError","type":"InvalidOperation"}
+e = {"callstack":[],"error":"example_12:16:6: cannot carry out operation \"builtin:delete\" for non-JSONPath value: \"\"hello\"\" and delete","pos":{"col":6,"filename":"example_12","line":16},"subset":"RuntimeError","type":"InvalidOperation"}
 after:
 a = null
 b = null

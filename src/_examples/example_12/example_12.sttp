@@ -1,14 +1,18 @@
+// The free builtin can be used as sttp lacks a garbage collector.
 a.b.c = "hello";
 a.b = a.b + {"foo": "bar"};
 a = a + {"baz": "bor"};
 
 $print("a =", a);
 
+// The free builtin will delete the values specified by the given JSONPaths. Only the leftmost factors of each 
+// expression provided will be evaluated. If this factor is not a JSONPath, then free will raise an error.
 $free(a.b.c + 1, a.b.foo * 3.142);
 
 $print("a =", a);
 
 try this
+    // Leftmost factor is not a JSONPath, error is thrown.
     $free("hello" / "blah" + a);
 catch as e do
     $print(e);

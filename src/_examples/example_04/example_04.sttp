@@ -4,6 +4,7 @@ counters = {
     "c": 0
 };
 
+// While loops
 while counters.a * counters.b * counters.c <= 100 do
     is counters.a % 3 == 0?
         counters.a = counters.a + 1;
@@ -22,6 +23,7 @@ $print("counters =", counters);
 
 while true do
     $print("we only execute this once...");
+    // Break can be used to exit any loop
     break;
     $print("we don't execute this at all");
 end
