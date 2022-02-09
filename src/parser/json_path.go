@@ -496,7 +496,7 @@ func (p *Path) Get(vm VM, current interface{}) (err error, gotten interface{}) {
 						current = nil
 					} else {
 						idx = mod(idx, len(str))
-						current = str[idx]
+						current = string(str[idx])
 					}
 				}
 			default:
