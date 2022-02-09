@@ -1,4 +1,11 @@
+// Batch statements
 batch this
+    // Batch statements will execute the nested block in two passes:
+    // 1. The first pass will enqueue all HTTP requests in a job queue. This job queue is executed by being distributed 
+    //    between several goroutines. The results will then be enqueued into a results queue in the same order they were
+    //    found at the start of the pass.
+    // 2. The second pass will execute the nested block again, this time de-queuing results from the result queue as 
+    //    HTTP requests are encountered.
     for i = 0; i < 100; i = i + 1 do
         result.result = $GET("http://127.0.0.1:3000/" + i);
         result.results[i] = result.result.content;
@@ -11,6 +18,7 @@ end;
 try this
     batch this
         a.result = $GET("http://127.0.0.1:3000/hello/world");
+        // A batch statement cannot be within another batch statement. An error will be thrown.
         batch this
             for _, prefix in ["a", "b", "c", "d", "e"] do
                 a.result = $GET("http://127.0.0.1:3000/%%" % [prefix]);
@@ -22,6 +30,7 @@ catch as e then
     $print(e);
 end;
 
+// Here there are no HTTP requests, so only the first pass will be executed.
 batch this
     $print("no method calls in 'ere");
 end;
@@ -30,6 +39,10 @@ try this
     batch this
         x = $GET("http://127.0.0.1:3000/the/flow/depends/on/this/request");
         y = $GET("http://127.0.0.1:3000/the/flow/depends/on/this/request/also");
+        // In the first pass, all HTTP requests will return "null" by default. This means that the following if 
+        // statement will evaluate to false, and the HTTP request within it will not be added to the job queue. In the 
+        // second pass, the interpreter will dequeue a result for the request after the if for the request within the 
+        // if. This will be detected and an error will be thrown.
         if x.code == 200 && y.code == 200 then
             wont_be_batched = $GET("http://127.0.0.1:3000/wont/be/batched");
         end;
@@ -43,6 +56,8 @@ try this
     batch this
         x = $GET("http://127.0.0.1:3000/the/flow/depends/on/this/request");
         y = $GET("http://127.0.0.1:3000/the/flow/depends/on/this/request/also");
+        // Similar to the example above but an error will be thrown in the second pass because there are no more results
+        // to dequeue when the request within the if is encountered.
         if x.code == 200 && y.code == 200 then
             wont_be_batched = $GET("http://127.0.0.1:3000/wont/be/batched");
         end;
@@ -54,6 +69,9 @@ end;
 try this
     batch this
         x = $GET("http://127.0.0.1:3000/the/flow/depends/on/this/request");
+        // Here the if will evaluate to true, enqueuing the request within in the first pass. In the second pass the 
+        // request within the if will not be reached, and will result in an error explaining that there is one more 
+        // result than expected.
         if x.code != 200 then
             wont_be_batched = $GET("http://127.0.0.1:3000/will/be/batched");
         end;
@@ -80,6 +98,7 @@ function fibMethod(n)
     return $fibMethod(n - 1) + $fibMethod(n - 2);
 end;
 
+// HTTP requests within functions will also be batched when applied within a batch statement.
 batch this
     $nMethodCalls(10);
     $nMethodCalls(20);

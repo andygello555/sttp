@@ -26,10 +26,14 @@ a = {
 
 a_search_schema = { "type": "string" };
 
+// $find: Find the first and deepest occurrence of the search schema within the value.
 $print("first occurrence of %% in a =" % [a_search_schema], $find(a, a_search_schema));
 
+// $find_all: Find all the occurrences of the search schema within the value, without including an parent nodes.
 $print("all occurrences of %% in a (without parent nodes) =" % [a_search_schema], $find_all(a, a_search_schema));
 
+// $find_all_parents: Finds all the occurrences of the search schema within the value, and also includes any parent 
+// nodes. Results are ordered by leftmost-deepest first.
 $print("all occurrences of %% in a (with parent nodes) =" % [a_search_schema], $find_all_parents(a, a_search_schema));
 
 $print();
