@@ -11,9 +11,15 @@ iterators = {
 
 $print("iterators =", iterators);
 
+// Foreach loops. These can either have a variable identifier in which the key of the currently iterated object is 
+// stored in, and an optional variable identifier in which the value of the currently iterated object is stored in.
 loop1out = "[";
+// When iterating over a string, the key variable is set to the currently iterated character's index and the value 
+// variable is set to the currently iterated character.
 for index, char in iterators.loop1 do
     loop1out = loop1out + ("(%%: %%)" % [index, char]);
+    // Here we use the behaviour of + on numbers to convert the string to a number. If the string is not parsable to a
+    // number then the length of the string is used as the cast number. 
     if index != (0 + iterators.loop1) - 1 then
         loop1out = loop1out + ", ";
     else
@@ -23,8 +29,11 @@ end;
 $print("loop1out =", loop1out);
 
 loop2out = "[";
+// When iterating over an array, the key variable is set to the currently iterated element's index, and the value 
+// variable is set to the currently iterated elements.
 for index, value in iterators.loop2 do
     loop2out = loop2out + ("(%%: %%)" % [index, value]);
+    // Again we are using the + operator on numbers to take the length of the array.
     if index != (0 + iterators.loop2) - 1 then
         loop2out = loop2out + ", ";
     else
@@ -34,6 +43,8 @@ end;
 $print("loop2out =", loop2out);
 
 loop3out = "[";
+// When iterating over an object, the key variable is set to the currently iterated key-value pair's key, and the value
+// variable is set to the currently iterated key-value pair's value.
 for key, value in iterators.loop3 do
     loop3out = loop3out + ("(%%: %%)" % [key, value]);
     if key != "world" then
@@ -66,6 +77,7 @@ for index, value in [] do ohno = true; end;
 $print("ohno =", ohno);
 
 loop5out = "[";
+// Any other value will first be cast to a String, then an Array, and finally an Object.
 for index, char in iterators.loop5 do
     loop5out = loop5out + ("(%%: %%)" % [index, char]);
     if index != 0 + ("a" + iterators.loop5) - 2 then
@@ -76,6 +88,7 @@ for index, char in iterators.loop5 do
 end;
 $print("loop5out =", loop5out);
 
+// You can also break out of foreach loops
 for index, char in "hello world!" do
     if char == " " then
         break;

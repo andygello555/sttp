@@ -105,9 +105,16 @@ func TestParse(t *testing.T) {
 
 		//fmt.Println(testNo, ">>>>>>>>")
 		//fmt.Println(p.String(0))
+		expectedLines := strings.Split(e.script, "\n")
+		for i, line := range expectedLines {
+			expectedLines[i] = strings.TrimLeft(line, "\n\t ")
+			if strings.HasPrefix(expectedLines[i], "//") {
+				expectedLines[i] = ""
+			}
+		}
 
-		actual := strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(  p.String(0), " ", ""), "\t", ""), "\n", ""), ";", "")
-		expected := strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(e.script          , " ", ""), "\t", ""), "\n", ""), ";", "")
+		actual := strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(p.String(0)                  , " ", ""), "\t", ""), "\n", ""), ";", "")
+		expected := strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(                 strings.Join(expectedLines, ""), " ", ""), "\t", ""), ";", "")
 		if actual != expected && t != nil {
 			t.Errorf("%d: parsed output does not match input script", testNo+1)
 			//fmt.Println("-------")

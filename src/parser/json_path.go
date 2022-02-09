@@ -496,7 +496,7 @@ func (p *Path) Get(vm VM, current interface{}) (err error, gotten interface{}) {
 						current = nil
 					} else {
 						idx = mod(idx, len(str))
-						current = str[idx]
+						current = string(str[idx])
 					}
 				}
 			default:
@@ -519,6 +519,10 @@ func (p *Path) String() string {
 			b.WriteString(path.(string))
 		case int:
 			b.WriteString(fmt.Sprintf("[%d]", path.(int)))
+		case *Block:
+			b.WriteString(fmt.Sprintf("```\n%s\n```", path.(*Block).String(1)))
+		case *data.Value:
+			b.WriteString(path.(*data.Value).String())
 		default:
 			panic(fmt.Errorf("path element should not be of type %s", reflect.TypeOf(path).String()))
 		}
