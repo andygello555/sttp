@@ -75,9 +75,8 @@ func init() {
 
 				// e will be a *JSONPathFactor value
 				jsonPathFactor := e.(*JSONPathFactor)
-				switch {
 				// We will only free the variable if the JSONPathFactor's root property is pointing to a variable...
-				case jsonPathFactor.RootProperty != nil:
+				if jsonPathFactor.RootProperty != nil {
 					// We convert the JSONPathFactor to a Path
 					var path Path
 					if err, path = jsonPathFactor.Convert(vm); err != nil {
@@ -107,8 +106,6 @@ func init() {
 						// If we only have one element then we will delete the Value from the heap.
 						heap.Delete(variableName)
 					}
-				default:
-					break
 				}
 			}
 			return nil, &data.Value{

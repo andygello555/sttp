@@ -130,14 +130,7 @@ func (p *Part) String(indent int) string {
 	if len(p.Indices) > 0 {
 		expressions := make([]string, len(p.Indices))
 		for i, expression := range p.Indices {
-			var indexOut string
-			switch {
-			case expression.ExpressionIndex != nil:
-				indexOut = fmt.Sprintf("[%s]", expression.ExpressionIndex.String(0))
-			case expression.FilterIndex != nil:
-				indexOut = fmt.Sprintf("```\n%s```", expression.FilterIndex.String(indent + 1))
-			}
-			expressions[i] = indexOut
+			expressions[i] = expression.String(0)
 		}
 		part += strings.Join(expressions, "")
 	}
@@ -159,6 +152,8 @@ func (j *JSONPathFactor) String(indent int) string {
 		parts[0] = j.RootProperty.String(0)
 	case j.RootJSON != nil:
 		parts[0] = j.RootJSON.String(0)
+	case j.RootString != nil:
+		parts[0] = j.RootString.String(0)
 	}
 
 	for i, part := range j.Parts {
@@ -172,18 +167,43 @@ func (jp *JSONPart) String(indent int) string {
 	if len(jp.Indices) > 0 {
 		expressions := make([]string, len(jp.Indices))
 		for i, expression := range jp.Indices {
-			var indexOut string
-			switch {
-			case expression.ExpressionIndex != nil:
-				indexOut = fmt.Sprintf("[%s]", expression.ExpressionIndex.String(0))
-			case expression.FilterIndex != nil:
-				indexOut = fmt.Sprintf("```\n%s```", expression.FilterIndex.String(indent + 1))
-			}
-			expressions[i] = indexOut
+			expressions[i] = expression.String(0)
 		}
 		part += strings.Join(expressions, "")
 	}
 	return part
+}
+
+func (slp *StringLitPart) String(indent int) string {
+	var b strings.Builder
+	var part string
+	encoder := json.NewEncoder(&b)
+	encoder.SetEscapeHTML(false)
+	if err := encoder.Encode(*slp.StringLit); err != nil {
+		panic(err)
+	} else {
+		part = strings.TrimSuffix(b.String(), "\n")
+	}
+
+	if len(slp.Indices) > 0 {
+		expressions := make([]string, len(slp.Indices))
+		for i, expression := range slp.Indices {
+			expressions[i] = expression.String(0)
+		}
+		part += strings.Join(expressions, "")
+	}
+	return part
+}
+
+func (i *Index) String(indent int) string {
+	var indexOut string
+	switch {
+	case i.ExpressionIndex != nil:
+		indexOut = fmt.Sprintf("[%s]", i.ExpressionIndex.String(0))
+	case i.FilterIndex != nil:
+		indexOut = fmt.Sprintf("```\n%s```", i.FilterIndex.String(indent + 1))
+	}
+	return indexOut
 }
 
 func (r *ReturnStatement) String(indent int) string {
@@ -331,15 +351,6 @@ func (f *Factor) String(indent int) string {
 		fac = fmt.Sprintf("%v", bool(*f.Boolean))
 	case f.Number != nil:
 		fac = fmt.Sprintf("%v", *f.Number)
-	case f.StringLit != nil:
-		var b strings.Builder
-		encoder := json.NewEncoder(&b)
-		encoder.SetEscapeHTML(false)
-		if err := encoder.Encode(*f.StringLit); err != nil {
-			panic(err)
-		} else {
-			fac = strings.TrimSuffix(b.String(), "\n")
-		}
 	case f.JSONPathFactor != nil:
 		fac = f.JSONPathFactor.String(0)
 	case f.FunctionCall != nil:

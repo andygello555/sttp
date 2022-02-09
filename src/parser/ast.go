@@ -59,7 +59,6 @@ type Factor struct {
 	Null           *Null           `  @Null`
 	Boolean        *Boolean        `| @(True | False)`
 	Number         *float64        `| @Number`
-	StringLit      *string         `| @StringLit`
 	JSONPathFactor *JSONPathFactor `| @@`
 	FunctionCall   *FunctionCall   `| @@`
 	MethodCall     *MethodCall     `| @@`
@@ -71,9 +70,10 @@ type Factor struct {
 type JSONPathFactor struct {
 	Pos lexer.Position
 
-	RootProperty *Part     `(   @@`
-	RootJSON     *JSONPart `  | @@ )`
-	Parts        []*Part   `( "." @@ )*`
+	RootProperty *Part          `(   @@`
+	RootJSON     *JSONPart      `  | @@`
+	RootString   *StringLitPart `  | @@ )`
+	Parts        []*Part        `( "." @@ )*`
 }
 
 // JSONPart acts similarly to Part. However, it matches a JSON literal as an initial property. Then matches any number 
@@ -83,6 +83,15 @@ type JSONPart struct {
 
 	JSON    *JSON    `@@`
 	Indices []*Index `@@*`
+}
+
+// StringLitPart acts similarly to Part. However, it matches a string literal token and any subsequent instances of 
+// Index. 
+type StringLitPart struct {
+	Pos lexer.Position
+
+	StringLit  *string  `@StringLit`
+	Indices    []*Index `@@*`
 }
 
 type Prec1Term struct {
