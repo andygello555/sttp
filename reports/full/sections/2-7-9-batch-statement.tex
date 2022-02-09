@@ -34,9 +34,10 @@
     \end{center}
 \end{figure}
 
-One of the main motivations for creating \verb|sttp| was to enable the programmer to easily `batch' multiple HTTP requests and execute them concurrently. This is a technique that I use often whilst requesting information from web servers that don't enforce a strict rate limit. Dispatching a `batch' of HTTP requests to multiple worker threads is often always faster than executing each HTTP request sequentially (from personal experience). In \verb|sttp| the \verb|batch| statement was implemented for this very reason.
+One of the main motivations for creating \verb|sttp| was to enable the programmer to easily `batch' multiple HTTP requests to have them executed concurrently. This is a technique that I use often whilst requesting information from web servers that don't enforce a strict rate limit. Dispatching a `batch' of HTTP requests to multiple worker threads is often always faster than executing each HTTP request sequentially (from personal experience). In \verb|sttp| the \verb|batch| statement was implemented for this very reason.
 
-\begin{verbatim}
+\begin{figure}[H]
+    \begin{verbatim}
 batch this
     for i = 0; i < 100; i = i + 1 do
         result.result = $GET("http://127.0.0.1:3000/" + i);
@@ -46,16 +47,18 @@ batch this
     oops_forgot_this = $GET("http://127.0.0.1:3000/" + 100);
     $print(oops_forgot_this.content);
 end;
-\end{verbatim}
+    \end{verbatim}
+    \cprotect\caption{An example of \verb|sttp|'s \verb|batch| statement.}
+\end{figure}
 
 The \verb|batch| statement can wrap any \verb|Block| of code. It executes the wrapped code in two passes:
 
 \begin{enumerate}
-    \item Batching each instance of the \verb|MethodCall| AST node. Then executing these batched HTTP requests in several worker goroutines, adding the result of each to a result queue.
-    \item Executing the inner \verb|Block| again, and replacing each instance of the \verb|MethodCall| AST node with the next result from the result queue.
+    \item Interpreting the nested \verb|Block|, whilst batching each instance of the \verb|MethodCall| AST node. These batched HTTP requests will then be executed by several worker goroutines, adding the result of each to a result queue.
+    \item Executing the nested \verb|Block| again, whilst replacing each instance of the \verb|MethodCall| AST node with the next result from the result queue. These results will be dequeued from the queue in the order that they were batched in the first pass.
 \end{enumerate}
 
-A more in-depth explanation of these steps is explained within the \hyperref[sec:batching]{specification}. The data-structure used to achieve this is the \verb|BatchSuite| type. This stores a list of jobs in the order that the \verb|MethodCall|s were encountered during the execution of the first pass. Along with this list, there is a counter for current ID to use for the next enqueued job, as well as a pointer back to the \verb|Batch| AST node. This work is then executed using a pool of goroutines, the number of which is decided by the number of incoming jobs.
+A more in-depth explanation of these steps is explained within the \hyperref[sec:batching]{specification}. The data-structure used to achieve this is the \verb|BatchSuite| type. This stores a list of jobs in the order that the \verb|MethodCall|s were encountered during the execution of the first pass. Along with this list, there is a counter for the current ID to use for the next enqueued job, as well as a pointer back to the \verb|Batch| AST node. This work is then executed using a pool of goroutines, the number of which is decided by the number of incoming jobs.
 
 \inputminted[firstline=72, lastline=78, autogobble, breaklines, tabsize=4]{go}{../../src/batch.go}
 
@@ -63,7 +66,7 @@ A more in-depth explanation of these steps is explained within the \hyperref[sec
 
 \inputminted[firstline=124, lastline=160, autogobble, breaklines, tabsize=4]{go}{../../src/batch.go}
 
-Here, the \verb|methodWorker| function acts as a worker `thread' which takes a readable channel (\mintinline{go}{<-chan}) of jobs as well as a writeable channel (\mintinline{go}{chan<-}) of results. This worker function is then spawned off \verb|min(MaxWorkers, numJobs)| times (where \verb|MaxWorkers = 20|). The jobs within \verb|BatchSuite.Batch| are then enqueued in the jobs queue. We then read from the results queue into a \verb|BatchResults| instance. \verb|BatchResults| implements \verb|heap.Interface| so the complexity of this operation is: $O(n \log n)$. This \verb|BatchResults| queue's reference will be stored within the \verb|VM|, and will act as the main way of checking whether the batch is currently in its second pass.
+Here, the \verb|methodWorker| function acts as a worker `thread' which takes a readable channel (\mintinline{go}{<-chan}) of jobs as well as a writeable channel (\mintinline{go}{chan<-}) of results. This worker function is then spawned off \verb|min(MaxWorkers, numJobs)| times (where \verb|MaxWorkers = 20|). The jobs within \verb|BatchSuite.Batch| are then enqueued in the jobs queue. We then read from the results queue, adding each result into a \verb|BatchResults| instance. \verb|BatchResults| implements \verb|heap.Interface| that prioritises results by their ID, effectively sorting the results in the order in which they were added to \verb|BatchSuite.Batch|. The complexity of this operation is: $O(n \log n)$. The \verb|BatchResults| instance's reference will be stored within the \verb|VM|, and will act as the main way of checking whether the batch is currently in its second pass.
 
 \begin{verbatim}
 // Example 1: A batch statement within a batch statement.
@@ -111,13 +114,13 @@ The \verb|batch| statement has a few edge cases that need to be handled due to t
 
 \textbf{Example 1}: \verb|batch| statements do not support another \verb|batch| statement within them. This is because this behaviour is undefined (for the moment). This is implemented by simply checking if there is a \verb|BatchSuite| or \verb|BatchResults| available in the \verb|VM| when evaluating each \verb|Batch| AST node.
 
-\textbf{Example 2}: a \verb|batch| statement with no \verb|MethodCall|s within it, only has its first-pass executed. This is accomplished by first caching the \verb|VM|'s stdout and stderr then setting them to temporary buffers within memory. If after the first pass no \verb|MethodCall|s have been batched, the temporary buffers will be written to the cached stdout and stderr which will then be set back to be the \verb|VM|'s stdout and stderr. The batch is then aborted.
+\textbf{Example 2}: a \verb|batch| statement with no \verb|MethodCall|s within it, only has its first-pass executed. This is accomplished by first caching the \verb|VM|'s stdout and stderr's file-descriptors then setting them to temporary buffers within memory. If after the first pass no \verb|MethodCall|s have been batched, the temporary buffers will be written to the cached stdout and stderr file-descriptors. These will then be set back to be the \verb|VM|'s stdout and stderr. The batch is then aborted.
 
-\textbf{Example 3}: in this example the \verb|MethodCall| that is being stored in the \verb|wont_be_batched| variable is not batched during the first pass. This is because the value of \verb|x| and \verb|y| will be set to \verb|null| during the first pass, as this is what is returned by all \verb|MethodCall|s within the first pass. Therefore, the \verb|MethodCall| within the \verb|if| statement will not be batched, but the one after it will be. However, when in the second pass, the \verb|MethodCall| within this \verb|if| statement will be evaluated, and the next result from the batch will be dequeued. Results within the results queue store a pointer back to the original \verb|MethodCall| that was enqueued as a job. This pointer can then be compared to the \verb|MethodCall| that is currently being evaluated. If it doesn't match, then an error will be thrown.
+\textbf{Example 3}: in this example the \verb|MethodCall| that is being stored in the \verb|wont_be_batched| variable is not batched during the first pass. This is because the value of \verb|x| and \verb|y| will be set to \verb|null| during the first pass, as this is what is returned by all \verb|MethodCall|s within the first pass. Therefore, the \verb|MethodCall| within the \verb|if| statement will not be batched, but the one after it will be. When the second pass is being executed, the \verb|MethodCall| within this \verb|if| statement will be evaluated, and the next result from the batch will be dequeued. Results within the results queue store a pointer back to the original \verb|MethodCall| that was enqueued as a job. This pointer can then be compared to the \verb|MethodCall| that is currently being evaluated. If it doesn't match, then an error will be thrown.
 
-\textbf{Example 4}: Similar to \textbf{Example 3}, this snippet will not batch the \verb|MethodCall| within the \verb|if| statement. However, this time there is no \verb|MethodCall| following the \verb|if|. This results in there being no result left to dequeue when in the second pass and evaluating the \verb|MethodCall| within the \verb|if|.
+\textbf{Example 4}: similar to \textbf{Example 3}, this snippet will not batch the \verb|MethodCall| within the \verb|if| statement. However, this time there is no \verb|MethodCall| following the \verb|if|. This results in there being no result left to dequeue when in the second pass and evaluating the \verb|MethodCall| within the \verb|if|. This causes an exception to occur.
 
-\textbf{Example 5}: Similar to \textbf{Example 3} and \textbf{Example 4}. However, this snippet will \textbf{not} batch the \verb|MethodCall| within the \verb|if| statement, and will not be evaluated in the second pass. This results in there being one more result in the results queue at the end of the \verb|batch| statement. In these cases, we are able to continue execution normally, but for completeness we raise an error.
+\textbf{Example 5}: similar to \textbf{Example 3} and \textbf{Example 4}. However, this snippet will \textbf{not} batch the \verb|MethodCall| within the \verb|if| statement, and will also not be evaluated in the second pass. This results in there being one more result in the results queue at the end of the \verb|batch| statement. In these cases, we are able to continue execution normally, but for completeness we raise an error.
 
 \subsubsection{Updating the echo-chamber test web API}
 
@@ -125,7 +128,7 @@ In order to give a fair analysis of the performance of batching, the echo-chambe
 
 \subsubsection{Performance}
 
-\verb|batch| statements need to be performant in order to be more useful than just executing \verb|MethodCall|s synchronously. When developing the \verb|batch| statement there was some apprehension to how performant the execution of two passes of the \verb|Block| within a \verb|batch| statement would be. This is because there is effectively double the overhead. To benchmark the performance of the \verb|batch| statement I wrote the following \verb|sttp| code snippet:
+\verb|batch| statements need to be performant in order to be more useful than just executing \verb|MethodCall|s synchronously. When developing the \verb|batch| statement there was some apprehension to how performant the execution of two passes of the \verb|Block| within a \verb|batch| statement would be. This is because there is effectively, close to, double the overhead. To benchmark the performance of the \verb|batch| statement I wrote the following \verb|sttp| code snippet:
 
 \begin{figure}[H]
     \begin{verbatim}
@@ -141,11 +144,12 @@ $print(oops_forgot_this.content);
     \label{sec:eval-ast-nodes-batch-bench-snippet}
 \end{figure}
 
-I then wrote multiple Go benchmarking functions within \verb|src/main_test.go| that used \verb|Sprintf| to replace \verb|%d| with: 10, 20, 30, 50, 100, and 200 to test the performance of evaluating \verb|MethodCall|s synchronously. I then replicated this for benchmarking the \verb|batch|ed concurrent code by wrapping the code snippet within a \verb|batch| statement. This gave me six benchmarks for a control, as well as six benchmarks for the concurrent code. Two important things to note about the benchmarking that took place:
+I then wrote multiple Go benchmarking functions within \verb|src/main_test.go| that use \verb|Sprintf| to replace \verb|%d| with: 10, 20, 30, 50, 100, and 200 to test the performance of evaluating \verb|MethodCall|s synchronously. I then replicated this for benchmarking the \verb|batch|ed concurrent code by wrapping the code snippet within a \verb|batch| statement. This gave me six benchmarks for a control (synchronous), as well as six benchmarks for the concurrent code. Two important things to note about the benchmarking that took place:
 
 \begin{enumerate}
     \item Due to the large numbers of socket descriptors that need to be open on the benchmarking machine, I had to increase the limit of the number of open socket descriptors to run the benchmarks successfully (on Unix based systems this can be done via the \verb|ulimit| command). A possible aggravator of this is that Go runs each iteration of each benchmarking function in parallel. Thus increasing the overall number of socket descriptors used by a factor of the number of iterations to execute.
     \item The time to generate the parser as well as parse the input snippet are \textbf{not} taken into account when timing each iteration.
+    \item A 2020 M1 MacBook Pro was used to run the benchmarks. Go version: \verb|>=1.16|, compiles natively into arm64 machine code\textsuperscript{\cite{go_1_16}}. \textbf{Your mileage may vary}.
 \end{enumerate}
 
 \label{sec:eval-ast-nodes-batch-bench-1-intro}
@@ -188,10 +192,10 @@ The graph above shows a similar result to that of the \hyperref[sec:eval-ast-nod
 Unfortunately, it is hard to tell. When executing a large number of HTTP requests to a known web server that can handle concurrent requests, the main source of time gains come from HTTP packets propagating through the network, or in other words: latency. However, because the benchmarks run above used the echo-chamber test web API, which was running locally, the effects of latency should be very minimal as there is no `network' to travel through. When sending many packets over the internet sequentially these could soon `build-up' causing latency. However, when making the requests concurrently there is still latency but because the requests are being sent at a similar time, it takes less time overall. The factors that I think could affect the execution speed of requests are:
 
 \begin{itemize}
-    \item \textbf{Memory allocation and garbage collection in Go}: heap memory allocation can fluctuate wildly depending on: how much of the page is left, and whether a new page needs to be allocated. Even though the Go GC works in a separate thread, it needs to sync-up all running goroutines to ensure heap data integrity. When this happens, the execution of the program will pause temporarily. If this happens frequently it could lead to build-ups when executing an operation with a lot of memory allocations many times. When executing a \verb|BatchSuite|, goroutine workers are spawned, each with their own stack. When \verb|Method.Call| is executed, the \verb|jobs| and \verb|results| \mintinline{go}{chan} will be allocated on that worker's stack, resulting in fewer allocations on the heap for the same number of HTTP requests.
+    \item \textbf{Memory allocation and garbage collection in Go}: heap memory allocation speeds can fluctuate wildly depending on the current pressure being put on Go's garbage collector. This is because Go will assign more goroutines to handle the marking of the heap for the GC, which will in turn slow down the speed of the main program and heap memory allocation. Even though the Go GC works in a separate thread, it needs to sync-up all running goroutines to ensure heap data integrity. When this happens, the execution of the program will pause temporarily. If this happens frequently it could lead to build-ups when executing an operation with a lot of memory allocations many times. This could be what is slowing down the synchronous code. \textbf{But shouldn't the GC also slow down the execution of the concurrent code?} When executing a \verb|BatchSuite|, goroutine workers are spawned, each with their own stack. When \verb|Method.Call| is executed, the \verb|jobs| and \verb|results| \mintinline{go}{chan} will be allocated on that worker's stack, resulting in fewer allocations on the heap for the same number of HTTP requests. Fewer number of allocations mean that the GC is starting less goroutines to aid it in marking the heap, meaning less sync pauses, and main program slowdowns.
     \item \textbf{Method.Call is executed concurrently rather than the HTTP request itself}: when the \verb|BatchSuite| executes work it executes the \verb|Method.Call| instance method. \verb|Method.Call| will execute the HTTP request and also do some other, somewhat memory intensive, functions such as parsing the response and allocating a \verb|Value| for the parsed response.
-    \item \textbf{Code optimisation}: because Go was designed foremost to be used for concurrency, it makes sense for the Go compiler to optimise concurrent code.
-    \item \textbf{Operating system and hardware optimisation}: operating systems usually perform caching on TCP sockets, in order to improve TCP connection speeds. It's also important to take into account hardware optimisation
+    \item \textbf{Code optimisation}: because Go was designed first and foremost to be used for concurrency, it makes sense for the Go compiler to optimise concurrent code.
+    \item \textbf{Operating system and hardware optimisation}: operating systems usually perform caching on TCP sockets, in order to improve TCP connection speeds. It's also important to take into account hardware optimisation.
     \item \textbf{And many more...}
 \end{itemize}
 
