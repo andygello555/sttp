@@ -117,11 +117,11 @@ func TestParse(t *testing.T) {
 		expected := strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(                 strings.Join(expectedLines, ""), " ", ""), "\t", ""), ";", "")
 		if actual != expected && t != nil {
 			t.Errorf("%d: parsed output does not match input script", testNo+1)
-			//fmt.Println("-------")
-			//fmt.Println(actual)
-			//fmt.Println(">>>>>>>>>>>")
-			//fmt.Println(expected)
-			//fmt.Println("-------")
+			fmt.Println("-------")
+			fmt.Println(actual)
+			fmt.Println(">>>>>>>>>>>")
+			fmt.Println(expected)
+			fmt.Println("-------")
 		}
 	}
 }

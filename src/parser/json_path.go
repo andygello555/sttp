@@ -496,7 +496,7 @@ func (p *Path) Get(vm VM, current interface{}) (err error, gotten interface{}) {
 						current = nil
 					} else {
 						idx = mod(idx, len(str))
-						current = str[idx]
+						current = string(str[idx])
 					}
 				}
 			default:
@@ -541,7 +541,8 @@ type Pathable interface {
 	Convert(vm VM) (err error, path Path)
 }
 
-// Convert will convert a JSONPathFactor AST node into a Path which will only be used to Get values from a value.
+// Convert will convert a JSONPathFactor AST node into an iterable Path which will only be used to Get values from a 
+// value.
 func (j *JSONPathFactor) Convert(vm VM) (err error, path Path) {
 	path = make(Path, 0)
 	var root Pathable
@@ -550,6 +551,8 @@ func (j *JSONPathFactor) Convert(vm VM) (err error, path Path) {
 		root = j.RootProperty
 	case j.RootJSON != nil:
 		root = j.RootJSON
+	case j.RootString != nil:
+		root = j.RootString
 	}
 
 	if err = path.ConvertAppend(root, vm); err != nil {
@@ -564,7 +567,7 @@ func (j *JSONPathFactor) Convert(vm VM) (err error, path Path) {
 	return nil, path
 }
 
-// Convert will convert a JSONPart AST node into a Path.
+// Convert will convert a JSONPart AST node into an iterable Path.
 func (jp *JSONPart) Convert(vm VM) (err error, path Path) {
 	path = make(Path, 0)
 	var value *data.Value
@@ -581,8 +584,24 @@ func (jp *JSONPart) Convert(vm VM) (err error, path Path) {
 	return nil, path
 }
 
-// Convert will convert a JSONPath AST node into a Path which can subsequently be used to Set and Get values from a 
-// value.
+// Convert will convert a StringLitPart AST node into an iterable Path.
+func (slp *StringLitPart) Convert(vm VM) (err error, path Path) {
+	path = make(Path, 0)
+	path = append(path, &data.Value{
+		Value:  *slp.StringLit,
+		Type:   data.String,
+	})
+
+	for _, i := range slp.Indices {
+		if err = path.ConvertAppend(i, vm); err != nil {
+			return err, nil
+		}
+	}
+	return nil, path
+}
+
+// Convert will convert a JSONPath AST node into an interable Path which can subsequently be used to Set and Get values
+// from a value.
 func (j *JSONPath) Convert(vm VM) (err error, path Path) {
 	path = make(Path, 0)
 	for _, p := range j.Parts {
@@ -593,7 +612,7 @@ func (j *JSONPath) Convert(vm VM) (err error, path Path) {
 	return nil, path
 }
 
-// Convert will convert a Part AST node into a Path.
+// Convert will convert a Part AST node into an iterable Path.
 func (p *Part) Convert(vm VM) (err error, path Path) {
 	path = Path{*p.Property}
 	for _, i := range p.Indices {
@@ -604,8 +623,8 @@ func (p *Part) Convert(vm VM) (err error, path Path) {
 	return nil, path
 }
 
-// Convert will convert an Index AST node into a Path. Indices act as a leaf for Pathable so all recursion will end 
-// here.
+// Convert will convert an Index AST node into an iterable Path. Indices act as a leaf for Pathable so all recursion 
+// will end here.
 func (i *Index) Convert(vm VM) (err error, path Path) {
 	path = make(Path, 1)
 	switch {

@@ -149,21 +149,6 @@ func (f *Factor) left() evalNode {
 			return lexer.Position{}
 		}
 		n = &en
-	case f.StringLit != nil:
-		en := struct { protoEvalNode }{}
-		en.evalMethod = func(vm VM) (err error, result *data.Value) {
-			return nil, &data.Value{
-				Value:  *f.StringLit,
-				Type:   data.String,
-			}
-		}
-		en.stringMethod = func(indent int) string {
-			return fmt.Sprintf("%s\"%v\"", strings.Repeat("\t", indent), *f.StringLit)
-		}
-		en.getPosMethod = func() lexer.Position {
-			return lexer.Position{}
-		}
-		n = &en
 	case f.JSONPathFactor != nil:
 		n = f.JSONPathFactor
 	case f.FunctionCall != nil:

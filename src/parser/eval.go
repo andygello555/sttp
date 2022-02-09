@@ -860,68 +860,33 @@ func (b *Boolean) Eval(vm VM) (err error, result *data.Value) {
 	}
 }
 
-// Eval for JSONPath calls Convert and then path.Get, to retrieve the Value at the given JSONPath. Will return data.Null
-// if the JSONPath points to nothing.
-func (j *JSONPath) Eval(vm VM) (err error, result *data.Value) {
-	vm.SetPos(j.GetPos())
-	var path Path; err, path = j.Convert(vm)
-	if err != nil {
-		return err, nil
-	}
-	// We get the root identifier of the JSONPath. This is the variable name.
-	variableName := path[0].(string)
-
-	// Then we get the value of the variable from the heap so that we can set its new value appropriately.
-	variableVal := vm.GetCallStack().Current().GetHeap().Get(variableName)
-	// If it cannot be found then we will set the value to be null initially.
-	if variableVal == nil {
-		variableVal = &data.Value{
-			Value:  nil,
-			Type:   data.Null,
-		}
-	}
-
-	// We get the value at the path and get the type of the value.
-	var t data.Type
-	var val interface{}
-	if err, val = path.Get(vm, variableVal.Value); err != nil {
-		return err, nil
-	}
-	err = t.Get(val)
-
-	if debug, ok := vm.GetDebug(); ok {
-		_, _ = fmt.Fprintf(debug, "getting %s from %s = %v\n", j.String(0), variableVal.String(), val)
-	}
-	if err != nil {
-		return errors.UpdateError(err, vm), nil
-	}
-
-	return nil, &data.Value{
-		Value:    val,
-		Type:     t,
-		ReadOnly: t == data.Function,
-	}
+// jsonPath is an interface that instances of both *JSONPath, and *JSONPathFactor implement.
+type jsonPath interface {
+	Pathable
+	ASTNode
 }
 
-// Eval for JSONPathFactor is similar to JSONPath.Eval. If the root property is not a root property that points to a 
-// variable we will Get the value requested from that root value.
-func (j *JSONPathFactor) Eval(vm VM) (err error, result *data.Value) {
+// jsonPathEval is called by both JSONPath.Eval and JSONPathFactor.Eval as the behaviour of both can be described as 
+// agnostic using the above interface and the "reflect" package.
+func jsonPathEval(j jsonPath, vm VM) (err error, result *data.Value) {
 	vm.SetPos(j.GetPos())
-	var path Path; err, path = j.Convert(vm)
+	var path Path
+	err, path = j.Convert(vm)
 	if err != nil {
 		return err, nil
 	}
 
 	var variableVal *data.Value
-	switch {
-	case j.RootProperty != nil:
+	rootPropertyField := reflect.ValueOf(j).Elem().FieldByName("RootProperty")
+	// If the type of j is *JSONPath OR the RootProperty field exists within the value of j, then we will consider j as
+	// having a root property that is a string (variable identifier). 
+	if reflect.TypeOf(j) == reflect.TypeOf((*JSONPath)(nil)) || (rootPropertyField.IsValid() && !rootPropertyField.IsNil()) {
 		// We get the root identifier of the JSONPath. This is the variable name.
 		variableName := path[0].(string)
 		// Then we get the value of the variable from the heap so that we can set its new value appropriately.
 		variableVal = vm.GetCallStack().Current().GetHeap().Get(variableName)
-	default:
-		// The root element in a Path of a JSONPathFactor that matched a JSON literal will always be a Value to that 
-		// literal
+	} else {
+		// The root property in a Path of j is a Value
 		variableVal = path[0].(*data.Value)
 	}
 
@@ -953,6 +918,18 @@ func (j *JSONPathFactor) Eval(vm VM) (err error, result *data.Value) {
 		Type:     t,
 		ReadOnly: t == data.Function,
 	}
+}
+
+// Eval for JSONPath calls Convert and then path.Get, to retrieve the Value at the given JSONPath. Will return data.Null
+// if the JSONPath points to nothing.
+func (j *JSONPath) Eval(vm VM) (err error, result *data.Value) {
+	return jsonPathEval(j, vm)
+}
+
+// Eval for JSONPathFactor is similar to JSONPath.Eval. If the root property is not a root property that points to a 
+// variable we will Get the value requested from that root value.
+func (j *JSONPathFactor) Eval(vm VM) (err error, result *data.Value) {
+	return jsonPathEval(j, vm)
 }
 
 // jsonDeclaration recursively generates a sttp value from a JSON declaration.
