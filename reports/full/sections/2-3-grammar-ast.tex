@@ -220,7 +220,7 @@ After defining the grammar, I started manipulating it into AST nodes so that par
 
 The implementation of the AST within Go will be skipped as this has been discussed extensively when discussing the \hyperref[sec:four-function-calc]{four-function calculator} test program. The type definitions for each AST node within \verb|sttp| can be found within \verb|src/parser/ast.go|. However, an interesting feature to note is that any AST node type definition can be given a \mintinline[breaklines]{go}{Pos lexer.Position} field. This will automatically be populated by the position (filename, line, column) of that non-terminal within the input. This was useful for returning \hyperref[sec:development-try-catch-throw-errors-context]{errors}.
 
-I found that defining the behaviour of each AST node sequentially, allowed me to create examples for that AST node easily. This allowed me to thoroughly test the behaviour of each AST node. These examples can be found in \verb|src/_examples| in the directories prefixed with: `\verb|example_|'.
+I found that defining the behaviour of each AST node sequentially, allowed me to create \hyperref[appendix:sttp-examples]{examples} for that AST node easily. This allowed me to thoroughly test the behaviour of each AST node. These examples can be found in \verb|src/_examples| in the directories prefixed with: `\verb|example_|'.
 
 \subsection{Pretty-printer}
 

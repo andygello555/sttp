@@ -1,5 +1,7 @@
 \cprotect\subsection{Try-Catch and \verb|throw|}
 
+\textit{Examples can be found in: }\cprotect{\hyperref[appendix:sttp-examples-10]}{\verb|src/_examples/example_10/example_10.sttp|}
+
 As well as returning a \verb|Value|, \verb|Eval| also can return an \mintinline[breaklines]{go}{error}. Each implementor of \verb|evalNode| will pass any errors that occur within that node, or from evaluating any lower down nodes, up to the parent node (the node that called the current node's \verb|Eval| method). This is true for all nodes apart from the \verb|TryCatch| node. If evaluating the \verb|Block| within the \verb|try| statement returns an error, this error will be wrapped, stored within the given identifier supplied in the \verb|catch as| statement, then the \verb|Block| nested within the \verb|catch as| statement will be executed.
 
 \subsubsection{Errors}
