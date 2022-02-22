@@ -3,8 +3,10 @@ package main
 import (
 	"fmt"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/data"
+	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/errors"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/eval"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/parser"
+	"github.com/alecthomas/participle/v2/lexer"
 	"io"
 	"io/ioutil"
 	"path/filepath"
@@ -32,7 +34,7 @@ type TestResult struct {
 type Passed interface {
 	parser.IndentString
 	CheckPass() bool
-	Run(stdout io.Writer, stderr io.Writer, debug io.Writer) error
+	Run(stdout io.Writer, stderr io.Writer, debug io.Writer, mergedEnv *Env) error
 }
 
 // TestPath contains either a pointer to a TestResults instance, or a pointer to a TestSuite instance. This encapsulates
@@ -66,8 +68,8 @@ func (tp *TestPath) String(indent int) string {
 }
 
 // Run will run the TestResults or TestSuite instance (whatever is not nil).
-func (tp *TestPath) Run(stdout io.Writer, stderr io.Writer, debug io.Writer) error {
-	return tp.GetPath().Run(stdout, stderr, debug)
+func (tp *TestPath) Run(stdout io.Writer, stderr io.Writer, debug io.Writer, mergedEnv *Env) error {
+	return tp.GetPath().Run(stdout, stderr, debug, mergedEnv)
 }
 
 // TestPaths represents a sorted array structure where TestPath(s) are ordered by their Path field in ascending 
@@ -87,11 +89,39 @@ type TestResults struct {
 }
 
 // Run will create and run a new VM for the script at the Path.
-func (t *TestResults) Run(stdout io.Writer, stderr io.Writer, debug io.Writer) error {
+func (t *TestResults) Run(stdout io.Writer, stderr io.Writer, debug io.Writer, mergedEnv *Env) error {
 	var err error
-	vm := New(t, stdout, stderr, debug)
+	vm := New(t, stdout, stderr, debug, mergedEnv)
 	fileBytes, _ := ioutil.ReadFile(t.Path)
 	err, _ = vm.Eval(t.Path, string(fileBytes))
+	if err != nil {
+		var pos lexer.Position
+		failedTest := false
+		switch err.(type) {
+		case struct { errors.ProtoSttpError }:
+			sttpErr := err.(struct { errors.ProtoSttpError })
+			if !sttpErr.FromNullVM {
+				pos = sttpErr.Pos
+			}
+		case errors.PurposefulError:
+			// We filter out any FailedTest errors
+			if err.(errors.PurposefulError) == errors.FailedTest {
+				failedTest = true
+			}
+		default:
+			pos = lexer.Position{
+				Filename: t.Path,
+			}
+		}
+
+		// We will not add any FailedTest errors
+		if !failedTest {
+			t.AddTest(&parser.TestStatement{
+				Pos:        pos,
+				Expression: nil,
+			}, false)
+		}
+	}
 	return err
 }
 
@@ -127,7 +157,17 @@ func (t *TestResults) String(indent int) string {
 	// We first iterate over the tests in the current file
 	if len(t.Results) > 0 {
 		for _, test := range t.Results {
-			b.WriteString(fmt.Sprintf("%s%s - \"%s\" (%s)\n", tabs, test.Node.Pos.String(), test.Node.String(0), passFail[test.Passed]))
+			if test.Node.Expression != nil {
+				b.WriteString(fmt.Sprintf(
+					"%s%s - \"%s\" (%s)\n",
+					tabs,
+					test.Node.Pos.String(),
+					test.Node.String(0),
+					passFail[test.Passed],
+				))
+			} else if !test.Passed {
+				b.WriteString(fmt.Sprintf("%s%s - error occurred (FAIL)\n", tabs, test.Node.Pos.String()))
+			}
 		}
 	} else {
 		b.WriteString(fmt.Sprintf("%sNO TEST RESULTS (PASS)\n", tabs))
@@ -141,39 +181,21 @@ func (t *TestResults) String(indent int) string {
 type TestSuite struct {
 	// There are TestResults for each sttp script within the current test suite, and TestSuite(s) for each directory 
 	// within the current test suite. This is encapsulated within a TestPath instance.
-	Paths          TestPaths
-	Config         *TestConfig
-	NestLevel      int
-	Path           string
-	Environment    *Env
+	Paths     TestPaths
+	Config    *TestConfig
+	NestLevel int
+	Path      string
 }
 
 // NewSuite will create a new TestSuite.
-func NewSuite(path string, breakOnFailure bool, nestLevel int, env *Env) *TestSuite {
-	// If env is nil then we will instead use an empty environment
-	if env == nil {
-		env = EmptyEnv()
-	} else {
-		// We create a copy of the environment
-		env = &Env{
-			Paths: env.Paths,
-			Value: &data.Value{
-				Value:    env.Value.Value,
-				Type:     env.Value.Type,
-				Global:   true,
-				ReadOnly: true,
-			},
-		}
-	}
-
+func NewSuite(path string, breakOnFailure bool, nestLevel int) *TestSuite {
 	return &TestSuite{
-		Paths:          make(TestPaths, 0),
-		Config:         &TestConfig{
+		Paths:     make(TestPaths, 0),
+		Config:    &TestConfig{
 			BreakOnFailure: breakOnFailure,
 		},
-		NestLevel:      nestLevel,
-		Path:           path,
-		Environment:    env,
+		NestLevel: nestLevel,
+		Path:      path,
 	}
 }
 
@@ -237,8 +259,9 @@ func (ts *TestSuite) String(indent int) string {
 // Run will create a new VM for each test script in the current and any subdirectories and will also construct a new 
 // TestSuite for any subdirectories. The results of the test suite will be output at the end of the procedure. You can
 // also specify the io.Writer for stdout, stderr, and debug, if these are nil then these will default to os.Stdout, 
-// os.Stderr, and ioutil.Discard respectively.
-func (ts *TestSuite) Run(stdout io.Writer, stderr io.Writer, debug io.Writer) error {
+// os.Stderr, and ioutil.Discard respectively. It also takes a mergedEnv which can either be nil, or an environment that
+// has been passed down from a parent TestSuite.
+func (ts *TestSuite) Run(stdout io.Writer, stderr io.Writer, debug io.Writer, mergedEnv *Env) error {
 	if files, err := ioutil.ReadDir(ts.Path); err != nil {
 		return err
 	} else {
@@ -250,7 +273,7 @@ func (ts *TestSuite) Run(stdout io.Writer, stderr io.Writer, debug io.Writer) er
 			path := filepath.Join(ts.Path, file.Name())
 			if file.IsDir() {
 				// Create a new test suite (don't run just yet)
-				newSuite := NewSuite(path, ts.Config.BreakOnFailure, ts.NestLevel + 1, ts.Environment)
+				newSuite := NewSuite(path, ts.Config.BreakOnFailure, ts.NestLevel + 1)
 				ts.Paths = append(ts.Paths, &TestPath{
 					Path:      path,
 					TestSuite: newSuite,
@@ -278,6 +301,21 @@ func (ts *TestSuite) Run(stdout io.Writer, stderr io.Writer, debug io.Writer) er
 			}
 		}
 
+		// If mergedEnv is nil then we will use an empty environment, otherwise we will create a copy of mergedEnv.
+		if mergedEnv == nil {
+			mergedEnv = EmptyEnv()
+		} else {
+			mergedEnv = &Env{
+				Paths: mergedEnv.Paths,
+				Value: &data.Value{
+					Value:    mergedEnv.Value.Value,
+					Type:     mergedEnv.Value.Type,
+					Global:   true,
+					ReadOnly: true,
+				},
+			}
+		}
+
 		// If we have environments, we will sort them by their paths and merge them into a single environment
 		if len(environments) > 0 {
 			sort.Slice(environments, func(i, j int) bool {
@@ -285,14 +323,14 @@ func (ts *TestSuite) Run(stdout io.Writer, stderr io.Writer, debug io.Writer) er
 			})
 
 			// We use the environment stored within the Environment field to merge into
-			if err = ts.Environment.MergeN(environments...); err != nil {
+			if err = mergedEnv.MergeN(environments...); err != nil {
 				return err
 			}
 		}
 
 		// We first iterate over all the scripts and the directories in a lexicographical fashion and run each TestPath
 		for _, path := range *ts.GetPaths() {
-			if err = path.Run(stdout, stderr, debug); err != nil && ts.Config.BreakOnFailure {
+			if err = path.Run(stdout, stderr, debug, mergedEnv); err != nil && ts.Config.BreakOnFailure {
 				break
 			}
 		}

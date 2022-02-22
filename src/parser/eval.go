@@ -45,6 +45,13 @@ func (p *Program) Eval(vm VM) (err error, result *data.Value) {
 		); err != nil {
 			return err, nil
 		}
+		if debug, ok := vm.GetDebug(); ok {
+			_, _ = fmt.Fprintf(debug, "environment was given: %s\n", env.String())
+		}
+	} else {
+		if debug, ok := vm.GetDebug(); ok {
+			_, _ = fmt.Fprint(debug, "environment was not given\n")
+		}
 	}
 
 	// Evaluate the inner Block
@@ -325,6 +332,7 @@ func (t *TestStatement) Eval(vm VM) (err error, result *data.Value) {
 	// We defer the addition of the test to simplify the logic within this node a bit
 	passed := false
 	defer func() {
+		fmt.Println("adding", t, "to results")
 		vm.GetTestResults().AddTest(t, passed)
 	}()
 

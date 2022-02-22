@@ -20,8 +20,8 @@ func main() {
 		} else if !files.IsFile(sourceFileOrScript) && files.IsDir(sourceFileOrScript) {
 			// If the input is a directory then we will assume it is a directory of tests, so we will construct a 
 			// TestSuite and run it, then exit.
-			suite := NewSuite(sourceFileOrScript, true, 0, nil)
-			if err := suite.Run(os.Stdout, os.Stderr, nil); err != nil {
+			suite := NewSuite(sourceFileOrScript, true, 0)
+			if err := suite.Run(os.Stdout, os.Stderr, nil, nil); err != nil {
 				fmt.Println(fmt.Sprintf("Error occurred whilst executing \"%s\": %v", sourceFileOrScript, err))
 				os.Exit(1)
 			}
