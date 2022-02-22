@@ -1,0 +1,13 @@
+url = env.url_format % [
+    env.host,
+    env.port,
+    env.api_prefix,
+    env.query_params
+];
+
+resp = $GET(url);
+
+test resp.code == 200;
+test resp.content.method == "GET";
+test resp.content.url == url;
+test resp.content.query_params == {};
