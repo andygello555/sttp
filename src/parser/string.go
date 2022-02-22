@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-type indentString interface {
+type IndentString interface {
 	String(indent int) string
 }
 
@@ -254,7 +254,7 @@ func (fb *FunctionBody) String(indent int) string {
 	return fmt.Sprintf("(%s)\n%send", strings.Join(params, ", "), fb.Block.String(indent + 1))
 }
 
-func termString(indent int, factor indentString, next []indentString) string {
+func termString(indent int, factor IndentString, next []IndentString) string {
 	expression := fmt.Sprintf("%s%s", tabs(indent), factor.String(0))
 	if len(next) > 0 {
 		nextStrs := make([]string, len(next))
@@ -266,12 +266,12 @@ func termString(indent int, factor indentString, next []indentString) string {
 	return expression
 }
 
-func precString(operator eval.Operator, factor indentString) string {
+func precString(operator eval.Operator, factor IndentString) string {
 	return fmt.Sprintf("%s %s", operator.String(), factor.String(0))
 }
 
 func (e *Expression) String(indent int) string {
-	next := make([]indentString, len(e.Right))
+	next := make([]IndentString, len(e.Right))
 	for i, n := range e.Right {
 		next[i] = n
 	}
@@ -283,7 +283,7 @@ func (p5 *Prec5) String(indent int) string {
 }
 
 func (p5t *Prec5Term) String(indent int) string {
-	next := make([]indentString, len(p5t.Right))
+	next := make([]IndentString, len(p5t.Right))
 	for i, n := range p5t.Right {
 		next[i] = n
 	}
@@ -295,7 +295,7 @@ func (p4 *Prec4) String(indent int) string {
 }
 
 func (p4t *Prec4Term) String(indent int) string {
-	next := make([]indentString, len(p4t.Right))
+	next := make([]IndentString, len(p4t.Right))
 	for i, n := range p4t.Right {
 		next[i] = n
 	}
@@ -307,7 +307,7 @@ func (p3 *Prec3) String(indent int) string {
 }
 
 func (p3t *Prec3Term) String(indent int) string {
-	next := make([]indentString, len(p3t.Right))
+	next := make([]IndentString, len(p3t.Right))
 	for i, n := range p3t.Right {
 		next[i] = n
 	}
@@ -319,7 +319,7 @@ func (p2 *Prec2) String(indent int) string {
 }
 
 func (p2t *Prec2Term) String(indent int) string {
-	next := make([]indentString, len(p2t.Right))
+	next := make([]IndentString, len(p2t.Right))
 	for i, n := range p2t.Right {
 		next[i] = n
 	}
@@ -331,7 +331,7 @@ func (p1 *Prec1) String(indent int) string {
 }
 
 func (p1t *Prec1Term) String(indent int) string {
-	next := make([]indentString, len(p1t.Right))
+	next := make([]IndentString, len(p1t.Right))
 	for i, n := range p1t.Right {
 		next[i] = n
 	}

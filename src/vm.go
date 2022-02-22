@@ -34,9 +34,12 @@ type VM struct {
 	// BatchResults contains the results of the executed BatchSuite. If nil then the VM is not currently in a 
 	// parser.Batch statement, or the BatchSuite has not yet been executed.
 	BatchResults heap.Interface
+	// All the environments passed to this VM when evaluating a script. This is so that inheritance can take place 
+	// within TestSuites.
+	Environments []parser.Env
 }
 
-func New(testResults *TestResults, stdout io.Writer, stderr io.Writer, debug io.Writer) *VM {
+func New(testResults *TestResults, stdout io.Writer, stderr io.Writer, debug io.Writer, envs... parser.Env) *VM {
 	cs := make(CallStack, 0)
 
 	if stdout == nil { stdout = os.Stdout }
@@ -51,6 +54,7 @@ func New(testResults *TestResults, stdout io.Writer, stderr io.Writer, debug io.
 		Debug: debug,
 		Batch: nil,
 		BatchResults: nil,
+		Environments: envs,
 	}
 }
 
@@ -67,11 +71,13 @@ func (vm *VM) Eval(filename, s string) (err error, result *data.Value) {
 		}
 	}()
 
+	// Parse the script
 	var program *parser.Program
-	err, program = parser.Parse(filename, s)
-	if err != nil {
+	if err, program = parser.Parse(filename, s); err != nil {
 		return err, nil
 	}
+
+	// We execute the Program that was parsed
 	return program.Eval(vm)
 }
 
@@ -156,4 +162,20 @@ func (vm *VM) CreateBatch(statement *parser.Batch) {
 // ExecuteBatch will execute the batched MethodCalls and store them in BatchResults.
 func (vm *VM) ExecuteBatch() {
 	vm.BatchResults = vm.Batch.Execute(-1)
+}
+
+func (vm *VM) GetEnvironment() (err error, env parser.Env) {
+	if len(vm.Environments) == 0 {
+		return nil, nil
+	} else if len(vm.Environments) == 1 {
+		return nil, vm.Environments[0]
+	} else {
+		// We will merge the environments together into an empty environment
+		env = EmptyEnv()
+		if err = env.MergeN(vm.Environments...); err != nil {
+			return err, nil
+		}
+		vm.Environments = []parser.Env{env}
+		return nil, vm.Environments[0]
+	}
 }

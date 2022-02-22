@@ -6,7 +6,6 @@ import (
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/data"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/eval"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/parser"
-	"github.com/andygello555/gotils/slices"
 	"io/fs"
 	"io/ioutil"
 	"os"
@@ -215,21 +214,19 @@ func BenchmarkVM_Eval(b *testing.B) {
 }
 
 func TestTestSuite_Run(t *testing.T) {
-	expected := [][]string{
-		{
-			`PENTHOUSE SUITE: _examples/test_suites/example_01  (PASS)`,
-			`	_examples/test_suites/example_01/check_a.sttp:1:1 - "test 1 + 1 == 2" (PASS)`,
-			`	_examples/test_suites/example_01/check_b.sttp:1:1 - "test 2 * 2 == 4" (PASS)`,
-			`	_examples/test_suites/example_01/check_c.sttp:1:1 - "test 4 % 2 == 0" (PASS)`,
-			`	SUB SUITE: _examples/test_suites/example_01/get_facebook  (PASS)`,
-			`		_examples/test_suites/example_01/get_facebook/facebook.sttp:2:1 - "test "" + a == "true"" (PASS)`,
-			`		_examples/test_suites/example_01/get_facebook/facebook.sttp:3:1 - "test a" (PASS)`,
-			`	SUB SUITE: _examples/test_suites/example_01/get_google  (PASS)`,
-			`		_examples/test_suites/example_01/get_google/google.sttp:2:1 - "test a" (PASS)`,
-			`	SUB SUITE: _examples/test_suites/example_01/get_twitter  (PASS)`,
-			`		_examples/test_suites/example_01/get_twitter/twitter.sttp:2:1 - "test a" (PASS)`,
-			``,
-		},
+	expected := []string{
+		`PENTHOUSE SUITE: _examples/test_suites/example_01  (PASS)
+	_examples/test_suites/example_01/check_a.sttp:1:1 - "test 1 + 1 == 2" (PASS)
+	_examples/test_suites/example_01/check_b.sttp:1:1 - "test 2 * 2 == 4" (PASS)
+	_examples/test_suites/example_01/check_c.sttp:1:1 - "test 4 % 2 == 0" (PASS)
+	SUB SUITE: _examples/test_suites/example_01/get_facebook  (PASS)
+		_examples/test_suites/example_01/get_facebook/facebook.sttp:2:1 - "test "" + a == "true"" (PASS)
+		_examples/test_suites/example_01/get_facebook/facebook.sttp:3:1 - "test a" (PASS)
+	SUB SUITE: _examples/test_suites/example_01/get_google  (PASS)
+		_examples/test_suites/example_01/get_google/google.sttp:2:1 - "test a" (PASS)
+	SUB SUITE: _examples/test_suites/example_01/get_twitter  (PASS)
+		_examples/test_suites/example_01/get_twitter/twitter.sttp:2:1 - "test a" (PASS)
+`,
 	}
 
 	if files, err := ioutil.ReadDir(ExampleTestSuitePath); err != nil {
@@ -237,29 +234,18 @@ func TestTestSuite_Run(t *testing.T) {
 	} else {
 		for testNo, file := range files {
 			if file.IsDir() && strings.HasPrefix(file.Name(), ExamplePrefix) {
-				suite := NewSuite(filepath.Join(ExampleTestSuitePath, file.Name()), true, 0)
+				suite := NewSuite(filepath.Join(ExampleTestSuitePath, file.Name()), true, 0, nil)
 				if err = suite.Run(nil, nil, os.Stdout); err != nil {
 					panic(err)
 				}
 
 				if testing.Verbose() {
 					fmt.Println("TEST SUITE", testNo + 1, ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-					fmt.Println(suite.String())
+					fmt.Println(suite.String(0))
 					fmt.Println("===================================================")
 				}
 
-				ifSlice := func(lines []string) []interface{} {
-					s := make([]interface{}, len(lines))
-					for i, line := range lines {
-						s[i] = line
-					}
-					return s
-				}
-
-				if !slices.SameElements(
-					ifSlice(strings.Split(suite.String(), "\n")),
-					ifSlice(expected[testNo]),
-				) {
+				if expected[testNo] != suite.String(0) {
 					t.Errorf("test no. %d suite's string output does not match expected output", testNo + 1)
 				}
 			}

@@ -17,20 +17,37 @@ type evalNode interface {
 
 // Eval for program will...
 //
-// - Push a new nil Frame to the callstack.
+// • Push a new nil Frame to the callstack.
 //
-// - The Block will be evaluated.
+// • The Block will be evaluated.
 //
-// - The Frame will be returned from.
+// • The Frame will be returned from.
 //
 // Any errors or results that have bubbled up from lower AST nodes will be returned.
 func (p *Program) Eval(vm VM) (err error, result *data.Value) {
 	vm.SetPos(p.GetPos())
 	// We insert a nil stack frame to indicate the bottom of the stack
-	err = vm.GetCallStack().Call(nil, nil, vm)
-	if err != nil {
+	if err = vm.GetCallStack().Call(nil, nil, vm); err != nil {
 		return err, nil
 	}
+
+	// We insert the environment (if we have one)
+	var env Env
+	if err, env = vm.GetEnvironment(); err != nil {
+		return err, nil
+	} else if env != nil {
+		// Assign the "env" variable to the environment
+		if err = vm.GetCallStack().Current().GetHeap().Assign(
+			"env",
+			env.GetValue().Value,
+			true, 
+			true,
+		); err != nil {
+			return err, nil
+		}
+	}
+
+	// Evaluate the inner Block
 	if err, result = p.Block.Eval(vm); err == nil {
 		if debug, ok := vm.GetDebug(); ok {
 			_, _ = fmt.Fprintf(debug, "final stack frame heap: %v\n", vm.GetCallStack().Current().GetHeap())
