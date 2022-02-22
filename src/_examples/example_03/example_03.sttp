@@ -13,6 +13,15 @@ else
     a.second_is = false;
 end
 
+// If-else ambiguity
+is true?
+    is false?
+        $print("Shouldn't have gotten here...");
+    else
+        $print("Got to where we needed to be...");
+    end
+end
+
 is a.second_if?
     a.done = false;
 elis a.first_is == false?
