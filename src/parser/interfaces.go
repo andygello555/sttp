@@ -11,7 +11,7 @@ import (
 
 // ASTNode is implemented by all ASTNodes
 type ASTNode interface {
-	indentString
+	IndentString
 	evalNode
 }
 
@@ -57,6 +57,8 @@ type VM interface {
 	CreateBatch(statement *Batch)
 	// ExecuteBatch will execute the current BatchSuite and store the results in the VM state accessible via GetBatch.
 	ExecuteBatch()
+	// GetEnvironment will return the currently used environment, or nil if there is no environment.
+	GetEnvironment() (err error, env Env)
 }
 
 // CallStack is implemented by the call stack that is used within the VM.
@@ -84,8 +86,8 @@ type Frame interface {
 type TestResults interface{
 	AddTest(node *TestStatement, passed bool)
 	GetConfig() Config
-	CheckPassed() bool
-	indentString
+	CheckPass() bool
+	IndentString
 }
 
 // Config is an interface for any config type.
@@ -111,4 +113,13 @@ type BatchSuite interface {
 	Work() int
 	GetStatement() *Batch
 	Execute(workers int) heap.Interface
+}
+
+// Env represents an environment variable that can be passed to a VM to set a global constant.
+type Env interface {
+	fmt.Stringer
+	Merge(env Env) (err error)
+	MergeN(envs... Env) (err error)
+	GetPaths() []string
+	GetValue() *data.Value
 }
