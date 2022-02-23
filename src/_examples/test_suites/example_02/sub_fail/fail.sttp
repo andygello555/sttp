@@ -1,0 +1,11 @@
+url = "http://127.0.0.1:3001/api/sub/fail";
+
+try this
+    resp = $GET(url);
+catch as e do ;end;
+
+test e != null;
+test resp.code == 200;
+test resp.content.method == "GET";
+test resp.content.url == url;
+test resp.content.query_params == {};

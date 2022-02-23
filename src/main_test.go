@@ -230,17 +230,33 @@ func TestTestSuite_Run(t *testing.T) {
 			`		_examples/test_suites/example_01/get_twitter/twitter.sttp:2:1 - "test a" (PASS)`,
 			``,
 		},
+		{
+			`PENTHOUSE SUITE: _examples/test_suites/example_02  (FAIL)`,
+			`	_examples/test_suites/example_02/api.sttp:5:1 - "test resp.code == 200" (PASS)`,
+			`	_examples/test_suites/example_02/api.sttp:6:1 - "test resp.content.method == "GET"" (PASS)`,
+			`	_examples/test_suites/example_02/api.sttp:7:1 - "test resp.content.url == url" (PASS)`,
+			`	_examples/test_suites/example_02/api.sttp:8:1 - "test resp.content.query_params == {"hello": "world"}" (PASS)`,
+			`	SUB SUITE: _examples/test_suites/example_02/sub_fail  (FAIL)`,
+			`		_examples/test_suites/example_02/sub_fail/fail.sttp:0:0 - error occurred (FAIL)`,
+			`	SUB SUITE: _examples/test_suites/example_02/sub  (PASS)`,
+			`		_examples/test_suites/example_02/sub/sub.sttp:5:1 - "test resp.code == 200" (PASS)`,
+			`		_examples/test_suites/example_02/sub/sub.sttp:6:1 - "test resp.content.method == "GET"" (PASS)`,
+			`		_examples/test_suites/example_02/sub/sub.sttp:7:1 - "test resp.content.url == url" (PASS)`,
+			`		_examples/test_suites/example_02/sub/sub.sttp:8:1 - "test resp.content.query_params == {}" (PASS)`,
+			``,
+		},
 	}
 
 	if files, err := ioutil.ReadDir(ExampleTestSuitePath); err != nil {
 		panic(err)
 	} else {
+		echoChamber := startServer()
+		time.Sleep(150 * time.Millisecond)
+
 		for testNo, file := range files {
 			if file.IsDir() && strings.HasPrefix(file.Name(), ExamplePrefix) {
 				suite := NewSuite(filepath.Join(ExampleTestSuitePath, file.Name()), true, 0)
-				if err = suite.Run(nil, nil, os.Stdout); err != nil {
-					panic(err)
-				}
+				_ = suite.Run(nil, nil, os.Stdout)
 
 				if testing.Verbose() {
 					fmt.Println("TEST SUITE", testNo + 1, ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
@@ -264,6 +280,8 @@ func TestTestSuite_Run(t *testing.T) {
 				}
 			}
 		}
+
+		killServer(echoChamber)
 	}
 }
 
