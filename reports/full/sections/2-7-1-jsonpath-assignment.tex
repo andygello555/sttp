@@ -29,7 +29,7 @@ JSONPath's are comprised of three different types of AST node:
 
 Whenever JSONPath's are used, they are first converted to the \mintinline[breaklines]{go}{type Path []interface{}}. This is an intermediary format that has a \verb|Set| and \verb|Get| instance methods. The \verb|Path| type acts as a queue whenever these two methods are called. It is easier to treat it is such rather than to use tree traversal to find each property, index, and filter block. The \verb|JSONPath| and \verb|Part| AST nodes implement the \verb|Convert| instance method that allows for the conversion of a JSONPath AST subtree, to a \verb|Path| instance. \verb|Index| does not implement this instance method, as it acts as a leaf node of a JSONPath expression, and does not need to be traversed down. It can be dealt with within \verb|Part.Convert|.
 
-\inputminted[firstline=529, lastline=581, autogobble, breaklines, tabsize=4]{go}{../../src/parser/json_path.go}
+\inputminted[firstline=533, lastline=585, autogobble, breaklines, tabsize=4]{go}{../../src/parser/json_path.go}
 
 \verb|JSONPath.Convert| will enqueue the \verb|Path|s constructed by each of its \verb|Part|s. Whereas, \verb|Part.Convert| will iterate over its indices and either evaluate the expression within the square brackets, or simply add the reference to the filter's \verb|Block| AST node.
 
