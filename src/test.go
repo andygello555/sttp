@@ -2,7 +2,9 @@ package main
 
 import (
 	"fmt"
+	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/errors"
 	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/parser"
+	"github.com/alecthomas/participle/v2/lexer"
 	"io"
 	"io/ioutil"
 	"path/filepath"
@@ -64,7 +66,17 @@ func (t *TestResults) String(indent int) string {
 	// We first iterate over the tests in the current file
 	if len(t.Results) > 0 {
 		for _, test := range t.Results {
-			b.WriteString(fmt.Sprintf("%s%s - \"%s\" (%s)\n", tabs, test.Node.Pos.String(), test.Node.String(0), passFail[test.Passed]))
+			if test.Node.Expression != nil {
+				b.WriteString(fmt.Sprintf(
+					"%s%s - \"%s\" (%s)\n",
+					tabs,
+					test.Node.Pos.String(),
+					test.Node.String(0),
+					passFail[test.Passed],
+				))
+			} else if !test.Passed {
+				b.WriteString(fmt.Sprintf("%s%s - error occurred (FAIL)\n", tabs, test.Node.Pos.String()))
+			}
 		}
 	} else {
 		b.WriteString(fmt.Sprintf("%sNO TEST RESULTS (PASS)\n", tabs))
@@ -176,8 +188,36 @@ func (ts *TestSuite) Run(stdout io.Writer, stderr io.Writer, debug io.Writer) er
 					// Create a new VM and run the script
 					vm := New(ts.Suite[path], stdout, stderr, debug)
 					fileBytes, _ := ioutil.ReadFile(path)
-					if err, _ = vm.Eval(path, string(fileBytes)); err != nil && ts.Config.BreakOnFailure {
-						break
+					err, _ = vm.Eval(path, string(fileBytes))
+					// Handle the error by first checking what kind it is, then adding the error as a TestResult failure
+					// to the TestResults. For instance, we do not add a FailedTest error to the TestResults.
+					if err != nil {
+						var pos lexer.Position
+						failedTest := false
+						switch err.(type) {
+						case struct { errors.ProtoSttpError }:
+							sttpErr := err.(struct { errors.ProtoSttpError })
+							if !sttpErr.FromNullVM {
+								pos = sttpErr.Pos
+							}
+						case errors.PurposefulError:
+							// We filter out any FailedTest errors
+							if err.(errors.PurposefulError) == errors.FailedTest {
+								failedTest = true
+							}
+						default:
+							pos = lexer.Position{
+								Filename: path,
+							}
+						}
+
+						// We will not add any FailedTest errors
+						if !failedTest {
+							ts.Suite[path].AddTest(&parser.TestStatement{
+								Pos:        pos,
+								Expression: nil,
+							}, false)
+						}
 					}
 				}
 			}
