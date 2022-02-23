@@ -1,0 +1,8 @@
+url = "http://127.0.0.1:3000/api?hello=world";
+
+resp = $GET(url);
+
+test resp.code == 200;
+test resp.content.method == "GET";
+test resp.content.url == url;
+test resp.content.query_params == {"hello": "world"};
