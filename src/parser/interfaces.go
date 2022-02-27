@@ -55,8 +55,11 @@ type VM interface {
 	DeleteBatch()
 	// CreateBatch will create a new BatchSuite for the given Batch AST node.
 	CreateBatch(statement *Batch)
-	// ExecuteBatch will execute the current BatchSuite and store the results in the VM state accessible via GetBatch.
-	ExecuteBatch()
+	// StartBatch will start the worker threads for the batch, ready to execute any MethodCall(s) enqueued as work.
+	StartBatch()
+	// StopBatch will stop indicate to the internal Batch that there is no more work to execute and that we want to wait
+	// for the workers to be finish. It should also set the BatchResults field to the results of this Batch.
+	StopBatch()
 	// GetEnvironment will return the currently used environment, or nil if there is no environment.
 	GetEnvironment() (err error, env Env)
 }
@@ -110,9 +113,9 @@ type BatchResult interface {
 // BatchSuite represents the suite that is used to execute a Batch statement.
 type BatchSuite interface {
 	AddWork(method *MethodCall, args... *data.Value)
-	Work() int
 	GetStatement() *Batch
-	Execute(workers int) heap.Interface
+	Start(workers int)
+	Stop() heap.Interface
 }
 
 // Env represents an environment variable that can be passed to a VM to set a global constant.
