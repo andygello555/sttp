@@ -543,28 +543,30 @@ func (f *ForEach) Eval(vm VM) (err error, result *data.Value) {
 // 1. If there is a BatchSuite or results for the BatchSuite set up already then we will assume that there is a Batch
 //    within a Batch. This means we will return an errors.BatchWithinBatch.
 //
-// 2. We cache the stdout and stderr file handlers. Then we create a deep copy of the current Frame's data.Heap, and set
-//    this copy as the new data.Heap for the current Frame.
+// 2. We cache the stdout and stderr file handlers, and set the interpreter to use temporary string buffers instead. 
+//    Then we create a deep copy of the current Frame's data.Heap, and set this copy as the new data.Heap for the 
+//    current Frame.
 //
-// 3. A BatchSuite is created and the first pass of the Block is initiated. We then set the stdout and stderr file 
-//    handlers to the ones cached before the first pass was initiated.
+// 3. A BatchSuite is created, and its workers are started. The first pass of the Block is then initiated.
 //
-// 4. If we have no work to execute, then we will write the temporary stdout and stderr to the cached stdout and stderr
-//    and set them back as the defaults. This effectively just skips the second pass as it is unnecessary.
+// 4. After this succeeds, we set the stdout and stderr file handlers to the ones cached before the first pass was 
+//    initiated. We also wait for the BatchSuite to execute all the work it was given just now.
+//   
+// 5. If the BatchSuite has not executed any work (aka. there were no MethodCall(s) within the Batch) we will write the
+//    temporary stdout and stderr to the cached stdout and stderr and set them back as the defaults. This effectively
+//    just skips the second pass as it is unnecessary.
 //
-// 5. Otherwise, we will execute the work in the Batch, set the heap back to the old one, and then execute the second 
-//    pass of the Block.
-//
-// 6. If we still have results in the BatchSuite result queue after executing the second pass, we will return an 
+// 6. Otherwise, we will set the heap back to the old one, and then execute the second pass of the Block. If we still 
+//    have results in the BatchSuite result queue after executing the second pass, we will return an 
 //    errors.MethodCallMismatchInBatch.
 //
 // If an error occurs at any point in these steps, we will first set the stdout and stderr back to the cached ones, if 
-// we haven't done already. As well as deleting the BatchSuite, so that the interpreter knows to not Batch anymore.
+// we haven't done already. We will also delete the BatchSuite, so that the interpreter knows to not Batch anymore.
 func (b *Batch) Eval(vm VM) (err error, result *data.Value) {
 	vm.SetPos(b.GetPos())
 	batch, results := vm.GetBatch()
 	if batch == nil && results == nil {
-		// Replace Stdout and Stderr with ioutil.Discard
+		// Replace Stdout and Stderr with temporary string buffers
 		oldStdout, oldStderr := vm.GetStdout(), vm.GetStderr()
 		var newStdout, newStderr strings.Builder
 		vm.SetStdout(&newStdout); vm.SetStderr(&newStderr)
@@ -584,12 +586,14 @@ func (b *Batch) Eval(vm VM) (err error, result *data.Value) {
 		*vm.GetCallStack().Current().GetHeap() = newHeap
 		// Set up the BatchSuite. vm.Batch is now not nil, but vm.BatchResults is...
 		vm.CreateBatch(b)
+		// Start the BatchSuite workers...
+		vm.StartBatch()
 
-		// Evaluate the Block for the first time. This will collect all the MethodCalls in the Batch to be executed in 
-		// parallel.
+		// Evaluate the Block for the first time. This will enqueue work to the worker goroutines running within the 
+		// BatchSuite.
 		if err, result = b.Block.Eval(vm); err != nil {
-			// We also have to set the stdout and stderr back to their originals as well as deleting the batch 
-			// altogether
+			// We also have to set the stdout and stderr back to their originals as well as stopping and deleting the 
+			// batch altogether
 			vm.SetStdout(oldStdout); vm.SetStderr(oldStderr)
 			vm.DeleteBatch()
 			return err, nil
@@ -597,16 +601,16 @@ func (b *Batch) Eval(vm VM) (err error, result *data.Value) {
 
 		// Then we set the stdout and stderr back to the old ones.
 		vm.SetStdout(oldStdout); vm.SetStderr(oldStderr)
+		// Then we wait for all the work to be processed by stopping the BatchSuite...
+		vm.StopBatch()
 
-		// We assign batch again to find the amount of work we have just enqueued. If we have found now work then we 
-		// optimise by skipping batch execution and running the Block again. We also keep the current copied over heap.
-		batch, _ = vm.GetBatch()
-		work := batch.Work()
+		// We find the number of results that have been processed. If nothing has been processed, then we optimise by 
+		// not running the Block again. We also keep the current copied over heap.
+		_, results = vm.GetBatch()
+		work := results.Len()
 
 		if work > 0 {
-			// We then execute the collected MethodCalls. This will set vm.BatchResults to not be nil anymore.
-			vm.ExecuteBatch()
-			// We also set the current heap back to the old one...
+			// We set the current heap back to the old one...
 			*vm.GetCallStack().Current().GetHeap() = *oldHeap
 			// Then we evaluate the Block again...
 			if err, result = b.Block.Eval(vm); err != nil {
