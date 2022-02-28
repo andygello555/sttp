@@ -83,8 +83,8 @@ Although there exists many tools for testing and developing web-based APIs, ther
 \chapter{Motivations}
 \label{chap:motivations}
 
-\begin{definition}[Web API]
-    A web API is an application programming interface that is hosted on a web server accessible via the HTTP protocol. Endpoints within a web API specify where an action or resource lies, creating a \textbf{directory like structure} of `methods'.
+\begin{definition}[Server side Web API]
+    A server side web API is an application programming interface that is hosted on a web server accessible via the HTTP protocol. Endpoints within a web API specify where an action or resource lies, creating a \textbf{directory like structure} of `methods'.
 \end{definition}
 
 Web APIs are in the background of most applications and services we use. Everything from requesting the weather in a certain country, accessing up to date exchange rate information, to accessing personal calendar information, can all be achieved through the use of specific web APIs. The number of web APIs has risen substantially over the last decade and a half. \href{https://www.programmableweb.com/category/all/apis}{ProgrammableWeb}, cites over 24,000 APIs (as of January 2022). A large increase from 2013: 9000, and an even larger increase from 2005: 105\textsuperscript{\cite{duvander_2013}}.
@@ -123,6 +123,233 @@ I chose the participle parser generator, as it was (and still is) being actively
 As explained in the \hyperref[chap:motivations]{motivations introduction}, much of my professional life and pastimes involve creating and testing web APIs. Therefore, \verb|sttp| is something that I would hope to use in both domains. I plan on continuing development on \verb|sttp| in the background to add newer features that will solve issues that occur frequently in my work life. Go is also rising in popularity within the web API space, and now that I am fairly fluent in it, I hope to use it within the workplace soon.
 
 As I enjoyed learning the theory behind programming language design and engineering as much as I enjoyed creating \verb|sttp|. I hope I can make better use of this knowledge in the appropriate field of work. I have found the material covered within \textit{CS3480: Software Language Engineering}, quite eye-opening as to the number of different Domain Specific Languages (DSL), in use and in development. There is a DSL for everything from CAD 3D modelling to programming robots\textsuperscript{\cite{nordmann_hochgeschwender_wrede_2014}}. A job within this area could have work that I find rewarding and interesting.
+
+\section{How to read this report}
+
+This report is split into two-broad parts. The first reads as a quick introduction to web-APIs and how to use them, as well as how the \verb|sttp| programming language fits into this space. It also includes examples and explanations of how to program in \verb|sttp|, and outlines the problems that it solves. The second, reads as an in-depth technical overview of \verb|sttp|'s development with specific details on the data-structures and algorithms used. This section will dive into specific source-code listings within the interpreter, and it assumes an intermediate knowledge of programming within Go.
+
+The reason behind this split was so that readers can get a reasonable understanding of how \verb|sttp| might work internally, through the real-world problems that it solves. It also enables those with more general expertise in computer science to get to grips with \verb|sttp| quicker.
+
+\cprotect\part{Meet \verb|sttp|}
+
+\chapter{Web APIs and where to find them}
+
+In this chapter we will discuss the types of web-APIs, give some introductory \verb|sttp| code, and create a small theoretical web API that serves as an interface for a \textbf{blog website}.
+
+\section{Web-APIs}
+
+One important disambiguation to establish before continuing with the report is what kind web APIs that we are going to focus on.
+
+\subsection{Client side Web APIs}
+
+When a web API is client side, it means that it is running directly within a user's web browser or HTTP client. The Mozilla Foundation \href{https://developer.mozilla.org/en-US/docs/Web/API}{outlines all of the client side web APIs} that can be used when developing a HTML5 application. These are \textbf{not} the web APIs that we will refer to for the rest of the report.
+
+\subsection{Server side Web APIs}
+
+As mentioned in the \hyperref[chap:motivations]{motivations} chapter, server side web APIs offer one-or-more user exposed endpoints that perform specific actions within a service. \cprotect\textbf{\verb|sttp| was written in order to test these actions}.
+
+\cprotect\section{\verb|sttp| is a HTTP client}
+\label{sec:meet-sttp-http-clients}
+
+Server side web APIs require the use of a HTTP client to communicate with them. HTTP clients make and accept HTTP requests and responses. Examples of HTTP clients include: \href{https://github.com/curl/curl}{cURL}, \href{https://www.gnu.org/software/wget/}{Wget}, \href{https://httpie.io/}{HTTPie}, and web browsers. On its base level, \cprotect\textbf{\verb|sttp| is just a HTTP client} wrapped within an iterative/procedural programming language.
+
+For instance, when visiting the domain: \verb|https://www.example.com/| within a web browser; the web browser will act as a HTTP client, requesting the resource found at that URL (this might be a webpage, CSV, PDF, JSON, etc.). Below shows some similar commands for retrieving this resource using the different HTTP clients mentioned above:
+
+\begin{enumerate}
+    \item cURL: \mintinline[breaklines]{sh}{curl https://www.example.com/}
+    \item Wget: \mintinline[breaklines]{sh}{wget https://www.example.com/}
+    \item HTTPie: \mintinline[breaklines]{sh}{http GET https://www.example.com/}
+    \item \verb|sttp|: \verb|$GET("https://www.example.com/")|
+\end{enumerate}
+
+\section{Web APIs services}
+
+Typically, when talking about server side web APIs we assume that a web API \textbf{talks to a service}. For example, a service could be a database of exchange rates. The web API for this service might have an \textbf{endpoint} consisting of the following URL path construction: \verb|/{from}/{to}|. Making a \verb|GET| request to the URL: \verb|/GBP/USD| (using a HTTP client) will return the exchange rate from GBP to USD for the previous day as a \verb|JSON| object.
+
+This allows subscribers to these services to \textbf{access them without much knowledge of the internal system itself}. \textbf{Endpoints} is the term usually given for a URL schema with a specific action tied to it. Information pertaining to the request is usually encoded within the URL itself: \verb|/GBP/USD|, placed within the query parameters: \verb|/today?from=GBP&to=USD|, or placed in the body of the HTTP request itself (if the HTTP method allows it). These endpoints are then tied to certain actions within these services by the web API developers. Actions such as: usually getting, creating, updating, and deleting resources are common actions tied to external endpoints.
+
+\section{Web API intricacies}
+
+When web APIs are modelled for large and intricate services, the layout of the endpoints for them can become cluttered very quickly. Thus, web API developers usually find it necessary to follow a convention for defining these endpoints. These conventions define how a set of actions might be mapped onto a URL and HTTP request methods (GET, POST, PUT, ...). One of the most popular of these conventions at the moment is: REST. A web API is considered RESTful if it adhere to a set of principles\textsuperscript{\cite{richardson_ruby_2007}}. The most relevant of these, to the current discussion on endpoints, is the \textbf{uniform interface} principle. This enforces that all RESTful APIs must\textsuperscript{\cite{fielding_2000}}:
+
+% https://archive.org/details/restfulwebservic00rich_0
+
+\begin{enumerate}
+    \item \textbf{Identify resources within endpoints that access that specific resource}. For instance, if the web API is an interface for a blogging service, and blog resources are identified by a \href{https://www.uuidgenerator.net/version4}{UUID4}, then the following URL path might be constructed to access the comments on a blog: \verb|/blogs/1a88249b-4b93-4b7f-b38c-d967af5a7993/comments|.
+    \item \textbf{Manipulate resources through representations of the internal structure of said resources}. Continuing the blogging service example, when requesting a specific blog this might fetch a row from the service's database and then \textbf{serialise} it into a media type such as \verb|JSON|. For example, the request \verb|GET /blogs/1a88249b-4b93-4b7f-b38c-d967af5a7993| might return the following \verb|JSON| data:
+    \begin{minted}{json}
+{
+    "id": "1a88249b-4b93-4b7f-b38c-d967af5a7993",
+    "name": "RESTful APIs",
+    "author": "Jane Doe",
+    "tags": [
+        "Web APIs",
+        "APIs",
+        "REST"
+    ]
+}    
+    \end{minted}
+    This serialised blog returns all the data necessary to manipulate it. For instance, to update the name of the blog, the author might send the following request: \\\verb|PUT /blogs/1a88249b-4b93-4b7f-b38c-d967af5a7993| with the body: \mintinline[breaklines]{json}{{"name": "RESTful Web APIs"}}. \cprotect\textit{Note how the body of the request is just a partial version of the data returned by \verb|GET|ting the same endpoint}.
+\end{enumerate}
+
+Hopefully this gives some indication as to how web APIs are created and used to access services. In the following chapter I will create an example web API that will be used throughout the first part of this report.
+
+\chapter{Theorising a simple REST web API}
+
+In this chapter we will create a theoretical REST web API to access a blogging service (similar to the one used as an example at the end of the last). This example web API will then be used throughout the first part as a common example.
+
+\section{Formal definition of the blogging service}
+
+The blogging service in question has three different resources, all of which are stored in their own tables within an internal database. This database \textbf{cannot} be accessed by end-users of the blogging service.
+
+\begin{enumerate}
+    \item \textbf{Topics}: each topic has a \textbf{unique ID}, the \textbf{number of blogs residing within it}, and a \textbf{name}.
+    \item \textbf{Blogs}: each blog has a \textbf{unique ID}, a \textbf{name}, a \textbf{body}, the \textbf{author's name}, a \textbf{link to the topic it resides in}, and a \textbf{list of tags}.
+    \item \textbf{Comments}: each comment has a \textbf{unique ID}, a \textbf{body}, the \textbf{commentor's name}, and the \textbf{link to a blog}.
+\end{enumerate}
+
+It is worth noting that although these resources describe parts of the internal database. It might still might mean that when requesting said resources, the server will add additional properties to them. For instance, with the \textbf{Topics} resource, storing the number of blogs within that topic within the database could be seen as inneligant. This is because each time a blog is created, its corresponding topic must have its blog counter incremented within the database. Instead, one might \textbf{bind this blog counter information when the request is being handled}. This is much more robust, and means less database interaction overall.
+
+We will assume that the API for this service serves its responses as, and accepts its requests in \verb|JSON|. The \verb|JSON| serialised versions of these resources are constructed from the properties of that specific resource, where the keys of the object are snake-cased versions of the property name.
+
+\section{The actions that are defined for users of the service}
+
+A user of the service must be able to perform the following actions. Each action has been grouped under its relevant resource type, and assigned an endpoint and HTTP method.
+
+For simplicity, we will assume that all users have permission to do everything. In a production web API, this would not be the case. Tokens would be used to authenticate the user and authorised using some sort of access control list.
+
+\begin{itemize}
+    \item Topics
+    \begin{itemize}
+        \item List all topics: \verb|GET /topics|
+        \item Create a topic: \verb|POST /topics|
+        \item Get a topic: \verb|GET /topics/{topic_id}|
+        \item Update a topic: \verb|PUT /topics/{topic_id}|
+        \item Delete a topic: \verb|DELETE /topics/{topic_id}|
+        \item Get the top 10 topics by the number of blogs within them: \verb|GET /topics/top|
+        \item Get the blogs for a topic: \verb|GET /topics/{topic_id}/blogs|
+    \end{itemize}
+    \item Blogs
+    \begin{itemize}
+        \item List all blogs: \verb|GET /blogs|
+        \item Create a blog: \verb|POST /blogs|
+        \item Get a blog: \verb|GET /blogs/{blog_id}|
+        \item Update a blog: \verb|PUT /blogs/{blog_id}|
+        \item Delete a blog: \verb|DELETE /blogs/{blog_id}|
+        \item Get the comments for a blog: \verb|GET /blogs/{blog_id}/comments|
+    \end{itemize}
+    \item Comments
+    \begin{itemize}
+        \item Create a comment: \verb|POST /comments|
+        \item Get a comment: \verb|GET /comments/{comment_id}|
+        \item Update a comment: \verb|PUT /comments/{comment_id}|
+        \item Delete a comment: \verb|DELETE /comments/{comment_id}|
+    \end{itemize}
+\end{itemize}
+
+By splitting our endpoints by resource, we can more efficiently communicate the different parts of the API. This makes using it easier.
+
+\section{How would you use this API?}
+
+This API does not make much sense as a standalone system. However, it makes more sense as a server application in a client-server architecture. By this I mean that the client application could be a HTTP client, or even another web server. In the case of a blogging service, it would make sense for there to be a seperate web server that hosts a set of webpages. These webpages then make requests to the web API to manipulate the service. This external facing web server is usually known as the `\textbf{frontend}', whereas the web API, along with the internal database, is known as the `\textbf{backend}'.
+
+Whether or not to restrict this web API completely to the \textbf{frontend} for security, or to make it publicly available so that users can programmatically utilise the service, is ultimately up to the maintainers. Personally, in this situation, I would restrict access to the web API to just the frontend web server in order to avoid user spam of the creation endpoints.
+
+\subsection{Some example HTTP requests using HTTPie}
+
+I've chosen HTTPie as a HTTP client for these examples as the commands themselves are similar to how a raw HTTP request is structured. For more information on how to use HTTPie the documentation can be found \href{https://httpie.io/docs/cli/examples}{here}.
+
+\cprotect\textit{These examples presume that the web API is hosted on a web server with the domain: \verb|example.com|.}
+
+\begin{enumerate}
+    \item Create a new topic on `Web APIs':
+    \begin{minted}[breaklines]{sh}
+http POST https://example.com/topics name='Web APIs' 
+    \end{minted}
+    Usually after creating a resource, the serialised version of that resource is returned back to the user.
+    \begin{minted}[breaklines]{json}
+{
+    "id": "26cfa9cc-d86f-4361-b1f8-138ec7e7bdd3",
+    "blog_count": 0,
+    "name": "Web APIs"
+}
+    \end{minted}
+    \item Create a new blog for the topic we have just created:
+    \begin{minted}[breaklines]{sh}
+http POST https://example.com/blogs name='RESTful APIs' body='Blah Blah' author='Jane Doe' tags:='["Web APIs", "APIs", "REST"]' topic_id='26cfa9cc-d86f-4361-b1f8-138ec7e7bdd3'
+    \end{minted}
+    Again returning back a serialised version of the resource:
+    \begin{minted}[breaklines]{json}
+{
+    "id": "44e8b997-a3be-4813-b439-efd2a9d3ca10",
+    "name": "RESTful APIs",
+    "body": "Blah Blah",
+    "author": "Jane Doe",
+    "topic_id": "26cfa9cc-d86f-4361-b1f8-138ec7e7bdd3",
+    "topic_url": "https://example.com/topics/26cfa9cc-d86f-4361-b1f8-138ec7e7bdd3",
+    "tags": ["Web APIs", "APIs", "REST"]
+}
+    \end{minted}
+    \item We can then add a comment to the blog that was just created:
+    \begin{minted}[breaklines]{sh}
+http POST https://example.com/comments body='Great blog!' author='John Doe' blog_id='44e8b997-a3be-4813-b439-efd2a9d3ca10'
+    \end{minted}
+    The created comment\dots
+    \begin{minted}[breaklines]{json}
+{
+    "id": "6aaa9fce-1340-4463-923b-cfe9217980a0",
+    "body": "Great blog!",
+    "author": "John Doe",
+    "blog_id": "44e8b997-a3be-4813-b439-efd2a9d3ca10",
+    "blog_url": "https://example.com/blogs/44e8b997-a3be-4813-b439-efd2a9d3ca10"
+}
+    \end{minted}
+    \item Fetching the comments for a blog will return a list of serialised comment objects:
+    \begin{minted}[breaklines]{sh}
+http GET https://example.com/blogs/44e8b997-a3be-4813-b439-efd2a9d3ca10/comments
+    \end{minted}
+    \begin{minted}[breaklines]{json}
+[
+    {
+        "id": "6aaa9fce-1340-4463-923b-cfe9217980a0",
+        "body": "Great blog!",
+        "author": "John Doe",
+        "blog_id": "44e8b997-a3be-4813-b439-efd2a9d3ca10",
+        "blog_url": "https://example.com/blogs/44e8b997-a3be-4813-b439-efd2a9d3ca10"
+    }
+]
+    \end{minted}
+\end{enumerate}
+
+How does \verb|sttp| fit into this equation?
+
+\cprotect\chapter{Hello \verb|sttp|}
+
+\begin{center}
+    \textit{How would someone go about maintaining, testing, and extending the web API described above?}
+\end{center}
+
+This question might be asked when the project passes hands or a new developer is brought in who needs to be onboarded quickly. A rudimentary answer to this question might be to create test scripts using the command-line HTTP clients discussed in \hyperref[sec:meet-sttp-http-clients]{chapter 2}. However, from experience, this soon becomes quite unweildy as you need to create a test runner that crawls a given directory structure, or worse yet, whenever a new test needs to be added the whole test runner needs to be rewritten.
+
+\begin{center}
+    \textit{Is there another solution?}
+\end{center}
+
+Yes. As server side web APIs became more popular, many other people experienced similar problems with conventional HTTP clients. API clients are HTTP clients that allow the user to not only make HTTP requests, but to test specific endpoints, and sometimes even to design entire APIs. Although these API clients are feature rich, they lack the control flow available when using just scripting languages. \verb|sttp| hopes to be the API client/HTTP client/scripting language that fits between these two domains.
+
+\begin{listing}
+    \begin{verbatim}
+// Setting variables using JSONPath
+foo.bar.baz = "hello world";
+
+// Calling functions stored within a variable by using the "$" prefix
+$print(foo);
+    \end{verbatim}
+\end{listing}
+
+\part{Technical}
+
+To fully understand the technical information within this part, it is recommended that you first read through the sections on test programs. These will run through the functionality utilised by the participle parser generator library, as well as some of the general feature-set of Go that is heavily utilised in the \verb|sttp| interpreter.
 
 \chapter{Development}
 \label{chap:development}
