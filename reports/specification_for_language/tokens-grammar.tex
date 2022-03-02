@@ -66,7 +66,9 @@ All capitalised symbols are tokens that are passed from the lexical analyser to 
 
         (* JSON Path *)
         JSONPath = Part { "." Part } ;
-        Part     = Ident { "[" Exp "]" } ;
+        Part     = Ident { Index } ;
+        Index    = "[" Exp "]"
+                 | "```" Block "```" ;
 
         RetStmt  = Return [ Exp ] ";" ;
         ThrwStmt = Throw [ Exp ] ";" ;
