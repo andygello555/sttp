@@ -54,17 +54,17 @@ whitespace = `\s+'
 Program  = Block ;
 Block    = { [ Stmt ] ";" } [ RetStmt | ThrwStmt ] ;
 Stmt     = Ass
-            | FuncCall
-            | MethCall
-            | Break
-            | Test Exp
-            | While Exp Do Block End
-            | For Ass ";" Exp [ ";" Ass ] Do Block End
-            | For Ident [ "," Ident ] In Exp Do Block End
-            | Batch This Block End
-            | Try This Block Catch As Ident Then End
-            | Function JSONPath FuncBody
-            | If Exp Then Block { ElifSeg } [ ElseSeg ] End ;
+         | FuncCall
+         | MethCall
+         | Break
+         | Test Exp
+         | While Exp Do Block End
+         | For Ass ";" Exp [ ";" Ass ] Do Block End
+         | For Ident [ "," Ident ] In Exp Do Block End
+         | Batch This Block End
+         | Try This Block Catch As Ident Then End
+         | Function JSONPath FuncBody
+         | If Exp Then Block { ElifSeg } [ ElseSeg ] End ;
 
 Ass      = JSONPath "=" Exp ;
 ElifSeg  = Elif Exp Then Block ;
@@ -72,7 +72,9 @@ ElseSeg  = Else Block ;
 
 (* JSON Path *)
 JSONPath = Part { "." Part } ;
-Part     = Ident { "[" Exp "]" } ;
+Part     = Ident { Index } ;
+Index    = "[" Exp "]"
+         | "```" Block "```" ;
 
 (* Return and Throw statements can only come at the end of a block *)
 RetStmt  = Return [ Exp ] ";" ;

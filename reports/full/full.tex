@@ -210,7 +210,7 @@ The blogging service in question has three different resources, all of which are
 
 It is worth noting that although these resources describe parts of the internal database. It might still might mean that when requesting said resources, the server will add additional properties to them. For instance, with the \textbf{Topics} resource, storing the number of blogs within that topic within the database could be seen as inneligant. This is because each time a blog is created, its corresponding topic must have its blog counter incremented within the database. Instead, one might \textbf{bind this blog counter information when the request is being handled}. This is much more robust, and means less database interaction overall.
 
-We will assume that the API for this service serves its responses as, and accepts its requests in \verb|JSON|. The \verb|JSON| serialised versions of these resources are constructed from the properties of that specific resource, where the keys of the object are snake-cased versions of the property name.
+We will assume that the API for this service serves its responses as, and accepts its requests in \verb|JSON|. The \verb|JSON| serialised versions of these resources are constructed from the properties of that specific resource, where the keys of the object are snake-cased versions of the property name. \verb|JSON| is a very popular choice of media type for REST APIs in particular.
 
 \section{The actions that are defined for users of the service}
 
@@ -337,15 +337,189 @@ This question might be asked when the project passes hands or a new developer is
 
 Yes. As server side web APIs became more popular, many other people experienced similar problems with conventional HTTP clients. API clients are HTTP clients that allow the user to not only make HTTP requests, but to test specific endpoints, and sometimes even to design entire APIs. Although these API clients are feature rich, they lack the control flow available when using just scripting languages. \verb|sttp| hopes to be the API client/HTTP client/scripting language that fits between these two domains.
 
-\begin{listing}
-    \begin{verbatim}
-// Setting variables using JSONPath
-foo.bar.baz = "hello world";
+In the following section I will give a rough overview on the look-and-feel of the \verb|sttp| language. This is so that when explaining how \verb|sttp| would be used to \hyperref[sec:hello-sttp-using-sttp-to-test]{test web APIs}, the language won't seem as alien.
 
-// Calling functions stored within a variable by using the "$" prefix
-$print(foo);
+\cprotect\section{What does \verb|sttp| look like?}
+
+\verb|sttp| is an interpreted imperative/procedural programming language that is dynamically-typed. The native types in \verb|sttp| are exactly similar to the ones used in the JSON interchange format:
+
+\begin{verbatim}
+string = "this is a string";
+number = 1.23;  // 123 is also a number
+boolean = true;
+array = [1, "2", [3]];
+object = {"hello": "world", "pi": 3.142};
+n = null;
+\end{verbatim}
+
+\begin{itemize}
+    \item \textbf{Strings}: sequences of characters surrounded by double quotes.
+    \item \textbf{Numbers}: both integers and real numbers.
+    \item \textbf{Booleans}: either \verb|false|, or \verb|true|.
+    \item \textbf{Arrays}: an unbounded list of elements that can take any type, enclosed within square braces. Zero-indexed.
+    \item \textbf{Objects}: a set of key-value pairs enclosed within curly braces. Keys must be String values.
+    \item \textbf{Null}: \verb|null| is falsy (evaluates to \verb|false|) value that indicates an empty value.
+    \item Along with the types defined within the \verb|JSON| specification, we also have the additional \textbf{Function} type that represents the `pointer' to a function definition.
+    \begin{verbatim}
+// More on this later...
+function foo()
+    return "bar";
+end
+func = foo;    
     \end{verbatim}
-\end{listing}
+\end{itemize}
+
+Compound statements, that take a nested `block', such as \verb|if|, \verb|while|, and \verb|for| are all terminated using the \verb|end| keyword, reminscient to Lua. Statements are seperated by semicolons, and functions are invoked by suffixing the function's path with a \verb|$| character. A comment is any line beginning with two forward slashes: \verb|//|. \verb|sttp| is whitespace independent, meaning that a program can be written on a single line. This is useful for quick prototyping through the command-line.
+
+\subsection{JSONPath}
+
+Variable assignment and dereference is achieved through JSONPath-like syntax. JSONPath is a syntax which can describe the path to any value within a \verb|JSON| Object, Array, or String. It is reminiscent to member access within Javascript.
+
+\begin{verbatim}
+// We define a variable foo, holding an Object value...
+foo = {
+    "array": [1, "2", [3]],
+    "bar": "baz",
+    "pi": 3.142
+};
+
+// If we wanted to print the 3rd element from the array
+// with the key: "array", within the variable foo...
+$print(foo.array[2]);
+
+// We could also do...
+$print(foo["array"][2]);
+
+// Or even...
+$print(foo[0][2]);
+
+// All Objects in sttp are ordered lexicographically by
+// their keys. This allows you to use integer indices to
+// access values within Objects.
+\end{verbatim}
+
+Note the three ways of accessing a named property within an Object: \verb|.property|, \verb|["property"]|, or \verb|[i]|; where \verb|i| is the lexicographical index of the property to access in relation to the other keys.
+
+Aside from simple member access, each property (\verb|.property|), or pair of square braces (\verb|[...]|), can be followed by a filter block. This is a block of \verb|sttp| code that will be run against each element of value currently pointed to by the path. If this block returns a truthy value for an element, then that element will be added to a resulting Array. Otherwise, returning a falsy value will not add that element. Filter blocks are enclosed between two triple backticks: \verb|```...```|.
+
+Each time a filter block is run against an element within the value, the variable \verb|curr| is set. \verb|curr| is an Object that has a \verb|key| key, and a \verb|value| key.
+
+\verb|key| stores the key of the currently iterated element within the value that is being iterated over. This will be an index when iterating over a String, or an Array, and a key when iterating over Objects.
+
+\verb|value| stores the value of the currently iterated element within the value that is being iterated over. This can be any one of \verb|sttp|'s native types.
+
+\begin{verbatim}
+// If "foo" stores the value in the previous example...
+
+// This will print the 3rd element from the value of the
+// "array" key within foo. Note the final index access 
+// after the filter to select the first element from the
+// result Array.
+$print(foo.array```
+    return curr.key == 2;
+```[0]);
+\end{verbatim}
+
+The examples up until now have been showcasing dereferencing variables via JSONPath, but \textbf{what if you want to assign a variable?} When it comes to assignment, \verb|sttp| employs a technique that (from what I can tell) is unique to \verb|sttp| alone. This technique is something that I've dubbed: \textbf{sparse-fill}. It allows Objects, Arrays, and Strings to be dynamically extended arbitrarily deep. For example:
+
+\begin{verbatim}
+foo = {"pi": 3.142};
+
+// This will create the "bar" key within "foo"...
+foo.bar = "foo bar";
+// Same as: foo["bar"]
+
+// This will create the "baz" key within a newly
+// created Object residing within "bar"'s value
+// within foo...
+foo.bar.baz = "foo bar baz";
+// Same as: foo["bar"]["baz"], foo.bar["baz"], ...
+
+// But what about the value that was assigned to
+// foo.bar? Don't worry it's still there...
+$print(foo);
+
+// The above print would output:
+// {
+//     "bar": {
+//         "": "foo bar",
+//         "baz": "foo bar baz"
+//     },
+//     "pi": 3.142
+// }
+
+// What are the ways of retrieving the old value
+// of foo.bar?
+$print(foo.bar[""]);
+// Or...
+$print(foo.bar[0]);
+\end{verbatim}
+
+Notice somethings interesting happens when sparsely filling \verb|foo.bar.baz|, when \verb|foo.bar| is already set to be a String. In this case, the next property within the JSONPath is accessing an Object key: \verb|.baz|, so the value initially stored at \verb|foo.bar| is moved to be the value of the empty string key (\verb|""|) within a `new' Object. There are two takeaways from this:
+
+\begin{enumerate}
+    \item When sparsely-filling a value, the next property in the JSONPath signifies what value will be created at that point.
+    \begin{itemize}
+        \item If the next property is a String index (\verb|["property"]|) or an Object key (\verb|.property|), then an Object will be created.
+        \begin{enumerate}
+            \item If a value already resides at that path, then it will be placed as a value of the empty string key (\verb|""|) within this newly created Object.
+            \item This is done so that the old value can be retrieved by either a zero index (\verb|[0]|), as an \textbf{empty String will always be lexicographically first}, or by using a String index (\verb|[""]|).
+        \end{enumerate}
+        \item If the next property is a integer index (square braces container an integer), and the value to be accessed is not an Object, Array, or String, then an Array will be created.
+        \begin{enumerate}
+            \item If a value already resides at that path, then it will be placed in the position one index after the one being accessed.
+            \item When creating a new Array, and accessing an element greater than 0, \verb|null|s will be inserted up until the accessed value.
+            \begin{verbatim}
+foo = {"pi": 3.142};
+foo.pi[3] = "not pi";
+$print(foo);
+// The above print would output:
+// {
+//     "pi": [
+//         null,
+//         null,
+//         null,
+//         "not pi",
+//         3.142
+//     ]
+// }
+            \end{verbatim}
+        \end{enumerate}
+    \end{itemize}
+    \item JSONPath assignment is very \textbf{permissive} in what it can do, and will \textbf{rarely throw an error}. This is was one of the main design philosophies when creating \verb|sttp|.
+\end{enumerate}
+
+JSONPath assignment on String values also has an interesting behaviour, and you can achieve some pretty complex String formatting by using it.
+
+\begin{verbatim}
+foo = "foo";
+
+// Concatenation...
+foo[3] = "bar";
+$print(foo);
+// Outputs: foobar
+
+// Concatenating with whitespace...
+foo[4] = "bar";
+$print(foo);
+// Outputs: foo bar
+
+// Replacing characters with Strings...
+foo[0] = "bo";
+$print(foo);
+// Outputs: booo
+\end{verbatim}
+
+There are quite a lot of intricacies when it comes to JSONPath assignment and dereferencing within \verb|sttp|, and not all of it will be covered in the scope of this part.
+
+\subsection{Expressions}
+
+\subsection{A note on Functions}
+
+\subsection{Method Calls (HTTP requests)}
+
+\cprotect\section{Using \verb|sttp| to test web APIs}
+\label{sec:hello-sttp-using-sttp-to-test}
 
 \part{Technical}
 
