@@ -124,9 +124,9 @@ As explained in the \hyperref[chap:motivations]{motivations introduction}, much 
 
 As I enjoyed learning the theory behind programming language design and engineering as much as I enjoyed creating \verb|sttp|. I hope I can make better use of this knowledge in the appropriate field of work. I have found the material covered within \textit{CS3480: Software Language Engineering}, quite eye-opening as to the number of different Domain Specific Languages (DSL), in use and in development. There is a DSL for everything from CAD 3D modelling to programming robots\textsuperscript{\cite{nordmann_hochgeschwender_wrede_2014}}. A job within this area could have work that I find rewarding and interesting.
 
-\section{How to read this report}
+\chapter{How to read this report}
 
-This report is split into two-broad parts. The first reads as a quick introduction to web-APIs and how to use them, as well as how the \verb|sttp| programming language fits into this space. It also includes examples and explanations of how to program in \verb|sttp|, and outlines the problems that it solves. The second, reads as an in-depth technical overview of \verb|sttp|'s development with specific details on the data-structures and algorithms used. This section will dive into specific source-code listings within the interpreter, and it assumes an intermediate knowledge of programming within Go.
+This report is split into two-broad parts. The first reads as a quick introduction to web-APIs and how to use them, as well as how the \verb|sttp| programming language fits into this space. It also includes examples and explanations of how to program in \verb|sttp|, and outlines the problems that it solves. The second, reads as an in-depth technical overview of \verb|sttp|'s development with specific details on the data-structures and algorithms used. This section will dive into specific source-code listings within the interpreter, and it assumes an intermediate knowledge of programming in Go.
 
 The reason behind this split was so that readers can get a reasonable understanding of how \verb|sttp| might work internally, through the real-world problems that it solves. It also enables those with more general expertise in computer science to get to grips with \verb|sttp| quicker.
 
@@ -134,7 +134,7 @@ The reason behind this split was so that readers can get a reasonable understand
 
 \chapter{Web APIs and where to find them}
 
-In this chapter we will discuss the types of web-APIs, give some introductory \verb|sttp| code, and create a small theoretical web API that serves as an interface for a \textbf{blog website}.
+In this chapter we will discuss the types of web-APIs, create a small theoretical web API that serves as an interface for a \textbf{blog website}, and finally introduce \verb|sttp| and explain how it fits in this domain.
 
 \section{Web-APIs}
 
@@ -162,11 +162,11 @@ For instance, when visiting the domain: \verb|https://www.example.com/| within a
     \item \verb|sttp|: \verb|$GET("https://www.example.com/")|
 \end{enumerate}
 
-\section{Web APIs services}
+\section{Web API services}
 
-Typically, when talking about server side web APIs we assume that a web API \textbf{talks to a service}. For example, a service could be a database of exchange rates. The web API for this service might have an \textbf{endpoint} consisting of the following URL path construction: \verb|/{from}/{to}|. Making a \verb|GET| request to the URL: \verb|/GBP/USD| (using a HTTP client) will return the exchange rate from GBP to USD for the previous day as a \verb|JSON| object.
+Typically, when talking about server side web APIs we assume that a web API \textbf{talks to a service}. For example, a service could be a database of exchange rates. The web API for this service might have an \textbf{endpoint} consisting of the following URL path construction: \verb|/{from}/{to}|. Thus, making a \verb|GET| request to the URL: \verb|/GBP/USD| (using a HTTP client) could return the exchange rate from GBP to USD for the previous day as a \verb|JSON| object.
 
-This allows subscribers to these services to \textbf{access them without much knowledge of the internal system itself}. \textbf{Endpoints} is the term usually given for a URL schema with a specific action tied to it. Information pertaining to the request is usually encoded within the URL itself: \verb|/GBP/USD|, placed within the query parameters: \verb|/today?from=GBP&to=USD|, or placed in the body of the HTTP request itself (if the HTTP method allows it). These endpoints are then tied to certain actions within these services by the web API developers. Actions such as: usually getting, creating, updating, and deleting resources are common actions tied to external endpoints.
+This allows subscribers to these services to \textbf{access them without much knowledge of the internal system itself}. \textbf{Endpoints} is the term usually given for a URL schema with a specific action tied to it. Information pertaining to the request is usually encoded within the URL itself: \verb|/GBP/USD|, placed within the query parameters: \verb|/today?from=GBP&to=USD|, or placed in the body of the HTTP request itself (if the HTTP method allows it). These endpoints are then tied to certain actions within these services by the web API developers. Actions such as: getting, creating, updating, and deleting resources are commonly tied to external endpoints.
 
 \section{Web API intricacies}
 
@@ -189,10 +189,10 @@ When web APIs are modelled for large and intricate services, the layout of the e
     ]
 }    
     \end{minted}
-    This serialised blog returns all the data necessary to manipulate it. For instance, to update the name of the blog, the author might send the following request: \\\verb|PUT /blogs/1a88249b-4b93-4b7f-b38c-d967af5a7993| with the body: \mintinline[breaklines]{json}{{"name": "RESTful Web APIs"}}. \cprotect\textit{Note how the body of the request is just a partial version of the data returned by \verb|GET|ting the same endpoint}.
+    This serialised blog returns all the data necessary to manipulate it. For instance, to update the name of the blog, the author might send the following request: \\\verb|PUT /blogs/1a88249b-4b93-4b7f-b38c-d967af5a7993| with the body: \mintinline[breaklines]{json}{{"name": "RESTful Web APIs"}}. \cprotect\textit{Note how the body of the request can be a partial version of the data returned by \verb|GET|ting the same endpoint}.
 \end{enumerate}
 
-Hopefully this gives some indication as to how web APIs are created and used to access services. In the following chapter I will create an example web API that will be used throughout the first part of this report.
+Hopefully this gives some indication as to how web APIs are created and used to access services. In the following chapter I will create an example web API that will be used throughout the rest of the first part of this report.
 
 \chapter{Theorising a simple REST web API}
 
@@ -212,11 +212,11 @@ It is worth noting that although these resources describe parts of the internal 
 
 We will assume that the API for this service serves its responses as, and accepts its requests in \verb|JSON|. The \verb|JSON| serialised versions of these resources are constructed from the properties of that specific resource, where the keys of the object are snake-cased versions of the property name. \verb|JSON| is a very popular choice of media type for REST APIs in particular.
 
-\section{The actions that are defined for users of the service}
+\section{Defining the actions and endpoints for the service}
 
 A user of the service must be able to perform the following actions. Each action has been grouped under its relevant resource type, and assigned an endpoint and HTTP method.
 
-For simplicity, we will assume that all users have permission to do everything. In a production web API, this would not be the case. Tokens would be used to authenticate the user and authorised using some sort of access control list.
+For simplicity, we will assume that all users have permission to do everything. In a production web API, this would not be the case. Tokens would be used to authenticate the user and authorised via an access control list.
 
 \begin{itemize}
     \item Topics
@@ -247,7 +247,7 @@ For simplicity, we will assume that all users have permission to do everything. 
     \end{itemize}
 \end{itemize}
 
-By splitting our endpoints by resource, we can more efficiently communicate the different parts of the API. This makes using it easier.
+By splitting our endpoints by resource, we can more efficiently communicate the different parts of the API. This makes developing it, using it, and testing it easier.
 
 \section{How would you use this API?}
 
@@ -321,7 +321,7 @@ http GET https://example.com/blogs/44e8b997-a3be-4813-b439-efd2a9d3ca10/comments
     \end{minted}
 \end{enumerate}
 
-How does \verb|sttp| fit into this equation?
+We have seen how to construct and use RESTful web APIs, but how does \verb|sttp| fit into this domain?
 
 \cprotect\chapter{Hello \verb|sttp|}
 
@@ -335,7 +335,7 @@ This question might be asked when the project passes hands or a new developer is
     \textit{Is there another solution?}
 \end{center}
 
-Yes. As server side web APIs became more popular, many other people experienced similar problems with conventional HTTP clients. API clients are HTTP clients that allow the user to not only make HTTP requests, but to test specific endpoints, and sometimes even to design entire APIs. Although these API clients are feature rich, they lack the control flow available when using just scripting languages. \verb|sttp| hopes to be the API client/HTTP client/scripting language that fits between these two domains.
+Yes. As server side web APIs became more popular, many other people experienced similar problems with conventional HTTP clients. API clients, such as \href{https://insomnia.rest/}{Insomnia} and \href{https://www.postman.com/}{Postman}, are HTTP clients that allow the user to not only make HTTP requests, but to test specific endpoints, and sometimes even to design entire APIs. Although these API clients are feature rich, they lack the control flow available when using a scripting language. \verb|sttp| hopes to be the API client/HTTP client/scripting language that fits between these two domains.
 
 In the following section I will give a rough overview on the look-and-feel of the \verb|sttp| language. This is so that when explaining how \verb|sttp| would be used to \hyperref[sec:hello-sttp-using-sttp-to-test]{test web APIs}, the language won't seem as alien.
 
@@ -358,18 +358,31 @@ n = null;
     \item \textbf{Booleans}: either \verb|false|, or \verb|true|.
     \item \textbf{Arrays}: an unbounded list of elements that can take any type, enclosed within square braces. Zero-indexed.
     \item \textbf{Objects}: a set of key-value pairs enclosed within curly braces. Keys must be String values.
-    \item \textbf{Null}: \verb|null| is falsy (evaluates to \verb|false|) value that indicates an empty value.
+    \item \textbf{Null}: \verb|null| is a falsy (evaluates to \verb|false|) value that indicates an empty value.
     \item Along with the types defined within the \verb|JSON| specification, we also have the additional \textbf{Function} type that represents the `pointer' to a function definition.
     \begin{verbatim}
 // More on this later...
 function foo()
     return "bar";
-end
+end;
+// func contains a copy of the reference to foo
 func = foo;    
     \end{verbatim}
 \end{itemize}
 
-Compound statements, that take a nested `block', such as \verb|if|, \verb|while|, and \verb|for| are all terminated using the \verb|end| keyword, reminscient to Lua. Statements are seperated by semicolons, and functions are invoked by suffixing the function's path with a \verb|$| character. A comment is any line beginning with two forward slashes: \verb|//|. \verb|sttp| is whitespace independent, meaning that a program can be written on a single line. This is useful for quick prototyping through the command-line.
+Compound statements (anything that takes a nested `block') such as \verb|if|, \verb|while|, and \verb|for| are all terminated using the \verb|end| keyword, reminscient to Lua. Statements are seperated by semicolons, and functions are invoked by suffixing the function's path with a \verb|$| character. A comment is any line beginning with two forward slashes: \verb|//|. \verb|sttp| is whitespace independent, meaning that a program can be written on a single line. This is useful for quick prototyping through the command-line.
+
+\begin{verbatim}
+// Compound statements are still statements, so
+// have to end with ";"
+if true then
+    // Call the print builtin using the "$" prefix
+    $print("True is true, who would've known?");
+end;
+
+// Or write everything on one line...
+if false then $print("Won't print..."); end;
+\end{verbatim}
 
 \subsection{JSONPath}
 
@@ -400,11 +413,11 @@ $print(foo[0][2]);
 
 Note the three ways of accessing a named property within an Object: \verb|.property|, \verb|["property"]|, or \verb|[i]|; where \verb|i| is the lexicographical index of the property to access in relation to the other keys.
 
-Aside from simple member access, each property (\verb|.property|), or pair of square braces (\verb|[...]|), can be followed by a filter block. This is a block of \verb|sttp| code that will be run against each element of value currently pointed to by the path. If this block returns a truthy value for an element, then that element will be added to a resulting Array. Otherwise, returning a falsy value will not add that element. Filter blocks are enclosed between two triple backticks: \verb|```...```|.
+Aside from simple member access, each property (\verb|.property|), or pair of square braces (\verb|[...]|), can be followed by a filter block. This is a block of \verb|sttp| code that will be run against each element of the value currently pointed to by the path. If this block returns a truthy value for an element, then that element will be added to a resulting Array. Otherwise, that element will not be added. Filter blocks are enclosed between two triple backticks: \verb|```...```|.
 
 Each time a filter block is run against an element within the value, the variable \verb|curr| is set. \verb|curr| is an Object that has a \verb|key| key, and a \verb|value| key.
 
-\verb|key| stores the key of the currently iterated element within the value that is being iterated over. This will be an index when iterating over a String, or an Array, and a key when iterating over Objects.
+\verb|key| stores the key of the currently iterated element within the value that is being iterated over. This will be a Number index when iterating over a String, or an Array, and a String key when iterating over Objects.
 
 \verb|value| stores the value of the currently iterated element within the value that is being iterated over. This can be any one of \verb|sttp|'s native types.
 
@@ -465,10 +478,10 @@ Notice somethings interesting happens when sparsely filling \verb|foo.bar.baz|, 
             \item If a value already resides at that path, then it will be placed as a value of the empty string key (\verb|""|) within this newly created Object.
             \item This is done so that the old value can be retrieved by either a zero index (\verb|[0]|), as an \textbf{empty String will always be lexicographically first}, or by using a String index (\verb|[""]|).
         \end{enumerate}
-        \item If the next property is a integer index (square braces container an integer), and the value to be accessed is not an Object, Array, or String, then an Array will be created.
+        \item If the next property is a integer index (square braces container an integer), and the value to be set is not an Object, Array, or String, then an Array will be created.
         \begin{enumerate}
-            \item If a value already resides at that path, then it will be placed in the position one index after the one being accessed.
-            \item When creating a new Array, and accessing an element greater than 0, \verb|null|s will be inserted up until the accessed value.
+            \item If a value already resides at that path, then it will be placed in the position one index after the one being set.
+            \item When creating a new Array, and setting an element greater than 0, \verb|null|s will be inserted up until the value to be set.
             \begin{verbatim}
 foo = {"pi": 3.142};
 foo.pi[3] = "not pi";
@@ -626,7 +639,7 @@ Below, is a run through of each supported operation for each type. \textit{Note 
 \begin{itemize}
     \item \textbf{Multiply}: Will repeat the String on the left $n$ times, where $n$ is the RHS cast to a Number.
     \begin{verbatim}
-"foo" + ("o" * 6) + "bar" == "foooooooobar";
+"foo" + "o" * 6 + "bar" == "foooooooobar";
     \end{verbatim}
     \item \textbf{Modulus}: If the RHS value is not of type String, then the RHS will be cast to an Array. String interpolation is performed on the String on the LHS using the verb `\verb|%%|'. If the RHS value is a String then this String will be treated as a singleton array, and the String interpolation will be carried out using this value.
     \begin{verbatim}
@@ -785,7 +798,11 @@ function print(a) return a; end;
 $print("foo");
 \end{verbatim}
 
-Each stack frame, including the first/main/global frame, will have a new heap allocated to it. This contains a mapping of variable names to \verb|sttp| values. Each local variable defined within the current frame will be allocated to the heap. All values defined as a global variable from the previous stack frame are copied by reference over to the new stack stack frame. Each argument is assigned to the JSONPath defined in the function's parameters and placed on this heap. If there is no argument for a defined function parameter, then that parameter will be set to \verb|null|. If there are more arguments provided then there are parameters, then an error is thrown. A \verb|self| variable is also placed on the heap which contains the value pointed to by the first/root property (in \verb|foo.bar.baz| this would be \verb|foo|) of the JSONPath of the function. For instance:
+Each stack frame, including the first/main/global frame, will have a new heap allocated to it. This contains a mapping of variable names to \verb|sttp| values. Each local variable defined within the current frame will be allocated to this heap. All values defined as a global variable from the previous stack frame are copied by reference over to the new stack stack frame.
+
+Each argument is assigned to the JSONPath defined in the function's parameters and placed on this heap. If there is no argument for a defined function parameter, then that parameter will be set to \verb|null|. If there are more arguments provided then there are parameters, then an error is thrown.
+
+A \verb|self| variable is also placed on the heap which contains the value pointed to by the first/root property (in \verb|foo.bar.baz| this would be \verb|foo|) of the JSONPath of the function. For instance:
 
 \begin{verbatim}
 hello_world = {"name": "John Smith"};
@@ -798,7 +815,7 @@ $hello_world.hello();
 // Output: Hello John Smith!
 \end{verbatim}
 
-Parameters are defined in order from left to right, with the \verb|self| parameter defined first. This can give way to some interesting behaviour such as the following:
+Parameters are assigned in order from left to right, with the \verb|self| parameter defined first. This can give way to some interesting behaviour such as the following:
 
 \begin{verbatim}
 foo = {"name": "John Smith"};
@@ -888,6 +905,8 @@ When a Method Call is used within a \verb|batch| statement then it will be added
 \cprotect\section{Using \verb|sttp| to test web APIs}
 \label{sec:hello-sttp-using-sttp-to-test}
 
+WIP
+
 \part{Technical}
 
 To fully understand the technical information within this part, it is recommended that you first read through the sections on test programs. These will run through the functionality utilised by the participle parser generator library, as well as some of the general feature-set of Go that is heavily utilised in the \verb|sttp| interpreter.
@@ -952,12 +971,12 @@ Each AST node within \verb|sttp| implements the \verb|evalNode| interface. This 
 
 \appendix
 
-\cprotect\chapter{\verb|sttp| Specification}
-\label{appendix:sttp-specification}
+% \cprotect\chapter{\verb|sttp| Specification}
+% \label{appendix:sttp-specification}
 
-\verb|sttp| (amalgamation of \textit{scripting} and \textit{HTTP}) is a dynamically typed, interpreted, scripting language written in Go using the participle parser generator by Alec Thomas\textsuperscript{\cite{thomas_2021}}. For information on how to run the \verb|sttp| interpreter, check the \verb|README|. Below is the formal grammar definition of the language:
+% \verb|sttp| (amalgamation of \textit{scripting} and \textit{HTTP}) is a dynamically typed, interpreted, scripting language written in Go using the participle parser generator by Alec Thomas\textsuperscript{\cite{thomas_2021}}. For information on how to run the \verb|sttp| interpreter, check the \verb|README|. Below is the formal grammar definition of the language:
 
-\import{../specification_for_language}{specification_for_language_body.tex}
+% \import{../specification_for_language}{specification_for_language_body.tex}
 
 \cprotect\chapter{\verb|sttp| Examples}
 \label{appendix:sttp-examples}
