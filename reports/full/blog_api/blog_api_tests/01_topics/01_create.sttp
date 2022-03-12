@@ -1,0 +1,14 @@
+topics = [
+    {"name": "Test Topic 1"},
+    {"name": "Test Topic 2"},
+    {"name": "Test Topic 3"}
+];
+
+// We create each topic...
+for _, topic in topics do
+    topic_resp = $POST("http://127.0.0.1:8000/api/topics", topic);
+    // Test for 201 code (Created)
+    test topic_resp.code == 201;
+    // Check if the name matches the name we wanted
+    test topic_resp.content.name == topic.name;
+end;

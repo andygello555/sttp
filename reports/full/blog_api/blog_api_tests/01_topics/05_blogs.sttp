@@ -1,0 +1,10 @@
+// Get the topics so that we can fetch the blogs for each
+topics = $GET("http://127.0.0.1:8000/api/topics/top");
+
+for i, topic in topics.content do
+    blogs = $GET("http://127.0.0.1:8000/api/topics/%%/blogs" % topic.id);
+    // The number of blogs returned must be equal to the blog_count of the topic
+    // as well as 3 - the current index.
+    test 0 + blogs.content == topic.blog_count
+    test 0 + blogs.content == 3 - i;
+end;

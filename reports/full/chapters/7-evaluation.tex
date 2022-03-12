@@ -33,6 +33,7 @@ In the future I would like to create a frontend for a compiler that translates \
 Most of these decisions come after realising that the grammar of the language makes it too `verbose', and there is a lot of time spent writing keywords and tokens.
 
 \cprotect\subsection{The \verb|batch| statement}
+\label{sec:evaluation-batch-optimisation}
 
 Another thing I would change is the algorithm used to compute the \verb|batch| statement. Since the implementation I have thought of several better, and more efficient ways of executing it. One of them involves starting the worker goroutines alongside the interpreter in the first pass. Whenever the interpreter steps into a \verb|MethodCall| AST node, it will enqueue it as a job instantly. This job will then be executed by a worker thread and then added to the result queue, ready for the second pass. The second pass would be unchanged from the original algorithm. This method leverages the speed increase from executing the HTTP requests in parallel, but is also doing the analysis pass (first pass) at the same time.
 
@@ -42,8 +43,10 @@ Most programming languages such as Java and Go, allow you to generate formal doc
 
 \cprotect\subsection{Environments}
 
-REST/HTTP clients, such as Insomnia and Postman, allow the user to create multiple `environments' which store some global configurations about the version or type of the Web API being tested. For instance, you could create an environment to test the Web API when it is running locally, as well as another environment to test the deployed version of it. In \verb|sttp| I would imagine that these environments could be created as \verb|.json| files that are stored within a particular directory of the \verb|TestSuite|. Then when running the \verb|TestSuite| you would supply a flag indicating the name of the environment to use. Then, before running each script in the \verb|TestSuite|, each \verb|sttp| \verb|VM| would first have a variable, such as \verb|env|, set within the bottommost stack frame as global variable that contains the environment that was chosen.
+REST/HTTP clients, such as Insomnia and Postman, allow the user to create multiple `environments' which store some global configurations about the version or type of the Web API being tested. For instance, you could create an environment to test the Web API when it is running locally, as well as another environment to test the deployed version of it. In \verb|sttp| I would imagine that these environments could be created as \verb|.json| files that are stored within a particular directory of the \verb|TestSuite|. Then when running the \verb|TestSuite| you would supply a flag indicating the name of the environment to use. Then, before running each script in the \verb|TestSuite|, each \verb|sttp| \verb|VM| would first have a variable, such as \verb|env|, set within the bottommost stack frame as global variable that contains the environment that was chosen. These environments could then be added to directories further down and would implement the fields from environments above.
+
+These environments could also contain computed properties, or even function definitions which could then act as setup/teardown methods for individual test suites. After using \verb|sttp| to test web APIs that I have been designing for work, this functionality seems imperative to stop duplicated code smells.
 
 \cprotect\subsection{The \verb|after-evaluation| branch}
 
-I have already started on some of these changes within the `\verb|after-evaluation|' branch. It is not part of the submitted code as it changes quite a lot of the syntax/semantics of \verb|sttp| and these have not yet been reflected within the specification.
+I have already started on some of these changes within the `\verb|after-evaluation|' branch, and implemented the batch statement optimisations mentioned \hyperref[sec:evaluation-batch-optimisation]{above} in another branch: \verb|after-eval-new-batch|. It is not part of the submitted code as it changes quite a lot of the syntax/semantics of \verb|sttp| and these have not yet been reflected within the specification.
