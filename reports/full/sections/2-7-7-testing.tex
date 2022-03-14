@@ -1,5 +1,6 @@
 \cprotect\subsection{Test suites and the \verb|test| statement}
 
+%TC:ignore
 \begin{center}
     \textbf{Git commit}
     \begin{minted}{markdown}
@@ -16,20 +17,27 @@ Language: implementation of TestSuite capabilities + TestStatement
     \vspace{-1em}
     \tiny{December 12, 2021}
 \end{center}
+%TC:endignore
 
 Test suites and \verb|test| statements are one of the most important features and motivations behind creating \verb|sttp|. They allow the programmer to construct test suites using a directory structure containing \verb|sttp| scripts. The \hyperref[sec:data-structures-vm]{VM section} mentions the \verb|TestResults| field that exists within the \verb|VM| interface's implementation. This is a pointer to an instance of the \verb|TestResults| type that has the following definition:
 
+%TC:ignore
 \inputminted[firstline=29, lastline=35, autogobble, breaklines, tabsize=4]{go}{../../src/test.go}
+%TC:endignore
 
 \verb|TestResults|' purpose is to store the results of all \verb|test| statements that have been evaluated by the interpreter thus far. \verb|TestStatement.Eval| will first create a new instance of \verb|TestResults| if there is not one already defined within the \verb|VM|. Then it will evaluate the expression that follows the \verb|test| statement, casting it to boolean if necessary. The result of this will then be added to the \verb|TestResults| using the \verb|TestResults.AddTest| method. This will append a \verb|TestResult| (definition below) to \verb|TestResults|.
 
+%TC:ignore
 \inputminted[firstline=21, lastline=27, autogobble, breaklines, tabsize=4]{go}{../../src/test.go}
+%TC:endignore
 
 Here, a pointer is stored to the \verb|TestStatement| that was evaluated for this result. This is in order to retrieve the position of the \verb|test| statement within the script (via \verb|TestStatement.GetPos|) and so that the \verb|test| statement can be `pretty-printed' (via \verb|TestStatement.String|).
 
 When the interpreter is evaluating a directory structure of \verb|sttp| scripts, an instance of \verb|TestSuite| will be constructed:
 
+%TC:ignore
 \inputminted[firstline=88, lastline=98, autogobble, breaklines, tabsize=4]{go}{../../src/test.go}
+%TC:endignore
 
 The \verb|TestSuite| is a recursive data-structure, in that if a \verb|TestSuite| represents the root directory, then a new \verb|TestSuite| will be created for each directory (and directory's directory) within the root directory. Each \verb|TestSuite| level can also have a set of \verb|sttp| scripts, that can all produce their own \verb|TestResults|.
 

@@ -24,6 +24,7 @@ As well as returning a \verb|Value|, \verb|Eval| also can return an \mintinline[
         \item \verb|FailedTest|, \verb|Return|, and \verb|Break|: \verb|ConstructSttpError| will ignore these values and return the error `as is'. This will effectively ignore the \verb|TryCatch|, creating an `uncatchable' error.
     \end{itemize}
     \item \mintinline{go}{struct { ProtoSttpError }}: these are anonymous structures that use \verb|ProtoSttpError| as a prototype. \verb|ProtoSttpError| is a type that implements Go's \mintinline{go}{error} interface, as well as some other fields and methods used to give more context to errors. The error value returned by \verb|ConstructSttpError| will be an \verb|Object| with the following schema:
+%TC:ignore
     \begin{minted}[breaklines]{js}
 {
     "type": "The name of the error (String)",
@@ -55,13 +56,18 @@ As well as returning a \verb|Value|, \verb|Eval| also can return an \mintinline[
     ]
 }
     \end{minted}
+%TC:endignore
 \end{itemize}
 
 The \verb|subset| key within this constructed error value relates to the three subsets of errors that can occur within \verb|sttp|. \verb|RuntimeError|s, \verb|StructureError|s, and \verb|PurposefulError|s. These three subsets are all described as enumerations of types that have `\mintinline{go}{string}' as their underlying type. This string represents each enumeration value's format string, the filled version of which will be used as the description for the error. \verb|RuntimeError| and \verb|StructureError|, both implement the \mintinline[breaklines]{go}{Errorf(vm VM, values... interface{}) error} method. This will return an instance of an anonymous structure that uses \verb|ProtoSttpError| as a prototype. These \verb|Errorf| methods will call the global package function \verb|Errorf|, which implements this anonymous \mintinline{go}{struct} construction logic. The code snippet below shows the \verb|RuntimeError.Errorf| method, the \verb|Errorf| function, and the \verb|ProtoSttpError| type definition.
 
+%TC:ignore
 \inputminted[firstline=73, lastline=105, autogobble, breaklines, tabsize=4]{go}{../../src/errors/errors.go}
+%TC:endignore
 
+%TC:ignore
 \inputminted[firstline=8, lastline=23, autogobble, breaklines, tabsize=4]{go}{../../src/errors/errors.go}
+%TC:endignore
 
 The \verb|ProtoSttpError| is used as a prototype for anonymous structures, any anonymous structure that uses it as a prototype will automatically implement Go's \mintinline[breaklines]{go}{type error interface { Error() string }} interface, as the \verb|errorMethod| stored within it can be called using \verb|ProtoSttpError.Error| method.
 

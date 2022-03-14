@@ -1,1 +1,11 @@
-;
+// Fetch all the comments so we can clean them up
+comments = $GET("http://127.0.0.1:8000/api/comments");
+// Test if we get the expected number of comments
+test 0 + comments.content == 54;
+
+// Delete each comment...
+for _, comment in comments.content do
+    comment_resp = $DELETE("http://127.0.0.1:8000/api/comments/%%" % comment.id);
+    // Test if action has code 204 (No content)
+    test comment_resp.code == 204;
+end;

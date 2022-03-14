@@ -3,6 +3,7 @@
 
 \textit{Examples can be found in: }\cprotect{\hyperref[appendix:sttp-examples-11]}{\verb|src/_examples/example_11/example_11.sttp|}
 
+%TC:ignore
 \begin{figure}[H]
     \begin{center}
         \textbf{Diary Entry}\\[0.5em]
@@ -35,6 +36,7 @@
         \tiny{2:17 am on November 20, 2021}
     \end{center}
 \end{figure}
+%TC:endignore
 
 One of the main motivations for creating \verb|sttp| was to enable the programmer to easily `batch' multiple HTTP requests to have them executed concurrently. This is a technique that I use often whilst requesting information from web servers that don't enforce a strict rate limit. Dispatching a `batch' of HTTP requests to multiple worker threads is often always faster than executing each HTTP request sequentially (from personal experience). In \verb|sttp| the \verb|batch| statement was implemented for this very reason.
 
@@ -62,11 +64,17 @@ The \verb|batch| statement can wrap any \verb|Block| of code. It executes the wr
 
 A more in-depth explanation of these steps is explained within the \hyperref[sec:batching]{specification}. The data-structure used to achieve this is the \verb|BatchSuite| type. This stores a list of jobs in the order that the \verb|MethodCall|s were encountered during the execution of the first pass. Along with this list, there is a counter for the current ID to use for the next enqueued job, as well as a pointer back to the \verb|Batch| AST node. This work is then executed using a pool of goroutines, the number of which is decided by the number of incoming jobs.
 
+%TC:ignore
 \inputminted[firstline=72, lastline=78, autogobble, breaklines, tabsize=4]{go}{../../src/batch.go}
+%TC:endignore
 
+%TC:ignore
 \inputminted[firstline=89, lastline=102, autogobble, breaklines, tabsize=4]{go}{../../src/batch.go}
+%TC:endignore
 
+%TC:ignore
 \inputminted[firstline=124, lastline=160, autogobble, breaklines, tabsize=4]{go}{../../src/batch.go}
+%TC:endignore
 
 Here, the \verb|methodWorker| function acts as a worker `thread' which takes a readable channel (\mintinline{go}{<-chan}) of jobs as well as a writeable channel (\mintinline{go}{chan<-}) of results. This worker function is then spawned off \verb|min(MaxWorkers, numJobs)| times (where \verb|MaxWorkers = 20|). The jobs within \verb|BatchSuite.Batch| are then enqueued in the jobs queue. We then read from the results queue, adding each result into a \verb|BatchResults| instance. \verb|BatchResults| implements \verb|heap.Interface| that prioritises results by their ID, effectively sorting the results in the order in which they were added to \verb|BatchSuite.Batch|. The complexity of this operation is: $O(n \log n)$. The \verb|BatchResults| instance's reference will be stored within the \verb|VM|, and will act as the main way of checking whether the batch is currently in its second pass.
 
@@ -173,7 +181,7 @@ The graph above shows that when executing up to 20 HTTP method calls within a ba
 
 \label{sec:eval-ast-nodes-batch-bench-2-intro}
 
-The next benchmarks I ran used 10, 20, 30, 50, and 200 as the number \verb|%d| was formatted with. The number of iterations to average each benchmarking function with dropped down to 15. This was due to socket limitations. Below shows the results of this second execution:
+The next benchmarks I ran used 10, 20, 30, 50, 100, and 200 as the number \verb|%d| was formatted with. The number of iterations to average each benchmarking function with dropped down to 15. This was due to socket limitations. Below shows the results of this second execution:
 
 \begin{center}
     Command that was used to run benchmarks:\\[0.5em]

@@ -25,7 +25,7 @@ class TopicViewSet(viewsets.ModelViewSet):
     @action(detail=True)
     def blogs(self, request: Request, pk=None) -> Response:
         return Response(
-            BlogSerialiser(self.get_object().blogs.all(), many=True, context={'request': request}).data,
+            BlogSerialiser(self.get_object().blogs.all().order_by('name'), many=True, context={'request': request}).data,
             status=status.HTTP_200_OK
         )
 

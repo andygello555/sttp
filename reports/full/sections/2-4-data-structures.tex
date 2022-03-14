@@ -1,5 +1,6 @@
 \section{Data-structures}
 
+%TC:ignore
 \begin{center}
     \textbf{Git commit}
     \begin{minted}{markdown}
@@ -17,6 +18,7 @@ Language: eval package + evaluation datastructures
     \vspace{-1em}
     \tiny{November 8, 2021}
 \end{center}
+%TC:endignore
 
 After implementing the pretty-printer, I moved onto defining the main data-structures (besides the AST) for the \verb|sttp| interpreter.
 
@@ -25,13 +27,16 @@ After implementing the pretty-printer, I moved onto defining the main data-struc
 
 I first defined a \verb|Heap| structure that would form the basis of variable storage within the interpreter. This was originally defined as a mapping of variable names to a linked list of symbols sorted in scope ascending order. An instance of this \verb|Heap| would sit within the data-structure that manages the state of the VM.
 
+%TC:ignore
 \begin{minted}{go}
 // This is what the type definition for Heap used to be.
 type Heap map[string][]*Symbol
 \end{minted}
+%TC:endignore
 
 However, this was an over-complication of what should be a simple data-structure. It was later refactored to be a mapping of variable names to current values, then a new instance of a \verb|Heap| would be initialised for every stack frame. Whenever a new stack frame is pushed; global variables, such as \verb|FunctionDefinition|s, are copied by reference from the previous frame to the new \verb|Heap| within this new frame. Once the stack frame `returns', the frame, and subsequently the \verb|Heap|, can be automatically deallocated by Go's garbage collector. Internally, this new \verb|Heap| definition is represented by the following Go types.
 
+%TC:ignore
 \begin{minted}{go}
 // Heap stores variable values on a stack frame.
 type Heap map[string]*Value
@@ -69,9 +74,11 @@ const (
     Function
 )
 \end{minted}
+%TC:endignore
 
 \verb|Heap| implements the following interface so that it can be read from and written to.
 
+%TC:ignore
 \begin{minted}{go}
 type Heap interface {
     // Exists will check whether the variable of the given name is on the heap.
@@ -88,12 +95,14 @@ type Heap interface {
     Get(name string) *Value
 }
 \end{minted}
+%TC:endignore
 
 The source code for \verb|Heap|, \verb|Value|, and \verb|Type|, as well as any instance methods for these types, can be found in \verb|src/data/heap.go|.
 
 \subsection{Frames and the CallStack}
 \label{sec:data-structures-frames-callstack}
 
+%TC:ignore
 \begin{center}
     \textbf{Git commit}
     \begin{minted}{markdown}
@@ -110,12 +119,15 @@ Language: call stack + VM + more tests
     \vspace{-1em}
     \tiny{November 10, 2021}
 \end{center}
+%TC:endignore
 
 As hinted to \hyperref[sec:data-structures-heap]{above}, the design of the \verb|Frame| type changed when the \verb|Heap| type was changed. Initially, it only included a pointer to the \verb|FunctionCall|, that called the function; a pointer to the \verb|FunctionDefinition| that is currently being executed; and a return value. However, as memory management now depends on the frames pushed to the call stack, each \verb|Frame| now includes a pointer to a \verb|Heap|. As for instance methods, the \verb|Frame| type has a getter for each field within it. This is so that the \verb|Frame| type can be used in functions/function signatures by interface only. This is vital, as the \verb|Frame| type is defined in the \verb|main| package, making it inaccessible directly from packages that reside lower than it. For this reason, the \verb|src/parser/interfaces.go| file defines a few interfaces of types defined in the \verb|main| package, including an interface for \verb|Frame|.
 
 The \verb|CallStack| is implemented as an array of pointers to \verb|Frame|s. It has a max size of \verb|MaxStackFrames| (\verb|src/call.go|) that is checked when pushing \verb|Frame|s to it. The following interface describes the \verb|CallStack| type.
 
+%TC:ignore
 \inputminted[firstline=62, lastline=73, autogobble, breaklines, tabsize=4]{go}{../../src/parser/interfaces.go}
+%TC:endignore
 
 The \verb|Call| instance method will first create a new \verb|Heap| and \verb|Frame| (using the \verb|Heap|) and push it to the top of the call stack. If the number of arguments given is greater than the number of parameters of the function, then a \verb|MoreArgsThanParams| error is returned. Otherwise, all \verb|Value|s from the below frame with their \verb|Global| flag set will be copied over by reference to the new \verb|Heap| located on the current frame. Then we create a variable: \verb|self|, that contains the value pointed to by the \textbf{root property} (the first property of a JSONPath, e.g. \verb|json| in \verb|json.hello.world[0]|) of the JSONPath of the \verb|FunctionDefinition| currently being called.
 
@@ -134,24 +146,30 @@ end;
 
 This means that parameters that are defined multiple times will be allowed. However, only the last argument for this parameter will ever be used. This is explained more within the \hyperref[sec:function-heap]{specification}. The code which achieves this parameter setting is defined within the \verb|src/call.go| file.
 
+%TC:ignore
 \inputminted[firstline=88, lastline=130, autogobble, breaklines, tabsize=4]{go}{../../src/call.go}
+%TC:endignore
 
 The \verb|Return| instance method for \verb|CallStack| will pop the topmost \verb|Frame| from the \verb|CallStack|, and return it. Originally, the global \verb|Value|s on the \verb|Heap| that was just popped, were copied back to the previous \verb|Frame|'s \verb|Heap|. This also affected the \verb|self| variable. However, this isn't necessary as the global \verb|Value|s that are added to the \verb|Heap| during the \verb|CallStack.Call| instance method, are now copied by reference. The code for \verb|Return| looks like the following:
 
+%TC:ignore
 \inputminted[firstline=140, lastline=151, autogobble, breaklines, tabsize=4]{go}{../../src/call.go}
+%TC:endignore
 
-Note that the topmost element of the \verb|CallStack| is first assigned to a variable, then set to \verb|nil|. This is so that the Go's garbage collector will see this \verb|Frame| pointer as being unused, and will therefore deallocate it.
-
-\verb|Call| and \verb|Return| can also return an error that will be \verb|StackOverflow| and \verb|StackUnderFlow| respectively. This happens during \verb|CallStack.Call|, when the current stack size is equal to \verb|MaxStackFrames|, or popping a \verb|Frame| when there are no \verb|Frame|s to pop.
+\verb|Call| and \verb|Return| can also return an error that will be \verb|StackOverflow| and \verb|StackUnderFlow| respectively.
 
 \subsection{VM}
 \label{sec:data-structures-vm}
 
 The \verb|VM| type was created in order to manage the state of the interpreter. A reference to an instance of it will be passed down from AST node to AST node. It is comprised of many other data structures, such as the \verb|CallStack|. All of which can be accessible through instance methods defined on the \verb|VM| type itself. As with the \verb|CallStack| type, the \verb|VM| type is declared in the \verb|main| package. This means that a \verb|VM| interface has to be defined in lower level packages, that allow access to all fields that need to be reachable from within that package. Below is the \verb|VM| type as it is declared in the \verb|main| package, as well as the \verb|VM| interface found within the \verb|parser| package.
 
+%TC:ignore
 \inputminted[firstline=15, lastline=37, autogobble, breaklines, tabsize=4]{go}{../../src/vm.go}
+%TC:endignore
 
+%TC:ignore
 \inputminted[firstline=18, lastline=60, autogobble, breaklines, tabsize=4]{go}{../../src/parser/interfaces.go}
+%TC:endignore
 
 Two things that should be noted about the \verb|VM| type and interface at this stage:
 

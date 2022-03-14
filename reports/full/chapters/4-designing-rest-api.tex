@@ -69,10 +69,13 @@ I've chosen HTTPie as a HTTP client for these examples as the commands themselve
 
 \begin{enumerate}
     \item Create a new topic on `Web APIs':
+%TC:ignore
     \begin{minted}[breaklines]{sh}
 http POST https://example.com/topics name='Web APIs' 
     \end{minted}
+%TC:endignore
     Usually after creating a resource, the serialised version of that resource is returned back to the user.
+%TC:ignore
     \begin{minted}[breaklines]{json}
 {
     "id": "26cfa9cc-d86f-4361-b1f8-138ec7e7bdd3",
@@ -80,11 +83,15 @@ http POST https://example.com/topics name='Web APIs'
     "name": "Web APIs"
 }
     \end{minted}
+%TC:endignore
     \item Create a new blog for the topic we have just created:
+%TC:ignore
     \begin{minted}[breaklines]{sh}
 http POST https://example.com/blogs name='RESTful APIs' body='Blah Blah' author='Jane Doe' tags:='["Web APIs", "APIs", "REST"]' topic_id='26cfa9cc-d86f-4361-b1f8-138ec7e7bdd3'
     \end{minted}
+%TC:endignore
     Again returning back a serialised version of the resource:
+%TC:ignore
     \begin{minted}[breaklines]{json}
 {
     "id": "44e8b997-a3be-4813-b439-efd2a9d3ca10",
@@ -96,11 +103,15 @@ http POST https://example.com/blogs name='RESTful APIs' body='Blah Blah' author=
     "tags": ["Web APIs", "APIs", "REST"]
 }
     \end{minted}
+%TC:endignore
     \item We can then add a comment to the blog that was just created:
+%TC:ignore
     \begin{minted}[breaklines]{sh}
 http POST https://example.com/comments body='Great blog!' author='John Doe' blog_id='44e8b997-a3be-4813-b439-efd2a9d3ca10'
     \end{minted}
+%TC:endignore
     The created comment\dots
+%TC:ignore
     \begin{minted}[breaklines]{json}
 {
     "id": "6aaa9fce-1340-4463-923b-cfe9217980a0",
@@ -110,10 +121,14 @@ http POST https://example.com/comments body='Great blog!' author='John Doe' blog
     "blog_url": "https://example.com/blogs/44e8b997-a3be-4813-b439-efd2a9d3ca10"
 }
     \end{minted}
+%TC:endignore
     \item Fetching the comments for a blog will return a list of serialised comment objects:
+%TC:ignore
     \begin{minted}[breaklines]{sh}
 http GET https://example.com/blogs/44e8b997-a3be-4813-b439-efd2a9d3ca10/comments
     \end{minted}
+%TC:endignore
+%TC:ignore
     \begin{minted}[breaklines]{json}
 [
     {
@@ -125,6 +140,7 @@ http GET https://example.com/blogs/44e8b997-a3be-4813-b439-efd2a9d3ca10/comments
     }
 ]
     \end{minted}
+%TC:endignore
 \end{enumerate}
 
 We have seen how to construct and use RESTful web APIs, but how does \verb|sttp| fit into this domain?

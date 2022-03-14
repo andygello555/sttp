@@ -1,6 +1,7 @@
 \section{Four-function calculator and participle}
 \label{sec:four-function-calc}
 
+%TC:ignore
 \begin{center}
     \textbf{Git commit}
     \begin{minted}{markdown}
@@ -16,9 +17,11 @@ four-func-calc: Defined grammar + dependencies + evaluations
     \vspace{-1em}
     \tiny{October 4, 2021}
 \end{center}
+%TC:endignore
 
-When declaring a \mintinline[breaklines]{go}{struct} in Go, the programmer can encode custom annotations (tags) for each field within the structure. These can be accessed using the native \verb|reflect| package. Usually, these are used for denoting how a value will be encoded by an encoder, but can be anything. In participle, you first define the AST nodes, in the form of structures, that will be produced by the generated parser. Then embed the grammar of the language within said AST nodes as Go structure tags. This is reminiscent of an attribute grammar, but in reverse. Where you define the attributes, then implement the grammar on top of them. For instance, consider the following Go code for the \verb|Statement| AST node within the four-function calculator.
+When declaring a \mintinline[breaklines]{go}{struct} in Go, the programmer can encode custom annotations (tags) for each field within the structure. These can be accessed using the native \verb|reflect| package. Usually, these are used for denoting how a value will be encoded by an encoder, but can be anything. In participle, you first define the AST nodes, in the form of structures, that will be produced by the generated parser. Then embed the grammar of the language within said AST nodes as Go structure tags. This is reminiscent of an attribute grammar, but in reverse. Where you define the nodes and their attributes, then implement the grammar on top of them. For instance, consider the following Go code for the \verb|Statement| AST node within the four-function calculator.
 
+%TC:ignore
 \begin{figure}[H]
     \begin{minted}{go}
 // Statement can either be an expression, variable assignment or variable clear.
@@ -60,12 +63,15 @@ func (s *Statement) Eval(ctx Memory) (float64, *Memory) {
     \label{fig:four-func-calc-statement-ast-node}
     \cprotect\caption{The \verb|Statement| AST node/non-terminal from the four-function calculator test program, along with its \verb|Eval| instance method.}
 \end{figure}
+%TC:endignore
 
 When defining an AST node within participle it is treated as a non-terminal within the grammar. Each field is a terminal/non-terminal that is part of the EBNF for the parent non-terminal. The EBNF for the \verb|Statement| non-terminal above would be:
 
+%TC:ignore
 \begin{minted}{ebnf}
 Statement = ( Clear | Assignment | Expression ) ( EOL | ";" | EOF );
 \end{minted}
+%TC:endignore
 
 \verb|Clear|, \verb|Assignment|, and \verb|Expression| are all other AST nodes/non-terminals that are defined with their own structures within the code base. Whereas, \verb|EOL|, \verb|";"|, and \verb|EOF| are tokens passed from the participle lexer. This EBNF is taken and split across all the fields within the \verb|Statement| structure by the programmer. The types of the field within AST nodes/non-terminals will either be:
 
@@ -78,6 +84,7 @@ Once the parser is generated, and an input within the language is parsed, an AST
 
 To encapsulate the behavior of multiple AST nodes, the programmer could define an \mintinline[breaklines]{go}{interface} which implements the necessary instance methods for a set of AST node types. For instance, the following interface could be declared to define all AST nodes that can be evaluated.
 
+%TC:ignore
 \begin{minted}{go}
 // Evaluatable defines all the AST nodes within the four-function 
 // calculator that can be evaluated.
@@ -85,11 +92,13 @@ type Evaluatable interface {
     Eval(ctx Memory) float64
 }
 \end{minted}
+%TC:endignore
 
 This allows the programmer to enforce some sort of ambiguity within their AST. This makes the evaluation of things such as expression trees much easier. The four-function calculator's AST nodes also implement Go's \mintinline[breaklines]{go}{Stringer} interface which allows for the code to be pretty-printed.
 
 The four-function calculator supports expression evaluation, variable assignment and deletion, and also has an interactive Repeat-Eval-Print Loop (REPL) mode. Its grammar, semantics and pretty-printer, are all defined within the \verb|test_programs/four_func_calc/calc.go| file.
 
+%TC:ignore
 \begin{figure}[H]
     \begin{minted}{ebnf}
 (*              Tokens               *)
@@ -114,5 +123,6 @@ Factor     = Number | Ident | "(" Expression ")" ;
     \end{minted}
     \cprotect\caption{The tokens and grammar for the four-function calculator unwrapped from the Go code.}
 \end{figure}
+%TC:endignore
 
 More information on how to use the four-function calculator can be found in the \verb|README|.

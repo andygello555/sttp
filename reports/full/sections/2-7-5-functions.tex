@@ -14,7 +14,9 @@ There are two AST nodes surrounding the evaluation and definition of functions. 
 
 Within \verb|sttp| \verb|FunctionDefinition| pointers (\verb|Function| type) are marshalled as strings. This is done using the following function which implements Go's \verb|json.Marshaler| interface. This function will be called by \verb|json.Marshal|.
 
+%TC:ignore
 \inputminted[firstline=374, lastline=379, autogobble, breaklines, tabsize=4]{go}{../../src/parser/functions.go}
+%TC:endignore
 
 The \verb|FunctionCall.Eval| instance method is more complicated than \verb|FunctionDefinition.Eval|, and follows the following order of execution:
 

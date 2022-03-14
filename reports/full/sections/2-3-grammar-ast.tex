@@ -1,5 +1,6 @@
 \section{The Grammar and the AST}
 
+%TC:ignore
 \begin{figure}[H]
     \begin{center}
         \textbf{Diary Entry}\\[0.5em]
@@ -7,9 +8,11 @@
         \tiny{3:33 pm on October 24, 2021}
     \end{center}
 \end{figure}
+%TC:endignore
 
-After creating the test programs described above, I moved onto starting a formal specification for the programming language. In particular the grammar of the language. The majority of the syntax is based on the syntax of Lua \textsuperscript{\cite{lua_syntax_specification}}. The syntax has been heavily modified in order to make it use \hyperref[chap:discussion]{tail recursion} and some of the other constructs within the language, such as JSONPath and HTTP request methods. It also differs from the Lua syntax specification, as the 5 levels of operator precedence are encoded into the grammar itself. Whereas, Lua's operator precedence is evaluated after parsing. This decision was made after writing a report on \textit{`The use derivation rules, and grammar idioms to capture notions of associativity and precedence in arithmetic expressions'} (\LaTeX \hspace{0.75mm} can be found in \verb|reports/derivations_idioms_associativity_priority/|).
+After creating the test programs in the previous chapter, I moved onto starting a formal specification for the programming language. In particular the grammar of the language. The majority of the syntax is based on the syntax of Lua \textsuperscript{\cite{lua_syntax_specification}}. The syntax has been heavily modified in order to make it use \hyperref[chap:discussion]{tail recursion} and some of the other constructs within the language, such as JSONPath and HTTP request methods. It also differs from the Lua syntax specification, as the 5 levels of operator precedence are encoded into the grammar itself. Whereas, Lua's operator precedence is evaluated after parsing. This decision was made after writing a report on \textit{`The use derivation rules, and grammar idioms to capture notions of associativity and precedence in arithmetic expressions'} (\LaTeX \hspace{0.75mm} can be found in \verb|reports/derivations_idioms_associativity_priority/|).
 
+%TC:ignore
 \begin{figure}[H]
     \begin{verbatim}
 # Tokens passed to the parser
@@ -48,34 +51,68 @@ whitespace = `\s+'
     
     All capitalised symbols are tokens that are passed from the lexical analyser to the parser. Whereas, the uncapitalised symbols are read by the lexical analyser and ignored by the parser.
 \end{figure}
+%TC:endignore
 
+%TC:ignore
 \begin{figure}[H]\ContinuedFloat
     \begin{minted}{ebnf}
+(* Each program is defined as a one or many statements *)
+(* followed by an optional return or throw statement.  *)
 Program  = Block ;
 Block    = { [ Stmt ] ";" } [ RetStmt | ThrwStmt ] ;
+
+(* The possible statements that can be used within sttp *)
 Stmt     = Ass
+           (* x = 1; *)
          | FuncCall
+           (* $foo(a, b); *)
          | MethCall
+           (* $GET("https://google.com"); *)
          | Break
+           (* break; *)
          | Test Exp
+           (* test a == b; *)
          | While Exp Do Block End
+           (* while true do $print("crash"); end; *)
          | For Ass ";" Exp [ ";" Ass ] Do Block End
+           (* for i = 0; i < 10; i = i + 1 do $print(i); end; *)
          | For Ident [ "," Ident ] In Exp Do Block End
+           (* for key, value in {"a": 1, "b": 2} do $print(key, value); end; *)
          | Batch This Block End
+           (* batch this $GET("http://google.com"); end; *)
          | Try This Block Catch As Ident Then End
+           (* try this throw "uh oh"; catch as e then $print(e); end; *)
          | Function JSONPath FuncBody
+           (* function foo.bar(a, b) return a + b; end; *)
          | If Exp Then Block { ElifSeg } [ ElseSeg ] End ;
+           (* if true then $print("true is true"); end; *)
 
 Ass      = JSONPath "=" Exp ;
 ElifSeg  = Elif Exp Then Block ;
 ElseSeg  = Else Block ;
 
 (* JSON Path *)
+(* Getting (all below get the same resource)       *)
+(* $print(foo.bar.baz);                            *)
+(* $print(foo["bar"].baz);                         *)
+(* $print(foo[0].baz);                             *)
+(* $print(foo```return curr.key == "bar";```.baz); *)
+(* Setting (all below set the same resource)       *)
+(* foo.bar.baz = "boo";                            *)
+(* foo["bar"].baz = "boo";                         *)
+(* foo[0].baz = "boo";                             *)
+(* foo```return curr.key == "bar";```.baz = "boo"; *)
 JSONPath = Part { "." Part } ;
 Part     = Ident { Index } ;
 Index    = "[" Exp "]"
          | "```" Block "```" ;
+    \end{minted}
+\end{figure}
+%TC:endignore
 
+%TC:ignore
+\begin{figure}[H]\ContinuedFloat
+    \begin{minted}{ebnf}
 (* Return and Throw statements can only come at the end of a block *)
 RetStmt  = Return [ Exp ] ";" ;
 ThrwStmt = Throw [ Exp ] ";" ;
@@ -108,11 +145,7 @@ Prec3Op  = "==" | "!=" ;
 Prec3T   = Prec2T { Prec2 } ;
 Prec2    = Prec2Op Prec2T ;
 Prec2Op  = "<" | ">" | "<=" | ">=" ;
-    \end{minted}
-\end{figure}
 
-\begin{figure}[H]\ContinuedFloat
-    \begin{minted}{ebnf}
 (* "+" and "-": 5th lowest precedence *)
 Prec2T   = Prec1T { Prec1 } ;
 Prec1    = Prec1Op Prec1T ;
@@ -123,18 +156,24 @@ Prec1T   = Factor { Prec0 } ;
 Prec0    = Prec0Op Factor ;
 Prec0Op  = "*" | "/" | "%" ;
 
-(* The factors are our base values *)
+(* The factors are base values in expressions *)
 Factor   = Null
-            | False
-            | True
-            | Number
-            | StringLit
-            | JSONPath
-            | JSON
-            | FuncCall
-            | MethodCall
-            | "(" Exp ")" ;
+         | False
+         | True
+         | Number
+         | StringLit
+         | JSONPath
+         | JSON
+         | FuncCall
+         | MethodCall
+         | "(" Exp ")" ;
+    \end{minted}
+\end{figure}
+%TC:endignore
 
+%TC:ignore
+\begin{figure}[H]\ContinuedFloat
+    \begin{minted}{ebnf}
 (* JSON literal *)
 JSON     = Object | Array ;
 Object   = "{" [ Members ] "}" ;
@@ -144,6 +183,7 @@ Array    = "[" [ ExpList ] "]" ;
     \end{minted}
     \cprotect\caption{The Tokens and Grammar of \verb|sttp|}
 \end{figure}
+%TC:endignore
 
 After defining the grammar, I started manipulating it into AST nodes so that participle could generate a parser for the language. Below is a summary of all AST nodes and what they denote within the grammar. For a more in-depth description of the semantics of the grammar, see the \hyperref[appendix:sttp-specification]{specification}.
 
@@ -198,7 +238,7 @@ After defining the grammar, I started manipulating it into AST nodes so that par
     \begin{enumerate}
         \item \verb|Part|: represents a property within a JSONPath, that can be followed by any number of indices.
         \begin{enumerate}
-            \item \verb|Index|: can either be square brackets surrounding an Expression, evaluated to a String, or a Number. Can also be a filter Block, which is a Block AST node executed on each node within the current level of the value that the JSONPath is accessing. If the Block returns a truthy value for that node, then that node will be added to the result Array.
+            \item \verb|Index|: can either be square brackets surrounding an Expression. Can also be a \hyperref[sec:hello-sttp-jsonpath-filter]{filter Block}.
         \end{enumerate}
     \end{enumerate}
     \item \verb|Statement|: a statement exists within a Block and can be one of the following:
@@ -220,12 +260,13 @@ After defining the grammar, I started manipulating it into AST nodes so that par
     \item \verb|Program|: the start non-terminal of the grammar. Matches a Block.
 \end{enumerate}
 
-The implementation of the AST within Go will be skipped as this has been discussed extensively when discussing the \hyperref[sec:four-function-calc]{four-function calculator} test program. The type definitions for each AST node within \verb|sttp| can be found within \verb|src/parser/ast.go|. However, an interesting feature to note is that any AST node type definition can be given a \mintinline[breaklines]{go}{Pos lexer.Position} field. This will automatically be populated by the position (filename, line, column) of that non-terminal within the input. This was useful for returning \hyperref[sec:development-try-catch-throw-errors-context]{errors}.
+The implementation of the AST within Go will be skipped as this has been discussed extensively when discussing the \hyperref[sec:four-function-calc]{four-function calculator} test program. The type definitions for each AST node within \verb|sttp| can be found within \verb|src/parser/ast.go|. However, an interesting feature of participle is that any AST node type definition can be given a \mintinline[breaklines]{go}{Pos lexer.Position} field. This will automatically be populated by the position (filename, line, column) of that non-terminal within the input. This was useful for returning \hyperref[sec:development-try-catch-throw-errors-context]{errors}.
 
 I found that defining the behaviour of each AST node sequentially, allowed me to create \hyperref[appendix:sttp-examples]{examples} for that AST node easily. This allowed me to thoroughly test the behaviour of each AST node. These examples can be found in \verb|src/_examples| in the directories prefixed with: `\verb|example_|'.
 
 \subsection{Pretty-printer}
 
+%TC:ignore
 \begin{center}
     \textbf{Git commit}
     \begin{minted}{markdown}
@@ -242,17 +283,21 @@ Language spec: String() referrers + grammar tweaks
     \vspace{-1em}
     \tiny{October 21, 2021}
 \end{center}
+%TC:endignore
 
 Before starting on the implementation of the interpreter itself, I first created a pretty-printer for the AST produced for \verb|sttp| scripts. This is done in a similar way as to the one used in the \hyperref[sec:four-function-calc]{four-function calculator}. However, rather than implementing Go's native \verb|Stringer| interface, I implement my own interface:
 
+%TC:ignore
 \begin{minted}{go}
 type indentString interface {
     String(indent int) string
 }
 \end{minted}
+%TC:endignore
 
 The \verb|String| instance method takes the level of indentation to apply to the node. This is so statements such as \verb|IfElifElse|, \verb|While|, \verb|For|, etc. can be indented within their parent \verb|Block|. Then when stringing an inner \verb|Block|, \verb|indent| can be incremented to visually indent that block, such as the following for the \verb|TryCatch| statement.
 
+%TC:ignore
 \begin{minted}{go}
 func (tc *TryCatch) String(indent int) string {
     // tabs is a function which returns the given number as "\t" chars
@@ -267,11 +312,13 @@ func (tc *TryCatch) String(indent int) string {
     )
 }
 \end{minted}
+%TC:endignore
 
 These \verb|String| instance methods can be found in the \verb|src/parser/string.go| file. The pretty-printer allowed me to debug some of the early mistakes within the grammar and AST nodes. This test case is \verb|TestParse| and is located within \verb|src/main_test.go|.
 
 \subsection{A problem with the grammar}
 
+%TC:ignore
 \begin{figure}[H]
     \begin{center}
         \textbf{Diary Entry}\\[0.5em]
@@ -279,11 +326,14 @@ These \verb|String| instance methods can be found in the \verb|src/parser/string
         \tiny{5:05 pm on December 8, 2021}
     \end{center}
 \end{figure}
+%TC:endignore
 
 As described by the diary entry above. There was a mistake within the grammar for the non-terminals: \verb|FunctionCall| and \verb|JSONPath|. This mistake lead to a $FIRST$ set clash, which lead to FunctionCalls being parsed as JSONPaths within Expressions, as both can derive Factor. To solve this, I added `\verb|$|' as a suffix for FunctionCalls (and MethodCalls for consistency), which solves the $FIRST$ set clash.
 
 Solving this also allowed me to change the grammar of assignment statements. The original grammar for \verb|Assignment| was:
 
+%TC:ignore
 \begin{minted}{ebnf}
 Assignment = "set" JSONPath "=" Expression ;
 \end{minted}
+%TC:endignore

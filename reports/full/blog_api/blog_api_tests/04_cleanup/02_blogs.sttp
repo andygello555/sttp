@@ -1,7 +1,7 @@
 // Fetch all the blogs so we can clean them up
 blogs = $GET("http://127.0.0.1:8000/api/blogs");
 // Test if we get the expected number of blogs
-test 0 + blogs.content == 6;
+test 0 + blogs.content == 9;
 
 // Delete each blog...
 for _, blog in blogs.content do

@@ -2,6 +2,7 @@
 
 \textit{Examples can be found in: }\cprotect{\hyperref[appendix:sttp-examples-2]}{\verb|src/_examples/example_02/example_02.sttp|}
 
+%TC:ignore
 \begin{center}
     \textbf{Git commit}
     \begin{minted}{markdown}
@@ -14,6 +15,7 @@ Language: json path setter + assignment ast node
     \vspace{-1em}
     \tiny{December 2, 2021}
 \end{center}
+%TC:endignore
 
 JSONPath setting and the \verb|Eval| instance method for the \verb|Assignment| AST node are what I implemented first.
 
@@ -29,7 +31,9 @@ JSONPath's are comprised of three different types of AST node:
 
 Whenever JSONPath's are used, they are first converted to the \mintinline[breaklines]{go}{type Path []interface{}}. This is an intermediary format that has a \verb|Set| and \verb|Get| instance methods. The \verb|Path| type acts as a queue whenever these two methods are called. It is easier to treat it is such rather than to use tree traversal to find each property, index, and filter block. The \verb|JSONPath| and \verb|Part| AST nodes implement the \verb|Convert| instance method that allows for the conversion of a JSONPath AST subtree, to a \verb|Path| instance. \verb|Index| does not implement this instance method, as it acts as a leaf node of a JSONPath expression, and does not need to be traversed down. It can be dealt with within \verb|Part.Convert|.
 
+%TC:ignore
 \inputminted[firstline=533, lastline=585, autogobble, breaklines, tabsize=4]{go}{../../src/parser/json_path.go}
+%TC:endignore
 
 \verb|JSONPath.Convert| will enqueue the \verb|Path|s constructed by each of its \verb|Part|s. Whereas, \verb|Part.Convert| will iterate over its indices and either evaluate the expression within the square brackets, or simply add the reference to the filter's \verb|Block| AST node.
 
@@ -46,6 +50,7 @@ The \verb|Get| instance method is semantically similar to \verb|Set|, but instea
 
 The \verb|Set| and \verb|Get| methods have gone through many iterations, but the most important was: Array, Object, and String access via Numbers, Strings and Filters. Filter expressions were implemented as I thought they would be useful when trying to find certain information within HTML that had been parsed into an \verb|sttp| Object. They are supported within the original syntax for JSONPath\textsuperscript{\cite{goessner_2007}}. However, \verb|sttp|'s version of filter expressions are syntactically different from the original specification, using the `\verb|```|' token to enclose a Block of code hanging off of a JSONPath. I added setting and getting to String Objects as I remembered that there was no way to retrieve and set character information within a String. Commit:
 
+%TC:ignore
 \begin{minted}{markdown}
 Language: JSONPath filter + JSONPath string getting/setting
 - Added the grammar for a JSONPath filter expression (30/12/2021 - 17:31:41)
@@ -64,6 +69,7 @@ Language: JSONPath filter + JSONPath string getting/setting
 - JSONPath setting can be used to concatenate and insert
   within strings now (30/12/2021 - 23:05:18)
 \end{minted}
+%TC:endignore
 
 \begin{figure}[H]
     \begin{verbatim}
@@ -158,7 +164,9 @@ After implementing the methods explained above, the implementation of the \verb|
 \begin{enumerate}
     \item Converts the \verb|JSONPath| on the LHS to a \verb|Path| (\verb|Path.Convert|) and gets the root property from it to find the root property's value on the current \verb|Frame|'s \verb|Heap|. If the root property's value is not found, we default \verb|null|.
     \item The RHS of the \verb|Assignment| is then evaluated. If the RHS is a \verb|Function|, then we will create a copy of the \verb|FunctionDefinition|, changing the \verb|JSONPath| to the \verb|JSONPath| of the Assignment.
+    %TC:ignore
     \inputminted[firstline=205, lastline=218, autogobble, breaklines, tabsize=4]{go}{../../src/parser/eval.go}
+    %TC:endignore
     \item We then set this evaluated value on the RHS using the \verb|Path| (\verb|Path.Set|) we converted earlier, and assign it to the root property found earlier.
 \end{enumerate}
 

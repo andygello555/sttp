@@ -2,6 +2,7 @@
 
 \textit{Examples can be found in: }\cprotect{\hyperref[appendix:sttp-examples-9]}{\verb|src/_examples/example_09/example_09.sttp|}
 
+%TC:ignore
 \begin{center}
     \textbf{Git commit}
     \begin{minted}{markdown}
@@ -17,10 +18,13 @@ Language: Method.Call setup + tests + Resty integration
     \vspace{-1em}
     \tiny{December 13, 2021}
 \end{center}
+%TC:endignore
 
 The \verb|MethodCall| AST node has a similar syntax to function calls but instead of having a user-defined function name it can only have one of the supported \verb|sttp| HTTP methods\textsuperscript{\cite{http_request_methods}}: \verb|GET|, \verb|HEAD|, \verb|POST|, \verb|PUT|, \verb|DELETE|, \verb|OPTIONS|, and \verb|PATCH|. Before I implemented the \verb|batch| statement, \verb|MethodCall|s were always executed synchronously. The \verb|Method| token that is captured by the \verb|MethodCall| non-terminal, is itself a type (\mintinline[breaklines]{go}{type Method int}). This type has an enumeration of values each of which representing one of the supported HTTP methods (\cprotect{\hyperref[sec:development-operators]}{similar to the \verb|Operator| type}). The arguments that these \verb|Method|s can be \verb|Call|ed with is described by the \verb|methodParams| table:
 
+%TC:ignore
 \inputminted[firstline=76, lastline=86, autogobble, breaklines, tabsize=4]{go}{../../src/eval/methods.go}
+%TC:endignore
 
 \verb|MethodParamType| is an enumerated type that describes all the accepted arguments that a \verb|Method| can take. As seen in the code above, each \verb|Method| requires a \verb|Url| and can take an optional \verb|Headers| and \verb|Cookies| argument. HTTP request methods that can take a `body' in their request can also be given the \verb|Body| argument.
 
@@ -28,16 +32,21 @@ Internally, \verb|sttp| uses the `resty' third-party HTTP/REST client for Go\tex
 
 A \verb|Method| can be called via the \verb|Method.Call| instance method. \verb|Call| only takes an array of computed arguments without any reference to the \verb|VM|. This means that any errors that occur within \verb|Call| will need to be given context by a calling function lower down on the call stack that \textbf{does have} access to a \verb|VM| instance (usually \verb|MethodCall.Eval|). These given computed arguments will be applied to a \verb|resty.Request| structure. This stores the request that will eventually be sent. This application of arguments is done via the following code:
 
+%TC:ignore
 \inputminted[firstline=169, lastline=182, autogobble, breaklines, tabsize=4]{go}{../../src/eval/methods.go}
+%TC:endignore
 
 Here, the \verb|Method.GetParamType| is used to get the \verb|MethodParamType| for each of the arguments iteratively. \verb|Method.GetParamType| is quite interesting as it utilises the fact that \mintinline{go}{int} is the underlying type of \verb|MethodParamType|, and uses this to cast the control variable of a for loop, iterating over the number of \verb|MethodParamType|s, into a \verb|MethodParamType|.
 
+%TC:ignore
 \inputminted[firstline=151, lastline=164, autogobble, breaklines, tabsize=4]{go}{../../src/eval/methods.go}
+%TC:endignore
 
 After the arguments have been bound, the \verb|resty.Request| will be executed using: \\\mintinline[breaklines]{go}{request.Execute(m.String(), args[0].StringLit())}. Here, \verb|m.String()| calls the \\\verb|Method.String| method which will return the canonical name of HTTP request method.
 
 \subsubsection{Response Parsing}
 
+%TC:ignore
 \begin{center}
     \textbf{Git commit}
     \begin{minted}{markdown}
@@ -49,9 +58,11 @@ Language: text/html responses parsed to map[string]interface{}
     \vspace{-1em}
     \tiny{December 27, 2021}
 \end{center}
+%TC:endignore
 
 After the request has been executed, and has not produced an error, the response will be converted/parsed to an \verb|sttp| \verb|Value|. This will default to \verb|ConstructSymbol| which uses Go's native JSON parser to parse the body of the response into a type that can be used within \verb|sttp|. However, if the response's \verb|content-type| includes \verb|text/html| then Go's native HTML parser will be used to parse the response's body to a tree-like structure. This structure is then traversed to produce a \mintinline[breaklines]{go}{map[string]interface{}}, or in other words an \verb|sttp| \verb|Object|. Each node within the parsed HTML document will be converted to the following representation:
 
+%TC:ignore
 \begin{minted}[breaklines]{json}
 {
     "type": "The node's type (String enumeration: text, document, element, comment, doctype, error).",
@@ -66,6 +77,7 @@ After the request has been executed, and has not produced an error, the response
     ]
 }
 \end{minted}
+%TC:endignore
 
 HTML is parsed to an \verb|Object| so that it can be searched and filtered using the \verb|find| builtins and the JSONPath filter blocks. This allows HTML content to be `scraped'. HTML parsing was only added after the implementation of filter blocks for this very use-case. The code for \verb|Method.Call|, and other code snippets used above, can be found in the \verb|src/eval/methods.go| file.
 

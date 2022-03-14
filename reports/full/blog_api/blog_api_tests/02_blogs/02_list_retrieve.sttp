@@ -1,1 +1,26 @@
-;
+// Fetch all the blogs...
+blogs = $GET("http://127.0.0.1:8000/api/blogs");
+// Test if we get the expected number of blogs
+test 0 + blogs.content == 9;
+
+// For each blog we will check the expected names of each blog.
+// The list action should order blogs by name ascending so we can
+// guess the blog names.
+topic_no = 1;
+blog_no = 1;
+topic_count = 4;
+for _, blog in blogs.content do
+    test blog.name == "Test Blog for Test Topic %% Updated, No %%" % [topic_no, blog_no];
+
+    // While we are here we will also test the retrieve endpoint...
+    blog_resp = $GET("http://127.0.0.1:8000/api/blogs/%%" % blog.id);
+    test blog_resp.content.name == blog.name;
+
+    // Increment all our counters...
+    if blog_no == topic_count then
+        topic_no = topic_no + 1;
+        blog_no = 0;
+        topic_count = topic_count - 1;
+    end;
+    blog_no = blog_no + 1;
+end;

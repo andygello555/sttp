@@ -1,1 +1,18 @@
-;
+// Fetch blogs so that we can create an extra comment for each
+blogs = $GET("http://127.0.0.1:8000/api/blogs");
+
+// We create a new comment for each blog
+for _, blog in blogs.content do
+    comments = $GET("http://127.0.0.1:8000/api/blogs/%%/comments" % blog.id);
+    comment_body = "Great blog! This is comment number %% for %%" % [1 + comments.content, blog.name];
+    comment_resp = $POST("http://127.0.0.1:8000/api/comments", {
+        "body": comment_body,
+        "commenter": "John Doe",
+        "blog_id": blog.id
+    });
+
+    // Test for 201 code (Created)
+    test comment_resp.code == 201;
+    // Check if the name matches the name we wanted
+    test comment_resp.content.name == blog_name;
+end;

@@ -1,1 +1,16 @@
-;
+// Fetch all the blogs so we can easily update the them
+blogs = $GET("http://127.0.0.1:8000/api/blogs");
+
+for _, blog in blogs.content do
+    // We will update the blog's name to be the existing name + "Updated"
+    new_name = blog.name + " Updated";
+    blog_resp = $PATCH(
+        "http://127.0.0.1:8000/api/blogs/%%" % blog.id,
+        {"name": new_name}
+    );
+
+    // Test the response code
+    test blog_resp.code == 200;
+    // Test whether the response from the server matches the updated name
+    test blog_resp.content.name == new_name;
+end;

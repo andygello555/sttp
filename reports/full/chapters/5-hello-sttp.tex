@@ -88,6 +88,8 @@ $print(foo[0][2]);
 
 Note the three ways of accessing a named property within an Object: \verb|.property|, \verb|["property"]|, or \verb|[i]|; where \verb|i| is the lexicographical index of the property to access in relation to the other keys.
 
+\label{sec:hello-sttp-jsonpath-filter}
+
 Aside from simple member access, each property (\verb|.property|), or pair of square braces (\verb|[...]|), can be followed by a filter block. This is a block of \verb|sttp| code that will be run against each element of the value currently pointed to by the path. If this block returns a truthy value for an element, then that element will be added to a resulting Array. Otherwise, that element will not be added. Filter blocks are enclosed between two triple backticks: \verb|```...```|.
 
 Each time a filter block is run against an element within the value, the variable \verb|curr| is set. \verb|curr| is an Object that has a \verb|key| key, and a \verb|value| key.
@@ -280,6 +282,7 @@ end;
 \end{verbatim}
 
 \subsection{Operators}
+\label{sec:hello-sttp-operators}
 
 Instead of having built-in functions for operations such as appending to an array, removing from an array, merging objects, etc. Operators, perform most of these actions. The following operators remain unchanged for all types:
 
@@ -397,6 +400,7 @@ a - b != a || b;
 Multiply, Divide, Modulus, Addition, and Subtraction will all `nullify' the operation (result is \verb|null|). Null cannot be compared but can be used in logical expressions where it will be cast into \verb|false|.
 
 \subsection{Casting}
+\label{sec:hello-sttp-casting}
 
 \begin{center}
 \textit{If a type is not mentioned in any of the sections below it means that the type cannot be cast to the missing type, and will return an error.}
@@ -621,9 +625,19 @@ blog_api_tests
 
 As you can see, the directory structure is split up into the \hyperref[sec:designing-rest-api-blogging-service]{resources}, apart from the \verb|04_cleanup| directory, used by the blogging web API. These act as \textbf{nested test suites} of the root test suite (canonically named the \textbf{penthouse suite}). The directories and scripts are prefixed with the order that they should be executed in. This is because when running this test suite using the command: \verb|sttp blog_api_tests|, the directories and scripts are evaluated in lexicographical order. It also \textbf{makes sense for the Topics to be tested first, so that they can be used within the tests for Blogs}, and the same goes for Blogs and Comments.
 
+\subsection{Nested sub suites}
+
+It is worth noting that sub suites can be nested within other sub suites. This could happen if a resource resides completely within another logically, and is not used outside of actions for the parent resource. Such is the case for Blogs and Topics, as well as Comments and Blogs. Thus we could restructure the \verb|blog_api_tests| directory to become the following:
+
+This is quite confusing so I will stick to the former directory structure. In the end, in this version of \verb|sttp|, nested sub suites act as niceties because a parent sub suite cannot pass data to a lower one. I will address this more in the \hyperref[sec:hello-sttp-problems-to-be-fixed]{`problems to be fixed'} section below.
+
+\subsection{Cleaning up resources}
+
 The reason for the \verb|04_cleanup| test suite is that it serves as the test for the deletion action of the resources created in the previous test suites. It also makes sense from a repeatability point of view, as the state of the blogging service's internal database is restored to it's starting state.
 
 Of course this is not the best solution to this problem. If the test fails before reaching the \verb|04_cleanup| test suite (and the \verb|BreakOnFailure| flag is set in the interpreter), the test will exit without cleaning up the created resources. A better solution would be to create a `test mode' for the web API that will create a temporary database, with the same schema as the production database, for the web API to use. This can be dropped and recreated each time the tests need to be run. The delete actions could then be tested in a similar way to the create, list, retrieve, and update endpoints within their appropriate resource test suites. This can still be seen as an inelegant solution, and is described further in the \hyperref[sec:hello-sttp-problems-to-be-fixed]{`problems to be fixed'} section below.
+
+\subsection{Scripts and test cases}
 
 The scripts test the actions described by the script's filename, which are provided by the different endpoints for the resource described by the parent directory. For instance, \\\verb|blog_api_tests/01_topics/01_create.sttp| will test the create action for Topics residing at the endpoint: \verb|POST /topics|. These scripts are also ordered in the natural progression of a resource: creation, retrieval, updating, then deletion.
 
@@ -633,25 +647,120 @@ These scripts use the \verb|test| statement to test if an expression is truthy. 
 test 1 + 1 == 2; // Would be reported as a successful test case
 \end{verbatim}
 
-\section{Scripts and test cases}
-
-In this section we will discuss the test suite for the Topics resource and the body of the scripts within this suite. The suite is constructed with the following scripts that test their corresponding actions:
+In the bullets below we will discuss the test suite for the Topics resource and the body of the scripts within this suite. The suite is constructed with the following scripts that test their corresponding actions:
 
 \begin{itemize}
     \item \verb|blog_api_tests/01_topics/01_create.sttp|: is testing the \verb|POST /topics| endpoint. \textit{It will create a couple of test Topics for use in the following scripts and check the responses from the API.}
+    %TC:ignore
+    \inputminted[autogobble, breaklines, tabsize=4]{text}{blog_api/blog_api_tests/01_topics/01_create.sttp}
+    %TC:endignore
     \item \verb|blog_api_tests/01_topics/02_list_retrieve.sttp|: is testing the \verb|GET /topics| and \verb|GET /topics/{topic_id}| endpoints. \textit{It will check that the Topics created in the previous script are fetched from using the list and retrieve actions.}
+    %TC:ignore
+    \inputminted[autogobble, breaklines, tabsize=4]{text}{blog_api/blog_api_tests/01_topics/02_list_retrieve.sttp}
+    %TC:endignore
     \item \verb|blog_api_tests/01_topics/03_update.sttp|: is testing the \verb|PUT /topics/{topic_id}| endpoint. \textit{It will update the the Topics created in the first script and check whether retrieving and listing each updated Topic serves the correct response.}
+    %TC:ignore
+    \inputminted[autogobble, breaklines, tabsize=4]{text}{blog_api/blog_api_tests/01_topics/03_update.sttp}
+    %TC:endignore
     \item \verb|blog_api_tests/01_topics/04_top_10.sttp|: is testing the \verb|GET /topics/top| endpoint. \textit{This will have to create some test Blogs, then check whether the endpoint returns the correct ordering of Topics.}
+    %TC:ignore
+    \inputminted[autogobble, breaklines, tabsize=4]{text}{blog_api/blog_api_tests/01_topics/04_top_10.sttp}
+    %TC:endignore
     \item \verb|blog_api_tests/01_topics/05_blogs.sttp|: is testing the \verb|GET /topics/{topic_id}/blogs| endpoint. \textit{Checks whether the Blogs created in the previous script are in the response returned by the API.}
+    %TC:ignore
+    \inputminted[autogobble, breaklines, tabsize=4]{text}{blog_api/blog_api_tests/01_topics/05_blogs.sttp}
+    %TC:endignore
 \end{itemize}
 
-\section{Running the tests and the output}
+\subsection{Running the tests and the output}
 
-\cprotect\section{Problems to be fixed in later versions of \verb|sttp|}
+\subsubsection{Implementation of the blogging service web API}
+
+To run the test suite directory, I had to first implement the blogging service web API. The method used to implement this is outside the scope of this report, but the source code can be found in the: \verb|reports/full/blog_api/blog_api_server/| directory. To run the server it is recommended to first create a python3.10 virtual environment: \mintinline[breaklines]{shell}{python3.10 -m venv .venv} (whilst within the \verb|blog_api_server| directory). You can then activate, install dependencies, and run the web server using the following commands (on UNIX based systems):
+
+%TC:ignore
+\begin{center}
+    \begin{minted}{shell}
+source .venv/bin/activate
+pip3 install -r requirements.txt
+# Will start a gunicorn web server with 4 workers, each with 4 threads
+gunicorn --reload --threads 4 -w 4 --log-level debug blog_api_server.wsgi
+    \end{minted}
+\end{center}
+%TC:endignore
+
+\subsubsection{Running the test suite}
+
+To run the test suite at \verb|reports/full/blog_api/blog_api_tests/| you will first need to build the \verb|sttp| executable. This can be done by installing latest minor version of \verb|go1.17|. After doing so, you can then navigate to the \verb|src/| directory and run: \verb|go build -o sttp|. This will produce an executable named: \verb|sttp|. It is recommended that you move this into the \verb|reports/full/blog_api/| directory (or onto your \verb|PATH| if you're inclined). To execute the \verb|sttp| test suite described above, you should first move to the \verb|reports/full/blog_api/| directory, and then run the command: \verb|./sttp blog_api_tests|. This should (hopefully) result in the following output.
+
+\begin{center}
+    \textit{Note the output has been truncated to only include the Topics test suite}
+\end{center}
+
+%TC:ignore
+\begin{minted}[fontsize=\scriptsize, breaklines]{text}
+PENTHOUSE SUITE: blog_api_tests NO SCRIPTS (PASS)
+    SUB SUITE: blog_api_tests/01_topics  (PASS)
+        blog_api_tests/01_topics/01_create.sttp:11:5 - "test topic_resp.code == 201" (PASS)
+        blog_api_tests/01_topics/01_create.sttp:13:5 - "test topic_resp.content.name == topic.name" (PASS)
+        blog_api_tests/01_topics/01_create.sttp:11:5 - "test topic_resp.code == 201" (PASS)
+        blog_api_tests/01_topics/01_create.sttp:13:5 - "test topic_resp.content.name == topic.name" (PASS)
+        blog_api_tests/01_topics/01_create.sttp:11:5 - "test topic_resp.code == 201" (PASS)
+        blog_api_tests/01_topics/01_create.sttp:13:5 - "test topic_resp.content.name == topic.name" (PASS)
+        blog_api_tests/01_topics/02_list_retrieve.sttp:4:1 - "test 0 + topics.content == 3" (PASS)
+        blog_api_tests/01_topics/02_list_retrieve.sttp:10:5 - "test topic.name == "Test Topic %%" % (i + 1)" (PASS)
+        blog_api_tests/01_topics/02_list_retrieve.sttp:11:5 - "test topic.blog_count == 0" (PASS)
+        blog_api_tests/01_topics/02_list_retrieve.sttp:15:5 - "test topic_resp.content.name == topic.name" (PASS)
+        blog_api_tests/01_topics/02_list_retrieve.sttp:10:5 - "test topic.name == "Test Topic %%" % (i + 1)" (PASS)
+        blog_api_tests/01_topics/02_list_retrieve.sttp:11:5 - "test topic.blog_count == 0" (PASS)
+        blog_api_tests/01_topics/02_list_retrieve.sttp:15:5 - "test topic_resp.content.name == topic.name" (PASS)
+        blog_api_tests/01_topics/02_list_retrieve.sttp:10:5 - "test topic.name == "Test Topic %%" % (i + 1)" (PASS)
+        blog_api_tests/01_topics/02_list_retrieve.sttp:11:5 - "test topic.blog_count == 0" (PASS)
+        blog_api_tests/01_topics/02_list_retrieve.sttp:15:5 - "test topic_resp.content.name == topic.name" (PASS)
+        blog_api_tests/01_topics/03_update.sttp:13:5 - "test topic_resp.code == 200" (PASS)
+        blog_api_tests/01_topics/03_update.sttp:15:5 - "test topic_resp.content.name == new_name" (PASS)
+        blog_api_tests/01_topics/03_update.sttp:13:5 - "test topic_resp.code == 200" (PASS)
+        blog_api_tests/01_topics/03_update.sttp:15:5 - "test topic_resp.content.name == new_name" (PASS)
+        blog_api_tests/01_topics/03_update.sttp:13:5 - "test topic_resp.code == 200" (PASS)
+        blog_api_tests/01_topics/03_update.sttp:15:5 - "test topic_resp.content.name == new_name" (PASS)
+        blog_api_tests/01_topics/04_top_10.sttp:26:5 - "test topic.blog_count == 3 - i" (PASS)
+        blog_api_tests/01_topics/04_top_10.sttp:27:5 - "test topic.name == "Test Topic %% Updated" % (i + 1)" (PASS)
+        blog_api_tests/01_topics/04_top_10.sttp:26:5 - "test topic.blog_count == 3 - i" (PASS)
+        blog_api_tests/01_topics/04_top_10.sttp:27:5 - "test topic.name == "Test Topic %% Updated" % (i + 1)" (PASS)
+        blog_api_tests/01_topics/04_top_10.sttp:26:5 - "test topic.blog_count == 3 - i" (PASS)
+        blog_api_tests/01_topics/04_top_10.sttp:27:5 - "test topic.name == "Test Topic %% Updated" % (i + 1)" (PASS)
+        blog_api_tests/01_topics/05_blogs.sttp:8:5 - "test 0 + blogs.content == topic.blog_count" (PASS)
+        blog_api_tests/01_topics/05_blogs.sttp:9:5 - "test 0 + blogs.content == 3 - i" (PASS)
+        blog_api_tests/01_topics/05_blogs.sttp:8:5 - "test 0 + blogs.content == topic.blog_count" (PASS)
+        blog_api_tests/01_topics/05_blogs.sttp:9:5 - "test 0 + blogs.content == 3 - i" (PASS)
+        blog_api_tests/01_topics/05_blogs.sttp:8:5 - "test 0 + blogs.content == topic.blog_count" (PASS)
+        blog_api_tests/01_topics/05_blogs.sttp:9:5 - "test 0 + blogs.content == 3 - i" (PASS)
+    SUB SUITE: blog_api_tests/02_blogs  (PASS)
+        ...
+    SUB SUITE: blog_api_tests/03_comments  (PASS)
+        ...
+    SUB SUITE: blog_api_tests/04_cleanup  (PASS)
+        ...
+\end{minted}
+%TC:endignore
+
+The output from \verb|sttp| is indented to show any sub test suite's, or directories, and suffixed with either \verb|PASS| or \verb|FAIL| to indicate whether that sub suite has passed or failed all the tests within each script within that sub suite. The individual tests from each script within the sub suite are then listed below the sub suite. Each test's file, line number, and column number are shown in the first half of the line, with the test statement itself pretty-printed in the second half. The pretty-printed test statement is quite useful as, when combined with the logs from the web API, it can help squash bugs without even having to open an editor to inspect the \verb|sttp| code.
+
+\cprotect\subsection{Problems to be fixed in later versions of \verb|sttp|}
 \label{sec:hello-sttp-problems-to-be-fixed}
 
+When using \verb|sttp| to test web APIs that I have been creating for work, and also for the example mentioned previously, I have noticed a few problems that I would like to fix in later versions of \verb|sttp|.
+
 \begin{itemize}
-    \item \verb|sttp| should be able to connect to databases, or execute shell commands, in order to setup temporary databases, so that external shell scripts don't have to be used and maintained.
-    \item What if we needed to authenticate some of the requests using the \verb|Authentication| header?
-    \item There is a lot of duplicated code.
+    \item \textbf{There is a lot of duplicated code.} A solution to this has been discussed in the \hyperref[sec:evaluation-environments]{evaluation chapter}. It proposes introducing environments which are \verb|.json| files that can reside within any test suite. These will be parsed to an \verb|sttp| Object that will be inherited by each script and test suite. Environments at a lower level inherit and overwrite the properties from any environments above. This allows global constants like test data, domains and URLs to be passed to each test directory, and allows the behaviour of the test to completely change when substituting in other environments.
+    \begin{itemize}
+        \item \textbf{What about duplicated functions?} This is a bit harder.
+        
+        One solution would be to permit function definitions within the grammar of \verb|sttp|, then only parse Object literals instead of whole programs within these environments. While on paper this may seem like the ideal solution, I am against the idea of adding more and more production rules to the grammar. This is because adding grammar idioms can become quite a slippery slope and I want \verb|sttp| to relatively `bare-bones' in its syntax.
+
+        Another solution would be to create global \verb|sttp| scripts that act as environments. For instance, any script prefixed/suffixed with `global' will be passed an environment variable that can be filled throughout that script. This object will then be extracted from the interpreter after execution and will serve as the environment that is passed to lower test suites. Within these `global' scripts you could copy function references to this environment variable, thus allowing definition of global functions. This is also not a very ideal solution as it seems more like a `hack' than an actual solution.
+    \end{itemize}
+    \item \textbf{\texttt{sttp} should be able to have setup and teardown procedures that run at the start and end of test suites.} This could be useful for setting up test databases and dropping test databases to avoid cleanup of individual resources. This is something that could be added to environments as definable functions. These functions will then be saved within each test suite.
 \end{itemize}
+
+As explained in the \hyperref[chap:evaluation]{evaluation chapter} at the end of this report, I have already started theorising and implementing some of the solutions to these problems within the \verb|after-evaluation| branch, but I felt that it deserved some further usage before incorporating the changes into the specification. It also did not make sense to rewrite large sections of this report to incorporate these new changes.

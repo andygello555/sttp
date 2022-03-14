@@ -49,6 +49,7 @@ The most relevant of these principles, to the current discussion on endpoints, i
 \begin{enumerate}
     \item \textbf{Identify resources within endpoints that access that specific resource}. For instance, if the web API is an interface for a blogging service, and blog resources are identified by a \href{https://www.uuidgenerator.net/version4}{UUID4}, then the following URL path might be constructed to access the comments on a blog: \verb|/blogs/1a88249b-4b93-4b7f-b38c-d967af5a7993/comments|.
     \item \textbf{Manipulate resources through representations of the internal structure of said resources}. Continuing the blogging service example, when requesting a specific blog this might fetch a row from the service's database and then \textbf{serialise} it into a media type such as \verb|JSON|. For example, the request \verb|GET /blogs/1a88249b-4b93-4b7f-b38c-d967af5a7993| might return the following \verb|JSON| data:
+%TC:ignore
     \begin{minted}{json}
 {
     "id": "1a88249b-4b93-4b7f-b38c-d967af5a7993",
@@ -61,6 +62,7 @@ The most relevant of these principles, to the current discussion on endpoints, i
     ]
 }    
     \end{minted}
+%TC:endignore
     This serialised blog returns all the data necessary to manipulate it. For instance, to update the name of the blog, the author might send the following request: \\\verb|PUT /blogs/1a88249b-4b93-4b7f-b38c-d967af5a7993| with the body: \mintinline[breaklines]{json}{{"name": "RESTful Web APIs"}}. \cprotect\textit{Note how the body of the request can be a partial version of the data returned by \verb|GET|ting the same endpoint}.
 \end{enumerate}
 
