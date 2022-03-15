@@ -185,7 +185,7 @@ Array    = "[" [ ExpList ] "]" ;
 \end{figure}
 %TC:endignore
 
-After defining the grammar, I started manipulating it into AST nodes so that participle could generate a parser for the language. Below is a summary of all AST nodes and what they denote within the grammar. For a more in-depth description of the semantics of the grammar, see the \hyperref[appendix:sttp-specification]{specification}.
+After defining the grammar, I started manipulating it into AST nodes so that participle could generate a parser for the language. Below is a summary of all AST nodes and what they denote within the grammar.
 
 \begin{enumerate}
     \item \verb|JSON|: JSON literal.
@@ -260,7 +260,7 @@ After defining the grammar, I started manipulating it into AST nodes so that par
     \item \verb|Program|: the start non-terminal of the grammar. Matches a Block.
 \end{enumerate}
 
-The implementation of the AST within Go will be skipped as this has been discussed extensively when discussing the \hyperref[sec:four-function-calc]{four-function calculator} test program. The type definitions for each AST node within \verb|sttp| can be found within \verb|src/parser/ast.go|. However, an interesting feature of participle is that any AST node type definition can be given a \mintinline[breaklines]{go}{Pos lexer.Position} field. This will automatically be populated by the position (filename, line, column) of that non-terminal within the input. This was useful for returning \hyperref[sec:development-try-catch-throw-errors-context]{errors}.
+The implementation of the AST within Go will be skipped as this has been discussed extensively when discussing the \hyperref[sec:four-function-calc]{four-function calculator} test program. The type definitions for each AST node within \verb|sttp| can be found within \verb|src/parser/ast.go|. However, an interesting feature of participle is that any AST node type definition can be given a \mintinline[breaklines]{go}{Pos lexer.Position} field. This will automatically be populated by the position (filename, line, column) of that non-terminal within the input. This was useful for returning errors.
 
 I found that defining the behaviour of each AST node sequentially, allowed me to create \hyperref[appendix:sttp-examples]{examples} for that AST node easily. This allowed me to thoroughly test the behaviour of each AST node. These examples can be found in \verb|src/_examples| in the directories prefixed with: `\verb|example_|'.
 

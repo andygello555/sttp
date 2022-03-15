@@ -592,8 +592,22 @@ Parsing HTML to an \verb|sttp| Object makes it easier to use with \verb|sttp|'s 
 
 \cprotect\subsubsection{The \verb|batch| statement}
 
-% Batch statement intro
-When a Method Call is used within a \verb|batch| statement then it will be added to a `batch', which will then be executed in parallel at the end of the batch statement. This is described more in the \hyperref[sec:batching]{following} section.
+When a Method Call is used within a \verb|batch| statement then it will be added to a `batch', which will then be executed in parallel at the end of the batch statement. This has \hyperref[chap:eval-ast-nodes-batch-edge-cases]{many caveats} but is useful for making a lot of requests quickly.
+
+\begin{verbatim}
+responses = [];
+batch this
+    for i = 0; i < 50; i = i + 1 do
+        response = $GET("https://blog.service/api/blogs/" + i);
+        // We need to check if the response is not null. This
+        // is because in the first pass of the batch MethodCalls
+        // return null.
+        if response != null then
+            responses = responses + response;
+        end;
+    end;
+end;
+\end{verbatim}
 
 \cprotect\section{Using \verb|sttp| to test web APIs}
 \label{sec:hello-sttp-using-sttp-to-test}

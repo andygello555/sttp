@@ -1,3 +1,4 @@
+\immediate\write18{texcount -1 -q -relaxed -sum -merge \jobname.tex -out=\jobname.sum}
 \documentclass[]{full}
 \usepackage{amsthm}
 \usepackage{amsmath}
@@ -17,7 +18,7 @@
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage{pmboxdraw}
-% \usepackage{verbatim} % for verbatim environment and \verbatiminput
+\usepackage{verbatim} % for verbatim environment and \verbatiminput
 % \usepackage{sverb} % for \verbinput
 \usepackage[linguistics]{forest}
 \usepackage{tikz}
@@ -26,6 +27,7 @@
 \theoremstyle{definition}
 \newtheorem{definition}{Definition}[subsubsection]
 \addbibresource{ref.bib}
+\newcommand\wordcount{\inputminted[firstline=1, lastline=1, fontfamily=helvetica]{text}{\jobname.sum}}
 
 % \BeforeBeginEnvironment{minted}{\begin{tcolorbox}}%
 % \AfterEndEnvironment{minted}{\end{tcolorbox}}%
@@ -53,7 +55,7 @@ This report has been prepared on the basis of my own work. Where other published
 
 \vskip3em
 
-Word Count:
+Word Count: \wordcount ($text + headings + captions + equations$)
 
 \vskip3em
 
@@ -152,8 +154,6 @@ To fully understand the technical information within this part, it is recommende
 \chapter{Test Programs}
 \label{chap:test-programs}
 
-Before development began I wrote a few test programs to get back up to speed with programming in Go, as well as familiarising myself with participle.
-
 \import{sections}{2-1-four-func-calc.tex}
 
 \import{sections}{2-2-regex-minimiser.tex}
@@ -211,7 +211,6 @@ The \verb|Eval| method for the JSONPath AST node can be found in: \verb|src/pars
 \import{sections}{2-7-2-expressions.tex}
 
 % \import{sections}{2-7-3-if-elif-else.tex}
-
 \subsection{If-Elif-Else}
 
 \textit{Examples can be found in: }\cprotect{\hyperref[appendix:sttp-examples-3]}{\verb|src/_examples/example_03/example_03.sttp|}
@@ -233,21 +232,153 @@ Language: Heap rework + Symbol -> Value + IfElifElse
 \end{center}
 %TC:endignore
 
-The \verb|Eval| method for the \verb|IfElifElse| AST node can be found in: \verb|src/parser/ast.go:304|.
+The \verb|Eval| method for the \verb|IfElifElse| AST node can be found in: \verb|src/parser/eval.go:796|.
 
 % \import{sections}{2-7-4-iterations.tex}
+\subsection{Iteration}
+
+%TC:ignore
+\begin{center}
+    \textbf{Git commit}
+    \begin{minted}{markdown}
+Language: ReadOnly Values + Iterator + While, For, ForEach + examples
+- Updated example_03 with some more 'advanced' if-elif-else 
+  usage (06/12/2021 - 22:57:36)
+- Added ReadOnly flag to Value struct (06/12/2021 - 22:58:04)
+- Added ImutableValue error after adding ReadOnly flag (06/12/2021 - 22:58:39)
+- Added logic for While, For, and ForEach loops (06/12/2021 - 22:59:01)
+- Also added examples for each of these loops (06/12/2021 - 22:59:17)
+- Added the Iterator type to the data package which uses the container/heap
+  package to construct an iterator from a String, Object, or Array
+  Type (06/12/2021 - 23:01:13)
+- Removed some accidental printlns (06/12/2021 - 23:02:27)
+    \end{minted}
+    \vspace{-1em}
+    \tiny{December 6, 2021}
+\end{center}
+%TC:endignore
+
+There are three statements used for iteration within \verb|sttp|:
+
+\begin{enumerate}
+    \item \verb|While| (example found in \hyperref[appendix:sttp-examples-4]{here}): \verb|Eval| method can be found at: \verb|src/parser/eval.go:331|.
+    \item \verb|For| (example found in \hyperref[appendix:sttp-examples-5]{here}): \verb|Eval| method can be found at: \verb|src/parser/eval.go:375|.
+    \item \verb|ForEach| (example found in \hyperref[appendix:sttp-examples-6]{here}): \verb|Eval| method can be found at: \verb|src/parser/eval.go:434|.
+\end{enumerate}
 
 % \import{sections}{2-7-5-functions.tex}
+\subsection{Functions}
+
+\textit{Examples can be found in: }\cprotect{\hyperref[appendix:sttp-examples-7]}{\verb|src/_examples/example_07/example_07.sttp|}
+
+\begin{figure}[H]
+    \begin{center}
+        \textbf{Diary Entry}\\[0.5em]
+        \textit{``This week I worked some more on adding in features to sttp. Since last week I have added all iteration structures (while, for, foreach), as well as function definitions and function calls which required quite a major rework to the stack. Currently the CallStack.Call method will copy over references to all global values to the new stack frame’s heap as well as creating a “self” variable that is filled with the value pointed to by the function definition’s root property. On top of this I also implemented the test statement and the TestSuite, which allows for the execution of directory-based sttp test suites."}\\[0.5em]
+        \tiny{1:44 am on November 12, 2021}
+    \end{center}
+\end{figure}
+
+There are two AST nodes surrounding the evaluation and definition of functions:
+
+\begin{enumerate}
+    \item \verb|FunctionDefinition|: \verb|Eval| method can be found at: \verb|src/parser/eval.go:643|.
+    \item \verb|FunctionCall|: \verb|Eval| method can be found at: \verb|src/parser/eval.go:695|.
+\end{enumerate}
 
 % \import{sections}{2-7-6-http-methods.tex}
+\subsection{HTTP Methods}
+
+\textit{Examples can be found in: }\cprotect{\hyperref[appendix:sttp-examples-9]}{\verb|src/_examples/example_09/example_09.sttp|}
+
+%TC:ignore
+\begin{center}
+    \textbf{Git commit}
+    \begin{minted}{markdown}
+Language: Method.Call setup + tests + Resty integration
+- Chose the Resty library for internal HTTP method calls (12/12/2021 - 14:21:50)
+- Moved Method enum to eval package and created MethodParamType to describe the
+  accepted paramters for each HTTP method call (13/12/2021 - 17:12:19)
+- Added Method.Call which calls the appropriate Resty functions and encapsulates
+  the returned data within a data.Value (13/12/2021 - 17:13:01)
+- Added a test for Method.Call. This was done by copying the echo chamber web
+  server over to the _example folder (13/12/2021 - 17:14:04)
+    \end{minted}
+    \vspace{-1em}
+    \tiny{December 13, 2021}
+\end{center}
+%TC:endignore
+
+The \verb|MethodCall| AST node has a similar syntax to function calls but instead of having a user-defined function name it can only have one of the supported \verb|sttp| HTTP methods\textsuperscript{\cite{http_request_methods}}: \verb|GET|, \verb|HEAD|, \verb|POST|, \verb|PUT|, \verb|DELETE|, \verb|OPTIONS|, and \verb|PATCH|. The \verb|Eval| method for the \verb|MethodCall| can be found at: \verb|src/parser/eval.go:239|.
 
 % \import{sections}{2-7-7-testing.tex}
+\cprotect\subsection{Test suites and the \verb|test| statement}
+
+%TC:ignore
+\begin{center}
+    \textbf{Git commit}
+    \begin{minted}{markdown}
+Language: implementation of TestSuite capabilities + TestStatement
+- Set up test data structures as well as interfaces (11/12/2021 - 02:50:34)
+- TestStatement.Eval filled (11/12/2021 - 02:51:01)
+- Methods for test datastructures (11/12/2021 - 02:51:14)
+- Added TestSuite.Run + implemented TestStatement.Eval (12/12/2021 - 01:20:55)
+- Added TestSuite testing capabilities (12/12/2021 - 01:21:14)
+- Added an initial test suite test (12/12/2021 - 01:34:16)
+- Created interfaces for TestResults so that they could be used within parser
+  package (12/12/2021 - 01:34:50)
+    \end{minted}
+    \vspace{-1em}
+    \tiny{December 12, 2021}
+\end{center}
+%TC:endignore
+
+Test suites and \verb|test| statements are one of the most important features and motivations behind creating \verb|sttp|. They allow the programmer to construct test suites using a directory structure containing \verb|sttp| scripts. The practical usage of this can be found in the \hyperref[sec:hello-sttp-using-sttp-to-test]{first part} of this report.
+
+The \verb|Eval| method for the \verb|TestStatement| node can be found at: \verb|src/parser/eval.go:294|, whereas the logic regarding test suite evaluation can be found within: \verb|src/test.go|.
 
 % \import{sections}{2-7-8-try-catch-throw.tex}
+\cprotect\subsection{Try-Catch and \verb|throw|}
+
+\textit{Examples can be found in: }\cprotect{\hyperref[appendix:sttp-examples-10]}{\verb|src/_examples/example_10/example_10.sttp|}
+
+As well as returning a \verb|Value|, \verb|Eval| also can return an \mintinline[breaklines]{go}{error}. Each implementor of \verb|evalNode| will pass any errors that occur within that node, or from evaluating any lower down nodes, up to the parent node (the node that called the current node's \verb|Eval| method). This is true for all nodes apart from the \verb|TryCatch| node, which will instead wrap any error that occurs within its \verb|try| \verb|Block|, store it within the given identifier, then execute the \verb|Block| nested within the \verb|catch as| statement.
+
+The \verb|TryCatch| node's \verb|Eval| can be found at: \verb|src/parser/eval.go:612|, whereas the error handling itself resides mostly within the \verb|src/errors/| package.
 
 \import{sections}{2-7-9-batch-statement.tex}
 
 % \import{sections}{2-7-10-builtins.tex}
+\section{Builtins}
+\label{sec:development-builtins}
+
+%TC:ignore
+\begin{center}
+    \textbf{Git commit}
+    \begin{minted}{markdown}
+Language: rearranging examples + builtin function call + testing
+- Removed HTTP methods unsupported by Resty (13/12/2021 - 20:51:41)
+- Made TestTestSuite_Run test more leniant in case ReadDir returns files in
+  different order (13/12/2021 - 20:54:22)
+- Implemented builtin functions on the FunctionCall.Eval end
+  (13/12/2021 - 20:54:47)
+- Added a builtins map and a function to access this map externally
+  (13/12/2021 - 20:55:17)
+- Added Stdout and Stderr fields to sttp VM as well as getters for these
+  fields in the VM interface (13/12/2021 - 20:59:17)
+- Also added stdout and stderr params to TestSuite.Run (13/12/2021 - 20:59:38)
+- Restructuring main_test examples by moving them to individual directories
+  with stdout, stderr and heap files (13/12/2021 - 21:00:50)
+- Made Method.Call tests more stable by using only one cookie, as sometimes
+  the cookie order is different in the response from the webserver
+  (13/12/2021 - 21:55:06)
+    \end{minted}
+    \vspace{-1em}
+    \tiny{December 13, 2021}
+\end{center}
+%TC:endignore
+
+The number of builtin functions within \verb|sttp| at the time of writing is limited. This could be because many of the actions reserved for builtin functions in other languages, such as a length function, can be done through operators. All the builtins are stored within a lookup that is initialised at interpreter runtime within the \verb|src/parser/functions.go| file. These functions and their semantics are discussed further within the specification found within \verb|reports/specification_for_language/|. Unlike \verb|MethodCall|s builtin functions utilise the same AST node as \verb|FunctionCall|s so are evaluated through the same \verb|Eval| method (found in \verb|src/parser/eval.go:695|).
 
 \import{chapters}{7-evaluation.tex}
 
@@ -257,6 +388,7 @@ The \verb|Eval| method for the \verb|IfElifElse| AST node can be found in: \verb
 
 \appendix
 
+%TC:ignore
 \cprotect\chapter{\verb|sttp| Examples}
 \label{appendix:sttp-examples}
 
@@ -264,95 +396,111 @@ The \verb|Eval| method for the \verb|IfElifElse| AST node can be found in: \verb
 
 \verb|sttp| examples that are run as unit tests for the \verb|sttp| interpreter. Please read the \verb|README| to find out how to build/run the \verb|sttp| interpreter from source. The expected stdout, stderr, test output, and error output will be located within the example's directory, \textbf{if it has an output available}.
 
-\cprotect\textit{Note: some of these examples require the echo-chamber web API to be running alongside the \verb|sttp| interpreter. This can be found in \verb|src/_examples/echo_chamber/main.js|, and can be run using \verb|node|.}
+\cprotect\textit{Note: some of these examples require the echo-chamber web API to be running alongside the \verb|sttp| interpreter. This can be found in \verb|src/_examples/echo_chamber/main.js|, and can be run using \verb|node main.js|.}
 
 \section{Example 1 - Catch all}
 \label{appendix:sttp-examples-1}
-%TC:ignore
+
+A general catch all example. It first showcases the valid value types within \verb|sttp| by defining an Object literal containing them. It then goes along to define a function that is a member of the Object defined previously. This function showcases parameter application within \verb|sttp|, as well as traditional \verb|for| loops and if statements. Then \verb|try-this-catch-as| and \verb|batch| statements are introduced by the way of a for-each loop and the \verb|throw| statement. \verb|sttp|'s whitespace independence is then showcased, with the \verb|test| statement introduction following it.
+
 \inputminted[autogobble, breaklines, tabsize=4]{text}{../../src/_examples/example_01/example_01.sttp}
-%TC:endignore
 
 \section{Example 2 - JSONPath}
 \label{appendix:sttp-examples-2}
-%TC:ignore
+
+This example showcases the ways of getting and setting values via JSONPath, as well as examples of how the sparse-fill technique used by \verb|sttp| works.
+
 \inputminted[autogobble, breaklines, tabsize=4]{text}{../../src/_examples/example_02/example_02.sttp}
-%TC:endignore
 
 \section{Example 3 - IfElifElse}
 \label{appendix:sttp-examples-3}
-%TC:ignore
+
+Showcases if-elif-else statements as well as testing the hanging else ambiguity that should be `fixed' using longest match.
+
 \inputminted[autogobble, breaklines, tabsize=4]{text}{../../src/_examples/example_03/example_03.sttp}
-%TC:endignore
 
 \section{Example 4 - While}
 \label{appendix:sttp-examples-4}
-%TC:ignore
+
+Showcasing while-loops as well as the \verb|break| statement within while-loops.
+
 \inputminted[autogobble, breaklines, tabsize=4]{text}{../../src/_examples/example_04/example_04.sttp}
-%TC:endignore
 
 \section{Example 5 - For}
 \label{appendix:sttp-examples-5}
-%TC:ignore
+
+A classic implementation of FizzBuzz using \verb|sttp|'s traditional for-loop. As with the example for while-loops, it also tests the behaviour of the \verb|break| statement.
+
 \inputminted[autogobble, breaklines, tabsize=4]{text}{../../src/_examples/example_05/example_05.sttp}
-%TC:endignore
 
 \section{Example 6 - ForEach}
 \label{appendix:sttp-examples-6}
-%TC:ignore
+
+Showcases the for-each-loop. This can have different behaviours when iterating over different values. The first loop showcases the behavior when iterating over Strings, the second: Arrays, the third: Objects, the fourth: literal values and the fifth: any other value.
+
 \inputminted[autogobble, breaklines, tabsize=4]{text}{../../src/_examples/example_06/example_06.sttp}
-%TC:endignore
 
 \section{Example 7 - FunctionDefinition and FunctionCall}
 \label{appendix:sttp-examples-7}
-%TC:ignore
+
+When I first implemented function definitions and invocation in \verb|sttp| I created this example to test certain tricky expected behaviours. For instance, the copying of Function values to other places, and the definition of functions within other functions.
+
 \inputminted[autogobble, breaklines, tabsize=4]{text}{../../src/_examples/example_07/example_07.sttp}
-%TC:endignore
 
 \section{Example 8 - Recursive FunctionCalls}
 \label{appendix:sttp-examples-8}
-%TC:ignore
+
+When implementing function invocation I was encountering a lot of bugs related to recursive function calls. I created this example to use as a test, and it involves defining two recursive functions to find the n\textsuperscript{th} Fibonacci number. The first definition is fairly standard implementation of this function, whereas the second makes use of the behaviours of function definition copying within \verb|sttp|.
+
 \inputminted[autogobble, breaklines, tabsize=4]{text}{../../src/_examples/example_08/example_08.sttp}
-%TC:endignore
 
 \section{Example 9 - MethodCalls}
 \label{appendix:sttp-examples-9}
-%TC:ignore
+
+Showcases all the available signatures for HTTP requests within \verb|sttp| by invoking each. The content from the responses of these requests is added to an Array.
+
 \inputminted[autogobble, breaklines, tabsize=4]{text}{../../src/_examples/example_09/example_09.sttp}
-%TC:endignore
 
 \section{Example 10 - TryCatch}
 \label{appendix:sttp-examples-10}
-%TC:ignore
+
+Showcases the \verb|try-this-catch-as| statement, as well as the \verb|throw| statement.
+
 \inputminted[autogobble, breaklines, tabsize=4]{text}{../../src/_examples/example_10/example_10.sttp}
-%TC:endignore
 
 \section{Example 11 - Batch}
 \label{appendix:sttp-examples-11}
-%TC:ignore
+
+Showcases the \verb|batch| statement as well as some of the edge cases that the interpreter will through an error for. This is discussed further in the \hyperref[chap:eval-ast-nodes-batch-edge-cases]{development} chapter. This example then goes on to test more peculiar edge cases such as batching recursive function calls that contain \verb|MethodCall|s.
+
 \inputminted[autogobble, breaklines, tabsize=4]{text}{../../src/_examples/example_11/example_11.sttp}
-%TC:endignore
 
 \section{Example 12 - Free builtin}
 \label{appendix:sttp-examples-12}
-%TC:ignore
+
+Showcases the \verb|free| builtin, which is used to `deallocate' variables from the current frame's heap. This makes use of the uncomputed \verb|Expression|s that are passed to each \verb|BuiltinFunction| instead of computed values.
+
 \inputminted[autogobble, breaklines, tabsize=4]{text}{../../src/_examples/example_12/example_12.sttp}
-%TC:endignore
 
 \section{Example 13 - Find builtins}
 \label{appendix:sttp-examples-13}
-%TC:ignore
+
+Showcases the find builtin functions: \verb|find|, \verb|find_all|, and \verb|find_all_parents|. These can be used for web scraping and this example illustrates the way they can be used to extract certain information from HTML that is parsed to an \verb|sttp| Object.
+
 \inputminted[autogobble, breaklines, tabsize=4]{text}{../../src/_examples/example_13/example_13.sttp}
-%TC:endignore
 
 \section{Example 14 - Escape characters}
 \label{appendix:sttp-examples-14}
-%TC:ignore
+
+This serves more as a test for escape characters within Strings than as an example.
+
 \inputminted[autogobble, breaklines, tabsize=4]{text}{../../src/_examples/example_14/example_14.sttp}
-%TC:endignore
 
 \section{Example 15 - Breaking and returning}
 \label{appendix:sttp-examples-15}
-%TC:ignore
+
+Used as a test for some edge cases I discovered that caused \verb|return| and \verb|break| statements within \verb|try-this-catch-as| statements to be caught as an error.
+
 \inputminted[autogobble, breaklines, tabsize=4]{text}{../../src/_examples/example_15/example_15.sttp}
 %TC:endignore
 

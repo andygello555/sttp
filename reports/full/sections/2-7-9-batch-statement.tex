@@ -62,7 +62,7 @@ The \verb|batch| statement can wrap any \verb|Block| of code. It executes the wr
     \item Executing the nested \verb|Block| again, whilst replacing each instance of the \verb|MethodCall| AST node with the next result from the result queue. These results will be dequeued from the queue in the order that they were batched in the first pass.
 \end{enumerate}
 
-A more in-depth explanation of these steps is explained within the \hyperref[sec:batching]{specification}. The data-structure used to achieve this is the \verb|BatchSuite| type. This stores a list of jobs in the order that the \verb|MethodCall|s were encountered during the execution of the first pass. Along with this list, there is a counter for the current ID to use for the next enqueued job, as well as a pointer back to the \verb|Batch| AST node. This work is then executed using a pool of goroutines, the number of which is decided by the number of incoming jobs.
+The data-structure used to achieve this is the \verb|BatchSuite| type. This stores a list of jobs in the order that the \verb|MethodCall|s were encountered during the execution of the first pass. Along with this list, there is a counter for the current ID to use for the next enqueued job, as well as a pointer back to the \verb|Batch| AST node. This work is then executed using a pool of goroutines, the number of which is decided by the number of incoming jobs.
 
 %TC:ignore
 \inputminted[firstline=72, lastline=78, autogobble, breaklines, tabsize=4]{go}{../../src/batch.go}
@@ -78,6 +78,7 @@ A more in-depth explanation of these steps is explained within the \hyperref[sec
 
 Here, the \verb|methodWorker| function acts as a worker `thread' which takes a readable channel (\mintinline{go}{<-chan}) of jobs as well as a writeable channel (\mintinline{go}{chan<-}) of results. This worker function is then spawned off \verb|min(MaxWorkers, numJobs)| times (where \verb|MaxWorkers = 20|). The jobs within \verb|BatchSuite.Batch| are then enqueued in the jobs queue. We then read from the results queue, adding each result into a \verb|BatchResults| instance. \verb|BatchResults| implements \verb|heap.Interface| that prioritises results by their ID, effectively sorting the results in the order in which they were added to \verb|BatchSuite.Batch|. The complexity of this operation is: $O(n \log n)$. The \verb|BatchResults| instance's reference will be stored within the \verb|VM|, and will act as the main way of checking whether the batch is currently in its second pass.
 
+\label{chap:eval-ast-nodes-batch-edge-cases}
 \begin{verbatim}
 // Example 1: A batch statement within a batch statement.
 batch this

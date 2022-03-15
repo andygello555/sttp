@@ -56,7 +56,7 @@ type Thompsons interface {
 \end{minted}
 %TC:endignore
 
-The \verb|Thompsons| instance method takes a pointer to a \verb|Graph| type, which is represented as an adjacency list internally, and returns a start node and an end node. This is because each one of Thompson's constructions modifies the NFA and can also introduce a new start point and end point to the NFA. For instance, in the case of alternation (\verb+"|"+) the new start and end point will be set to the created nodes that join to the existing nodes using the epsilon transition.
+The \verb|Thompsons| instance method takes a pointer to a \verb|Graph| type, which is an adjacency list, and returns a start node and an end node. This is because when one of Thompson's constructions modifies the NFA it can introduce a new start point and end point to the NFA. For instance, in the case of alternation (\verb+"|"+) the new start and end point will be set to the created nodes that join to the existing nodes using the epsilon transition.
 
 \begin{figure}[!h]
     \centering
@@ -102,24 +102,25 @@ In the example shown above, the \verb|Term| node will be executed first. This wi
 \subsection{Subset Construction}
 \cprotect\textit{Source located in: \verb|test_programs/thompsons/subset.go|}
 
-After the NFA has been produced, the \verb|Graph| instance mentioned above is then passed to the subset construction algorithm to construct a (non-minimal) DFA. It is important to note that the \verb|AdjacencyList| type, that is used within the \verb|Graph| type, has the signature:
+After the NFA has been produced, the \verb|Graph| instance mentioned above is then passed to the subset construction algorithm to construct a (non-minimal) DFA. A type used extensively whilst calculating the subset construction is the \verb|StateSetExistence| type. \verb|StateSetExistence| denotes a unique set of states, and is used when calculating the possible inputs accepted by the regular expression as well as the epsilon closure.
 
-%TC:ignore
-\begin{minted}{go}
-type AdjacencyList map[StateKey][]Edge
+% It is important to note that the \verb|AdjacencyList| type, that is used within the \verb|Graph| type, has the signature:
 
-// StateKey represents the key used within AdjacencyLists.
-// It wraps both State and StateSet to provide a string key usable in maps.
-type StateKey interface {
-	// Key generates a key from a State or StateSet.
-	Key() string
-}
-\end{minted}
-%TC:endignore
+% %TC:ignore
+% \begin{minted}{go}
+% type AdjacencyList map[StateKey][]Edge
 
-The \verb|StateKey| interface is used within the \verb|AdjacencyList| type so that both a single state (represented as the \verb|State|), and a set of states (represented as the \verb|StateSet| type) can be easily hashed and used within Go's native \mintinline[breaklines]{go}{map} type. This is useful when carrying out the subset construction, as it merges multiple states from the NFA into a smaller number of sets of states.
+% // StateKey represents the key used within AdjacencyLists.
+% // It wraps both State and StateSet to provide a string key usable in maps.
+% type StateKey interface {
+% 	// Key generates a key from a State or StateSet.
+% 	Key() string
+% }
+% \end{minted}
+% %TC:endignore
 
-Another type used extensively whilst calculating the subset construction is the \verb|StateSetExistence| type. \verb|StateSetExistence| denotes a unique set of states, and is used when calculating the possible inputs accepted by the regular expression as well as the epsilon closure.
+% The \verb|StateKey| interface is used within the \verb|AdjacencyList| type so that both a single state (represented as the \verb|State|), and a set of states (represented as the \verb|StateSet| type) can be easily hashed and used within Go's native \mintinline[breaklines]{go}{map} type. This is useful when carrying out the subset construction, as it merges multiple states from the NFA into a smaller number of sets of states.
+
 
 %TC:ignore
 \begin{minted}{go}
@@ -145,6 +146,4 @@ Dead State minimisation requires the DFA to translated into a transition table. 
 
 The \verb|MergedStates| type is important to the execution of the Dead State minimisation algorithm. This is because it includes an instance method that can check if the given merged state differs from the instanced merged state, which is the main condition that must hold for Dead State minimisation to continue. Once this instance method returns \mintinline[breaklines]{go}{false}, this means that Dead State minimisation is complete and the DFA is minimal.
 
-The source code for the algorithm itself is implemented as an instance method for the \verb|TransitionTable| type, and can be found in the \verb|test_programs/thompsons/minimisation.go| file.
-
-More information on how to run the regex minimiser can be found in the \verb|README|.
+The source code for the algorithm itself is implemented as an instance method for the \verb|TransitionTable| type, and can be found in the \verb|test_programs/thompsons/minimisation.go| file. More information on how to run the regex minimiser can be found in the \verb|README|.
