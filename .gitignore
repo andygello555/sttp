@@ -26,4 +26,5 @@
 *.blg
 *.run.xml
 *.toc
+*.sum
 _minted*/
