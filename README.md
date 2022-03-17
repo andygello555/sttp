@@ -2,6 +2,10 @@
 # Individual Project 2021 - Jakab Zeller
 
 - [Abstract](#abstract)
+- [Submission directory structure](#submission-directory-structure)
+  - [How to run `reports/full/blog_api/`](#how-to-run-reportsfullblog_api)
+    - [`reports/full/blog_api/blog_api_server/`](#reportsfullblog_apiblog_api_server)
+    - [`reports/full/blog_api/blog_api_tests`](#reportsfullblog_apiblog_api_tests)
 - [`sttp`](#sttp)
   - [Libraries used](#libraries-used)
   - [How to use](#how-to-use)
@@ -25,6 +29,92 @@
 
 The idea for creating a simple scripting language for the development and testing of Web APIs came from my use, reliance and creation of such APIs in my work life as well as in my spare time. I’ve often found the available tools for such development (such as Postman or Insomnia) quite limited when it comes to control-flow before or after requesting a resource from an API. Thus, the idea of a scripting language for this very purpose came about.
 The language will include variable declaration/definition, control-flow (if and for statements), function definitions, short builtin functions for every HTTP method, and JSON manipulation via json-path. The language will also be dynamically typed with values being stored as JSON parsable strings. My hopes are that this will make working with JSON Web APIs (the standard when it comes to popular Web APIs) easier and more intuitive. This means that the only supported “types” will be strings, integers, floats, JSON objects and lists.
+
+## Submission directory structure
+
+```
+IndividualProject_2021_Jakab.Zeller
+├── documents - PDF versions of the reports found in reports/
+├── reports - Reports written towards my final project
+│   ├── context_free_grammars_and_manual_procedures - 1st report on theory,
+│   │                                                 which forms part of
+│   │                                                 my interim report
+│   ├── derivations_idioms_associativity_priority - 2nd report on theory,
+│   │                                               which forms part of
+│   │                                               my interim report
+│   ├── full - This report
+│   │   └── blog_api
+│   │       ├── blog_api_server - The REST API server used in part 1
+│   │       └── blog_api_tests - The sttp test suite for the above server
+│   │           ├── 01_topics
+│   │           ├── 02_blogs
+│   │           ├── 03_comments
+│   │           └── 04_cleanup
+│   ├── interim - Interim report
+│   └── specification_for_language - The specification for sttp
+├── src - The source code for sttp
+│   ├── _examples - The examples used to test sttp (included within the
+│   │   │           appendix of this report)
+│   │   ├── echo_chamber - The echo chamber web API used during testing
+│   │   │                  (copy from test_programs/test-web-api/)
+│   │   ├── example_01
+│   │   ├── example_02
+│   │   ├── example_03
+│   │   ├── example_04
+│   │   ├── example_05
+│   │   ├── example_06
+│   │   ├── example_07
+│   │   ├── example_08
+│   │   ├── example_09
+│   │   ├── example_10
+│   │   ├── example_11
+│   │   ├── example_12
+│   │   ├── example_13
+│   │   ├── example_14
+│   │   ├── example_15
+│   │   └── test_suites - Examples for testing test suites
+│   │       ├── example_01
+│   │       └── example_02
+│   ├── data
+│   ├── errors
+│   ├── eval
+│   └── parser
+└── test_programs - The test programs written towards my final project
+    ├── four_func_calc - A four-function calculator
+    ├── test-web-api - The echo chamber web API used to test sttp
+    └── thompsons - The regex minimiser
+```
+
+### How to run `reports/full/blog_api/`
+
+This directory contains two sub-directories:
+
+- `blog_api_server`: a Django REST web API that will be tested by the test suite contained within `blog_api_tests`. The implementation of this will not be discussed.
+- `blog_api_tests`: the `sttp` test suite used to test the web API.
+
+#### `reports/full/blog_api/blog_api_server/`
+
+How to install and run the web server (UNIX based console commands).
+
+```shell
+cd reports/full/blog_api/blog_api_server/
+# Create a python3.10 virtual environment and activate it
+python3.10 -m venv .venv
+source .venv/bin/activate
+# Install dependencies
+pip3 install -r requirements.txt
+# Will start a gunicorn web server with 4 workers, each with 4 threads
+gunicorn --reload --threads 4 -w 4 --log-level debug blog_api_server.wsgi
+```
+
+#### `reports/full/blog_api/blog_api_tests`
+
+To run the test suite for `blog_api_server` it is recommended that you build an `sttp` executable. This can be done by following [this](#building-an-executable-and-running-it) section. After this, copy or move the executable to `reports/full/blog_api/`, then run the tests using the following command:
+
+```shell
+cd reports/full/blog_api/
+./sttp blog_api_tests
+```
 
 ## `sttp`
 
