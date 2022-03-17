@@ -137,7 +137,64 @@ The reason behind this split was so that readers can get a reasonable understand
 
 \section{Specification}
 
-The specification for \verb|sttp| can be found in \verb|reports/specification_for_language/|. This is to be read as a more in-depth user guide to \verb|sttp|. Throughout the report this specification might referenced, in which case it can be used to supplement the material within the report.
+The specification for \verb|sttp| can be found in \verb|documents/specification_for_language.pdf|. This is to be read as a more in-depth user guide to \verb|sttp|. Throughout the report this specification might referenced, in which case it can be used to supplement the material within the report.
+
+\section{Submission directory structure}
+
+The below directory structure shows the directories within my submission.
+
+\begin{verbatim}
+IndividualProject_2021_Jakab.Zeller
+├── documents - PDF versions of the reports found in reports/
+├── reports - Reports written towards my final project
+│   ├── context_free_grammars_and_manual_procedures - 1st report on theory,
+│   │                                                 which forms part of
+│   │                                                 my interim report
+│   ├── derivations_idioms_associativity_priority - 2nd report on theory,
+│   │                                               which forms part of
+│   │                                               my interim report
+│   ├── full - This report
+│   │   └── blog_api
+│   │       ├── blog_api_server - The REST API server used in part 1
+│   │       └── blog_api_tests - The sttp test suite for the above server
+│   │           ├── 01_topics
+│   │           ├── 02_blogs
+│   │           ├── 03_comments
+│   │           └── 04_cleanup
+│   ├── interim - Interim report
+│   └── specification_for_language - The specification for sttp
+├── src - The source code for sttp
+│   ├── _examples - The examples used to test sttp (included within the
+│   │   │           appendix of this report)
+│   │   ├── echo_chamber - The echo chamber web API used during testing
+│   │   │                  (copy from test_programs/test-web-api/)
+│   │   ├── example_01
+│   │   ├── example_02
+│   │   ├── example_03
+│   │   ├── example_04
+│   │   ├── example_05
+│   │   ├── example_06
+│   │   ├── example_07
+│   │   ├── example_08
+│   │   ├── example_09
+│   │   ├── example_10
+│   │   ├── example_11
+│   │   ├── example_12
+│   │   ├── example_13
+│   │   ├── example_14
+│   │   ├── example_15
+│   │   └── test_suites - Examples for testing test suites
+│   │       ├── example_01
+│   │       └── example_02
+│   ├── data
+│   ├── errors
+│   ├── eval
+│   └── parser
+└── test_programs - The test programs written towards my final project
+    ├── four_func_calc - A four-function calculator
+    ├── test-web-api - The echo chamber web API used to test sttp
+    └── thompsons - The regex minimiser
+\end{verbatim}
 
 \cprotect\part{Meet \verb|sttp|}
 
@@ -378,7 +435,7 @@ Language: rearranging examples + builtin function call + testing
 \end{center}
 %TC:endignore
 
-The number of builtin functions within \verb|sttp| at the time of writing is limited. This could be because many of the actions reserved for builtin functions in other languages, such as a length function, can be done through operators. All the builtins are stored within a lookup that is initialised at interpreter runtime within the \verb|src/parser/functions.go| file. These functions and their semantics are discussed further within the specification found within \verb|reports/specification_for_language/|. Unlike \verb|MethodCall|s builtin functions utilise the same AST node as \verb|FunctionCall|s so are evaluated through the same \verb|Eval| method (found in \verb|src/parser/eval.go:695|).
+The number of builtin functions within \verb|sttp| at the time of writing is limited. This could be because many of the actions reserved for builtin functions in other languages, such as a length function, can be done through operators. All the builtins are stored within a lookup that is initialised at interpreter runtime within the \verb|src/parser/functions.go| file. These functions and their semantics are discussed further within the specification found in \verb|documents/specification_for_language.pdf|. Unlike \verb|MethodCall|s builtin functions utilise the same AST node as \verb|FunctionCall|s so are evaluated through the same \verb|Eval| method (found in \verb|src/parser/eval.go:695|).
 
 \import{chapters}{7-evaluation.tex}
 
