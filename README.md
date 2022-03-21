@@ -5,7 +5,7 @@
 - [Submission directory structure](#submission-directory-structure)
   - [How to run `reports/full/blog_api/`](#how-to-run-reportsfullblog_api)
     - [`reports/full/blog_api/blog_api_server/`](#reportsfullblog_apiblog_api_server)
-    - [`reports/full/blog_api/blog_api_tests`](#reportsfullblog_apiblog_api_tests)
+    - [`reports/full/blog_api/blog_api_tests/`](#reportsfullblog_apiblog_api_tests)
 - [`sttp`](#sttp)
   - [Libraries used](#libraries-used)
   - [How to use](#how-to-use)
@@ -34,7 +34,18 @@ The language will include variable declaration/definition, control-flow (if and 
 
 ```
 IndividualProject_2021_Jakab.Zeller
+├── README.md - Contains information on how to run sttp and the test
+│               programs
+├── COPYING - GPL3.0: does not clash with any 3rd party libraries
+│
 ├── documents - PDF versions of the reports found in reports/
+│   ├── context_free_languages_parser_generators.pdf
+│   ├── derivations_idioms_associativity_priority.pdf
+│   ├── full.pdf
+│   ├── interim.pdf
+│   ├── project_plan.pdf
+│   └── specification_for_language.pdf
+│
 ├── reports - Reports written towards my final project
 │   ├── context_free_grammars_and_manual_procedures - 1st report on theory,
 │   │                                                 which forms part of
@@ -52,6 +63,7 @@ IndividualProject_2021_Jakab.Zeller
 │   │           └── 04_cleanup
 │   ├── interim - Interim report
 │   └── specification_for_language - The specification for sttp
+│
 ├── src - The source code for sttp
 │   ├── _examples - The examples used to test sttp (included within the
 │   │   │           appendix of this report)
@@ -79,6 +91,7 @@ IndividualProject_2021_Jakab.Zeller
 │   ├── errors
 │   ├── eval
 │   └── parser
+│
 └── test_programs - The test programs written towards my final project
     ├── four_func_calc - A four-function calculator
     ├── test-web-api - The echo chamber web API used to test sttp
@@ -107,7 +120,7 @@ pip3 install -r requirements.txt
 gunicorn --reload --threads 4 -w 4 --log-level debug blog_api_server.wsgi
 ```
 
-#### `reports/full/blog_api/blog_api_tests`
+#### `reports/full/blog_api/blog_api_tests/`
 
 To run the test suite for `blog_api_server` it is recommended that you build an `sttp` executable. This can be done by following [this](#building-an-executable-and-running-it) section. After this, copy or move the executable to `reports/full/blog_api/`, then run the tests using the following command:
 
