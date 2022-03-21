@@ -63,7 +63,7 @@ Student Name: \studentname
 
 \vskip3em
 
-Date of Submission: 2022
+Date of Submission: 21/03/2022
 
 \vskip3em
 
@@ -80,7 +80,7 @@ Signature: \includegraphics[height=4em]{assets/signature.jpeg}
 
 \begin{abstract}
 
-Although there exists many tools for testing and developing web-based APIs, there are not many solutions which provide full user freedom when it comes to control-flow. This project proposes a solution in the form of a dynamically typed, interpreted, scripting language with features enabling the use of web-based APIs `out-of-the-box', as well as other helpful tooling.
+Although there exists many tools/HTTP clients for testing and developing server-side web APIs, there are not many solutions which provide full user freedom when it comes to control-flow. This project proposes a solution in the form of a dynamically typed, interpreted, scripting language with features enabling the use of web APIs `out-of-the-box', as well as other helpful tooling for testing.
 
 \end{abstract}
 \newpage
@@ -131,21 +131,24 @@ As I enjoyed learning the theory behind programming language design and engineer
 
 \chapter{How to read this report}
 
-This report is split into two broad parts. The first reads as a quick introduction to web-APIs and how to use them, as well as how the \verb|sttp| programming language fits into this space. It also includes examples and explanations of how to program in \verb|sttp|, and outlines the problems that it solves. The second, reads as an in-depth technical overview of \verb|sttp|'s development with specific details on the data-structures and algorithms used. This section will dive into specific source-code listings within the interpreter, and it assumes an intermediate knowledge of programming in Go.
-
-The reason behind this split was so that readers can get a reasonable understanding of how \verb|sttp| might work internally, through the real-world problems that it solves. It also enables those with more general expertise in computer science to get to grips with \verb|sttp| quicker.
-
-\section{Specification}
-
-The specification for \verb|sttp| can be found in \verb|documents/specification_for_language.pdf|. This is to be read as a more in-depth user guide to \verb|sttp|. Throughout the report this specification might referenced, in which case it can be used to supplement the material within the report.
-
 \section{Submission directory structure}
 
-The below directory structure shows the directories within my submission.
+The below directory structure shows the important directories and files within my submission.
 
 \begin{verbatim}
 IndividualProject_2021_Jakab.Zeller
+├── README.md - Contains information on how to run sttp and the test
+│               programs
+├── COPYING - GPL3.0: does not clash with any 3rd party libraries
+│
 ├── documents - PDF versions of the reports found in reports/
+│   ├── context_free_languages_parser_generators.pdf
+│   ├── derivations_idioms_associativity_priority.pdf
+│   ├── full.pdf
+│   ├── interim.pdf
+│   ├── project_plan.pdf
+│   └── specification_for_language.pdf
+│
 ├── reports - Reports written towards my final project
 │   ├── context_free_grammars_and_manual_procedures - 1st report on theory,
 │   │                                                 which forms part of
@@ -163,6 +166,7 @@ IndividualProject_2021_Jakab.Zeller
 │   │           └── 04_cleanup
 │   ├── interim - Interim report
 │   └── specification_for_language - The specification for sttp
+│
 ├── src - The source code for sttp
 │   ├── _examples - The examples used to test sttp (included within the
 │   │   │           appendix of this report)
@@ -190,11 +194,22 @@ IndividualProject_2021_Jakab.Zeller
 │   ├── errors
 │   ├── eval
 │   └── parser
+│
 └── test_programs - The test programs written towards my final project
     ├── four_func_calc - A four-function calculator
     ├── test-web-api - The echo chamber web API used to test sttp
     └── thompsons - The regex minimiser
 \end{verbatim}
+
+\section{Overview of this report}
+
+This report is split into two broad parts. The first reads as a quick introduction to web-APIs and how to use them, as well as how the \verb|sttp| programming language fits into this space. It also includes examples and explanations of how to program in \verb|sttp|, and outlines the problems that it solves. The second, reads as an in-depth technical overview of \verb|sttp|'s development with specific details on the data-structures and algorithms used. This section will dive into specific source-code listings within the interpreter, and it assumes an intermediate knowledge of programming in Go.
+
+The reason behind this split was so that readers can get a reasonable understanding of how \verb|sttp| might work internally, through the real-world problems that it solves. It also enables those with more general expertise in computer science to get to grips with \verb|sttp| quicker.
+
+\section{Specification}
+
+The specification for \verb|sttp| can be found in \verb|documents/specification_for_language.pdf|. This is to be read as a more in-depth user guide to \verb|sttp|. Throughout the report this specification might referenced, in which case it can be used to supplement the material within the report.
 
 \cprotect\part{Meet \verb|sttp|}
 
