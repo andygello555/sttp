@@ -172,7 +172,7 @@ func TestVM_Eval(t *testing.T) {
 	for testNo, e := range examples {
 		if skipPtr == len(skip) || testNo != skip[skipPtr] {
 			var stdout, stderr strings.Builder
-			vm := New(nil, &stdout, &stderr, os.Stdout)
+			vm := New(false, nil, &stdout, &stderr, os.Stdout)
 			err, result := vm.Eval(e.name, e.script)
 
 			if testing.Verbose() {
@@ -518,7 +518,7 @@ func batchBenchmarkSetup(i int) []interface{} {
 	for l := 0; l <= i; l++ {
 		expectedStdout.WriteString(fmt.Sprintf("{\"code\":null,\"headers\":{\"accept-encoding\":\"gzip\",\"host\":\"127.0.0.1:3000\",\"user-agent\":\"go-resty/2.7.0 (https://github.com/go-resty/resty)\"},\"method\":\"GET\",\"query_params\":{},\"url\":\"http://127.0.0.1:3000/%d\",\"version\":\"1.1\"}\n", l))
 	}
-	return []interface{}{i, expectedStdout.String(), New(nil, &null, &null, ioutil.Discard)}
+	return []interface{}{i, expectedStdout.String(), New(false, nil, &null, &null, ioutil.Discard)}
 }
 
 func benchmarkNoBatch(args []interface{}, b *testing.B) {

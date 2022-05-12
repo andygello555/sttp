@@ -34,9 +34,12 @@ type VM struct {
 	// BatchResults contains the results of the executed BatchSuite. If nil then the VM is not currently in a 
 	// parser.Batch statement, or the BatchSuite has not yet been executed.
 	BatchResults heap.Interface
+	// Whether the VM is running in REPL mode. This will not remove the bottommost stack frame at the end of 
+	// parser.Program Eval().
+	REPL         bool
 }
 
-func New(testResults *TestResults, stdout io.Writer, stderr io.Writer, debug io.Writer) *VM {
+func New(repl bool, testResults *TestResults, stdout io.Writer, stderr io.Writer, debug io.Writer) *VM {
 	cs := make(CallStack, 0)
 
 	if stdout == nil { stdout = os.Stdout }
@@ -51,6 +54,7 @@ func New(testResults *TestResults, stdout io.Writer, stderr io.Writer, debug io.
 		Debug: debug,
 		Batch: nil,
 		BatchResults: nil,
+		REPL: repl,
 	}
 }
 
@@ -156,4 +160,8 @@ func (vm *VM) CreateBatch(statement *parser.Batch) {
 // ExecuteBatch will execute the batched MethodCalls and store them in BatchResults.
 func (vm *VM) ExecuteBatch() {
 	vm.BatchResults = vm.Batch.Execute(-1)
+}
+
+func (vm *VM) CheckREPL() bool {
+	return vm.REPL
 }

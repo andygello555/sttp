@@ -126,7 +126,7 @@ As hinted to \hyperref[sec:data-structures-heap]{above}, the design of the \verb
 The \verb|CallStack| is implemented as an array of pointers to \verb|Frame|s. It has a max size of \verb|MaxStackFrames| (\verb|src/call.go|) that is checked when pushing \verb|Frame|s to it. The following interface describes the \verb|CallStack| type.
 
 %TC:ignore
-\inputminted[firstline=62, lastline=73, autogobble, breaklines, tabsize=4]{go}{../../src/parser/interfaces.go}
+\inputminted[firstline=64, lastline=77, autogobble, breaklines, tabsize=4]{go}{../../src/parser/interfaces.go}
 %TC:endignore
 
 The \verb|Call| instance method will first create a new \verb|Heap| and \verb|Frame| (using the \verb|Heap|) and push it to the top of the call stack. If the number of arguments given is greater than the number of parameters of the function, then a \verb|MoreArgsThanParams| error is returned. Otherwise, all \verb|Value|s from the below frame with their \verb|Global| flag set will be copied over by reference to the new \verb|Heap| located on the current frame. Then we create a variable: \verb|self|, that contains the value pointed to by the \textbf{root property} (the first property of a JSONPath, e.g. \verb|json| in \verb|json.hello.world[0]|) of the JSONPath of the \verb|FunctionDefinition| currently being called.
@@ -164,11 +164,11 @@ The \verb|Return| instance method for \verb|CallStack| will pop the topmost \ver
 The \verb|VM| type was created in order to manage the state of the interpreter. A reference to an instance of it will be passed down from AST node to AST node. It is comprised of many other data structures, such as the \verb|CallStack|. All of which can be accessible through instance methods defined on the \verb|VM| type itself. As with the \verb|CallStack| type, the \verb|VM| type is declared in the \verb|main| package. This means that a \verb|VM| interface has to be defined in lower level packages, that allow access to all fields that need to be reachable from within that package. Below is the \verb|VM| type as it is declared in the \verb|main| package, as well as the \verb|VM| interface found within the \verb|parser| package.
 
 %TC:ignore
-\inputminted[firstline=15, lastline=37, autogobble, breaklines, tabsize=4]{go}{../../src/vm.go}
+\inputminted[firstline=15, lastline=40, autogobble, breaklines, tabsize=4]{go}{../../src/vm.go}
 %TC:endignore
 
 %TC:ignore
-\inputminted[firstline=18, lastline=60, autogobble, breaklines, tabsize=4]{go}{../../src/parser/interfaces.go}
+\inputminted[firstline=18, lastline=62, autogobble, breaklines, tabsize=4]{go}{../../src/parser/interfaces.go}
 %TC:endignore
 
 % Two things that should be noted about the \verb|VM| type and interface at this stage:

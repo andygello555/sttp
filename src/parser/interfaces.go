@@ -57,6 +57,8 @@ type VM interface {
 	CreateBatch(statement *Batch)
 	// ExecuteBatch will execute the current BatchSuite and store the results in the VM state accessible via GetBatch.
 	ExecuteBatch()
+	// CheckREPL will return whether the VM is in REPL mode.
+	CheckREPL() bool
 }
 
 // CallStack is implemented by the call stack that is used within the VM.
@@ -66,8 +68,10 @@ type CallStack interface {
 	Call(caller *FunctionCall, current *FunctionDefinition, vm VM, args ...*data.Value) error
 	// Return will remove the top frame from the call stack and return it.
 	Return(vm VM) (err error, frame Frame)
-	// Current will return the top of the call stack but not return it.
+	// Current will return the top of the call stack but not remove it.
 	Current() Frame
+	// Size will return the number of Frames on the stack.
+	Size() int
 	// Stringer interface is used so that we can stringify the top couple of stack frames.
 	fmt.Stringer
 }

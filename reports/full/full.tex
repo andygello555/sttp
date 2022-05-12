@@ -278,7 +278,7 @@ Language: json path setter + assignment ast node
 
 The \verb|src/parser/json_path.go| contains the \verb|Path| type that acts as an intermediate representation for JSONPath access and setting. Each segment of a JSONPath AST node has a correlated \verb|Convert| method which carries out this transformation. From there a \verb|Path| can be used to \verb|Get| and \verb|Set| values of the given value with the corresponding methods.
 
-The \verb|Eval| method for the JSONPath AST node can be found in: \verb|src/parser/eval.go:863|, whereas the \verb|Eval| method for the Assignment AST node can be found at \verb|src/parser/eval.go:166|.
+The \verb|Eval| method for the JSONPath AST node can be found in: \verb|src/parser/eval.go:874|, whereas the \verb|Eval| method for the Assignment AST node can be found at \verb|src/parser/eval.go:184|.
 
 \import{sections}{2-7-2-expressions.tex}
 
@@ -304,7 +304,7 @@ Language: Heap rework + Symbol -> Value + IfElifElse
 \end{center}
 %TC:endignore
 
-The \verb|Eval| method for the \verb|IfElifElse| AST node can be found in: \verb|src/parser/eval.go:796|.
+The \verb|Eval| method for the \verb|IfElifElse| AST node can be found in: \verb|src/parser/eval.go:808|.
 
 % \import{sections}{2-7-4-iterations.tex}
 \subsection{Iteration}
@@ -333,9 +333,9 @@ Language: ReadOnly Values + Iterator + While, For, ForEach + examples
 There are three statements used for iteration within \verb|sttp|:
 
 \begin{enumerate}
-    \item \verb|While| (example found in \hyperref[appendix:sttp-examples-4]{here}): \verb|Eval| method can be found at: \verb|src/parser/eval.go:331|.
-    \item \verb|For| (example found in \hyperref[appendix:sttp-examples-5]{here}): \verb|Eval| method can be found at: \verb|src/parser/eval.go:375|.
-    \item \verb|ForEach| (example found in \hyperref[appendix:sttp-examples-6]{here}): \verb|Eval| method can be found at: \verb|src/parser/eval.go:434|.
+    \item \verb|While| (example found in \hyperref[appendix:sttp-examples-4]{here}): \verb|Eval| method can be found at: \verb|src/parser/eval.go:341|.
+    \item \verb|For| (example found in \hyperref[appendix:sttp-examples-5]{here}): \verb|Eval| method can be found at: \verb|src/parser/eval.go:386|.
+    \item \verb|ForEach| (example found in \hyperref[appendix:sttp-examples-6]{here}): \verb|Eval| method can be found at: \verb|src/parser/eval.go:447|.
 \end{enumerate}
 
 % \import{sections}{2-7-5-functions.tex}
@@ -354,8 +354,8 @@ There are three statements used for iteration within \verb|sttp|:
 There are two AST nodes surrounding the evaluation and definition of functions:
 
 \begin{enumerate}
-    \item \verb|FunctionDefinition|: \verb|Eval| method can be found at: \verb|src/parser/eval.go:643|.
-    \item \verb|FunctionCall|: \verb|Eval| method can be found at: \verb|src/parser/eval.go:695|.
+    \item \verb|FunctionDefinition|: \verb|Eval| method can be found at: \verb|src/parser/eval.go:657|.
+    \item \verb|FunctionCall|: \verb|Eval| method can be found at: \verb|src/parser/eval.go:717|.
 \end{enumerate}
 
 % \import{sections}{2-7-6-http-methods.tex}
@@ -381,7 +381,7 @@ Language: Method.Call setup + tests + Resty integration
 \end{center}
 %TC:endignore
 
-The \verb|MethodCall| AST node has a similar syntax to function calls but instead of having a user-defined function name it can only have one of the supported \verb|sttp| HTTP methods\textsuperscript{\cite{http_request_methods}}: \verb|GET|, \verb|HEAD|, \verb|POST|, \verb|PUT|, \verb|DELETE|, \verb|OPTIONS|, and \verb|PATCH|. The \verb|Eval| method for the \verb|MethodCall| can be found at: \verb|src/parser/eval.go:239|.
+The \verb|MethodCall| AST node has a similar syntax to function calls but instead of having a user-defined function name it can only have one of the supported \verb|sttp| HTTP methods\textsuperscript{\cite{http_request_methods}}: \verb|GET|, \verb|HEAD|, \verb|POST|, \verb|PUT|, \verb|DELETE|, \verb|OPTIONS|, and \verb|PATCH|. The \verb|Eval| method for the \verb|MethodCall| can be found at: \verb|src/parser/eval.go:259|.
 
 % \import{sections}{2-7-7-testing.tex}
 \cprotect\subsection{Test suites and the \verb|test| statement}
@@ -407,7 +407,7 @@ Language: implementation of TestSuite capabilities + TestStatement
 
 Test suites and \verb|test| statements are one of the most important features and motivations behind creating \verb|sttp|. They allow the programmer to construct test suites using a directory structure containing \verb|sttp| scripts. The practical usage of this can be found in the \hyperref[sec:hello-sttp-using-sttp-to-test]{first part} of this report.
 
-The \verb|Eval| method for the \verb|TestStatement| node can be found at: \verb|src/parser/eval.go:294|, whereas the logic regarding test suite evaluation can be found within: \verb|src/test.go|.
+The \verb|Eval| method for the \verb|TestStatement| node can be found at: \verb|src/parser/eval.go:309|, whereas the logic regarding test suite evaluation can be found within: \verb|src/test.go|.
 
 % \import{sections}{2-7-8-try-catch-throw.tex}
 \cprotect\subsection{Try-Catch and \verb|throw|}
@@ -416,7 +416,7 @@ The \verb|Eval| method for the \verb|TestStatement| node can be found at: \verb|
 
 As well as returning a \verb|Value|, \verb|Eval| also can return an \mintinline[breaklines]{go}{error}. Each implementor of \verb|evalNode| will pass any errors that occur within that node, or from evaluating any lower down nodes, up to the parent node (the node that called the current node's \verb|Eval| method). This is true for all nodes apart from the \verb|TryCatch| node, which will instead wrap any error that occurs within its \verb|try| \verb|Block|, store it within the given identifier, then execute the \verb|Block| nested within the \verb|catch as| statement.
 
-The \verb|TryCatch| node's \verb|Eval| can be found at: \verb|src/parser/eval.go:612|, whereas the error handling itself resides mostly within the \verb|src/errors/| package.
+The \verb|TryCatch| node's \verb|Eval| can be found at: \verb|src/parser/eval.go:625|, whereas the error handling itself resides mostly within the \verb|src/errors/| package.
 
 \import{sections}{2-7-9-batch-statement.tex}
 
@@ -450,7 +450,7 @@ Language: rearranging examples + builtin function call + testing
 \end{center}
 %TC:endignore
 
-The number of builtin functions within \verb|sttp| at the time of writing is limited. This could be because many of the actions reserved for builtin functions in other languages, such as a length function, can be done through operators. All the builtins are stored within a lookup that is initialised at interpreter runtime within the \verb|src/parser/functions.go| file. These functions and their semantics are discussed further within the specification found in \verb|documents/specification_for_language.pdf|. Unlike \verb|MethodCall|s builtin functions utilise the same AST node as \verb|FunctionCall|s so are evaluated through the same \verb|Eval| method (found in \verb|src/parser/eval.go:695|).
+The number of builtin functions within \verb|sttp| at the time of writing is limited. This could be because many of the actions reserved for builtin functions in other languages, such as a length function, can be done through operators. All the builtins are stored within a lookup that is initialised at interpreter runtime within the \verb|src/parser/functions.go| file. These functions and their semantics are discussed further within the specification found in \verb|documents/specification_for_language.pdf|. Unlike \verb|MethodCall|s builtin functions utilise the same AST node as \verb|FunctionCall|s so are evaluated through the same \verb|Eval| method (found in \verb|src/parser/eval.go:717|).
 
 \import{chapters}{7-evaluation.tex}
 

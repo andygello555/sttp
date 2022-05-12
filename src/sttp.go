@@ -33,11 +33,13 @@ func main() {
 			s = sourceFileOrScript
 		}
 
-		vm := New(nil, nil, nil, nil)
+		vm := New(false, nil, nil, nil, nil)
 		if err, _ := vm.Eval(filename, s); err != nil {
 			fmt.Println(fmt.Sprintf("Error occurred whilst executing \"%s\": %v", sourceFileOrScript, err))
 			os.Exit(1)
 		}
+	} else {
+		REPL()
 	}
 	os.Exit(0)
 }
