@@ -229,3 +229,7 @@ func (cs *CallStack) Value() []interface{} {
 	}
 	return val
 }
+
+func (cs *CallStack) Size() int {
+	return len(*cs)
+}

@@ -26,8 +26,13 @@ type evalNode interface {
 // Any errors or results that have bubbled up from lower AST nodes will be returned.
 func (p *Program) Eval(vm VM) (err error, result *data.Value) {
 	vm.SetPos(p.GetPos())
-	// We insert a nil stack frame to indicate the bottom of the stack
-	err = vm.GetCallStack().Call(nil, nil, vm)
+
+	// We insert a nil stack frame to indicate the bottom of the stack. We check if stack size is zero because if the 
+	// VM is in REPL mode, we do not want to add another bottommost stack frame onto of the original.
+	if vm.GetCallStack().Size() == 0 {
+		err = vm.GetCallStack().Call(nil, nil, vm)
+	}
+
 	if err != nil {
 		return err, nil
 	}
@@ -35,7 +40,11 @@ func (p *Program) Eval(vm VM) (err error, result *data.Value) {
 		if debug, ok := vm.GetDebug(); ok {
 			_, _ = fmt.Fprintf(debug, "final stack frame heap: %v\n", vm.GetCallStack().Current().GetHeap())
 		}
-		err, _ = vm.GetCallStack().Return(vm)
+
+		// When we are not in REPL mode, we will pop the bottommost stack frame
+		if !vm.CheckREPL() {
+			err, _ = vm.GetCallStack().Return(vm)
+		}
 	} else if purposeful, ok := err.(errors.PurposefulError); ok {
 		// We check if the error is a purposeful error
 		switch purposeful {

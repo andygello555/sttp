@@ -186,7 +186,7 @@ func (ts *TestSuite) Run(stdout io.Writer, stderr io.Writer, debug io.Writer) er
 					}
 
 					// Create a new VM and run the script
-					vm := New(ts.Suite[path], stdout, stderr, debug)
+					vm := New(false, ts.Suite[path], stdout, stderr, debug)
 					fileBytes, _ := ioutil.ReadFile(path)
 					err, _ = vm.Eval(path, string(fileBytes))
 					// Handle the error by first checking what kind it is, then adding the error as a TestResult failure

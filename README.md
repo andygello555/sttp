@@ -7,12 +7,15 @@
     - [`reports/full/blog_api/blog_api_server/`](#reportsfullblog_apiblog_api_server)
     - [`reports/full/blog_api/blog_api_tests/`](#reportsfullblog_apiblog_api_tests)
 - [`sttp`](#sttp)
-  - [Libraries used](#libraries-used)
+  - [Libraries/Code used](#librariescode-used)
   - [How to use](#how-to-use)
     - [Prerequisites](#prerequisites)
     - [Running from the `src/` directory](#running-from-the-src-directory)
     - [Building an executable and running it](#building-an-executable-and-running-it)
     - [Examples](#examples)
+  - [Running tests](#running-tests)
+    - [Debugging info](#debugging-info)
+    - [Benchmarks](#benchmarks)
 - [Test Programs](#test-programs)
   - [Four Function Calculator](#four-function-calculator)
     - [Prerequisites](#prerequisites-1)
@@ -133,10 +136,13 @@ cd reports/full/blog_api/
 
 *Located in: `src/`*
 
-### Libraries used
+### Libraries/Code used
 
 - [participle/v2](https://github.com/alecthomas/participle) (licensed under MIT): recursive descent parser generator for Go by Alec Thomas.
 - [resty/v2](https://github.com/go-resty/resty) (licensed under MIT): a HTTP/REST client for Go.
+- [atomicgo/cursor](https://github.com/atomicgo/cursor) (licensed under MIT): cross-platform methods to move the terminal cursor in different directions. For `sttp` REPL mode.
+- [pkg/term](https://github.com/pkg/term) (licensed under BSD 2): used for reading from terminal in raw mode. Again for `sttp` REPL.
+- [`getChar` function from climenu](https://github.com/paulrademacher/climenu/blob/master/getchar.go) (licensed under [The Unlicense](https://unlicense.org/)): a `getChar` function (similar to C implementation), written for Go by Paul Rademacher for their library: [climenu](https://github.com/paulrademacher/climenu). This function is defined in `src/sttp.go` for use in `sttp`'s REPL mode.
 - [gotils v1.2.7](https://pkg.go.dev/github.com/andygello555/gotils) (licensed under GPL-3.0): a set of utility functions written for Go by me.
 - [go v1.17](https://go.dev/) (licensed under a [BSD-style](https://go.dev/LICENSE) license): programming language.
 
@@ -144,13 +150,14 @@ cd reports/full/blog_api/
 
 You can either run the `sttp` interpreter from the `src/` directory, or by creating an executable that can be run later. You can provide the interpreter with the following inputs:
 
+- Interactively using the new REPL mode. This is entered by not supplying any arguments.
 - An `.sttp` file containing `sttp` source code.
 - The root of a directory containing `.sttp` files to run as a TestSuite.
 - Raw `sttp` code to execute from the terminal. E.g. `./sttp '$print("Hello World!");'`
 
 #### Prerequisites
 
-You must have `go 1.17` installed.
+You must have `go 1.17` (or later) installed.
 
 #### Running from the `src/` directory
 
@@ -174,6 +181,30 @@ Examples for `sttp` can be found within the `src/_examples` directory. Each exam
 - `*.err` file (optional): containing the expected errors that bubble up to the bottommost stack frame during execution.
 
 Some of these examples utilise the echo-chamber web API. The web server for which is located within: `src/_examples/echo_chamber` directory. The usage of which can be found [here](#echo-chamber-web-api).<br/>
+
+### Running tests
+
+The Go tests for `sttp` can be run using the following command when inside the `src/` directory:
+
+```console
+go test ./...
+```
+
+You might need to increase the limit for the number of open sockets on your system (via `ulimit` or Windows alternative). This is because Go is known to run some test cases in parallel in order to speed up test execution. In conjunction to this, there are also a lot of tests that manage interactions between the [echo chamber web API](#echo-chamber-web-api), and batched HTTP requests made via `sttp`.<br/>
+
+#### Debugging info
+
+Debugging info can be enabled by appending the `-v` flag to the command mentioned [above](#running-tests). **This will lead to a lot of output when running tests**, so it might be beneficial to only run specific `*_test.go` files/test cases by using the `-run PATTERN` option.
+
+#### Benchmarks
+
+Benchmarks used for testing performance of the `batch` statement can be run using the following command:
+
+```console
+go test -run=XXX -bench="Benchmark(No)?Batch" -benchtime=5x -cpu=8 -count=3
+```
+
+As with [tests](#running-tests), this can chew through **a lot** of sockets on your system, so it is advised you tinker around with the `-benchtime` and `-count` flags.
 
 ## Test Programs
 
