@@ -142,7 +142,7 @@ cd reports/full/blog_api/
 - [resty/v2](https://github.com/go-resty/resty) (licensed under MIT): a HTTP/REST client for Go.
 - [atomicgo/cursor](https://github.com/atomicgo/cursor) (licensed under MIT): cross-platform methods to move the terminal cursor in different directions. For `sttp` REPL mode.
 - [pkg/term](https://github.com/pkg/term) (licensed under BSD 2): used for reading from terminal in raw mode. Again for `sttp` REPL.
-- [`getChar` function from climenu](https://github.com/paulrademacher/climenu/blob/master/getchar.go) (licensed under [The Unlicense](https://unlicense.org/)): a `getChar` function (similar to C implementation), written for Go by Paul Rademacher for their library: [climenu](https://github.com/paulrademacher/climenu). This function is defined in `src/sttp.go` for use in `sttp`'s REPL mode.
+- [`getChar` function from climenu](https://github.com/paulrademacher/climenu/blob/master/getchar.go) (licensed under [The Unlicense](https://unlicense.org/)): a `getChar` function (similar to C implementation), written for Go by Paul Rademacher for their library: [climenu](https://github.com/paulrademacher/climenu). This function is defined in `src/repl.go` for use in `sttp`'s REPL mode.
 - [gotils v1.2.7](https://pkg.go.dev/github.com/andygello555/gotils) (licensed under GPL-3.0): a set of utility functions written for Go by me.
 - [go v1.17](https://go.dev/) (licensed under a [BSD-style](https://go.dev/LICENSE) license): programming language.
 
