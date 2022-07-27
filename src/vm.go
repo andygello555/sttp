@@ -149,8 +149,9 @@ func (vm *VM) GetBatch() (parser.BatchSuite, heap.Interface) {
 	return vm.Batch, vm.BatchResults
 }
 
-// DeleteBatch will nullify the Batch.
+// DeleteBatch will stop the workers, then nullify the Batch.
 func (vm *VM) DeleteBatch() {
+	vm.Batch.Stop()
 	vm.Batch = nil
 	vm.BatchResults = nil
 }
@@ -159,9 +160,12 @@ func (vm *VM) CreateBatch(statement *parser.Batch) {
 	vm.Batch = Batch(statement)
 }
 
-// ExecuteBatch will execute the batched MethodCalls and store them in BatchResults.
-func (vm *VM) ExecuteBatch() {
-	vm.BatchResults = vm.Batch.Execute(-1)
+func (vm *VM) StartBatch() {
+	vm.Batch.Start(-1)
+}
+
+func (vm *VM) StopBatch() {
+	vm.BatchResults = vm.Batch.Stop()
 }
 
 func (vm *VM) GetEnvironment() (err error, env parser.Env) {
