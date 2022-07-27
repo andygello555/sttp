@@ -1,8 +1,8 @@
 package eval
 
 import (
-	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/data"
-	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/errors"
+	"github.com/andygello555/src/data"
+	"github.com/andygello555/src/errors"
 	"reflect"
 )
 
@@ -11,16 +11,16 @@ var e = eFunc
 
 // castTable contains the functions that are used to cast one Value into another type. The rows represent the Type to
 // cast from. Whereas, the columns represent the Type to cast to.
-var castTable = [8][8]func(symbol *data.Value) (err error, cast *data.Value) {
+var castTable = [8][8]func(symbol *data.Value) (err error, cast *data.Value){
 	/*                NoType    Object    Array    String    Number    Boolean    Null    Function                    */
-	/* NoType   */ {    same,        e,       e,        e,        e,         e,      e,          e},
-	/* Object   */ {       e,     same, obArray,        s,        l,     lBool,      e,          e},
-	/* Array    */ {       e, arObject,    same,        s,        l,     lBool,      e,          e},
-	/* String   */ {       e, stObject, stArray,     same, stNumber,     lBool,      e,          e},
-	/* Number   */ {       e,   obSing,  arSing,        s,     same, nuBoolean,      e,          e},
-	/* Boolean  */ {       e,   obSing,  arSing,        s, boNumber,      same,      e,          e},
-	/* Null     */ {       e,   obSing,  arSing,        s, nlNumber, nlBoolean,   same,          e},
-	/* Function */ {       e,        e,       e,        s,        e,         e,      e,       same},
+	/* NoType   */ {same, e, e, e, e, e, e, e},
+	/* Object   */ {e, same, obArray, s, l, lBool, e, e},
+	/* Array    */ {e, arObject, same, s, l, lBool, e, e},
+	/* String   */ {e, stObject, stArray, same, stNumber, lBool, e, e},
+	/* Number   */ {e, obSing, arSing, s, same, nuBoolean, e, e},
+	/* Boolean  */ {e, obSing, arSing, s, boNumber, same, e, e},
+	/* Null     */ {e, obSing, arSing, s, nlNumber, nlBoolean, same, e},
+	/* Function */ {e, e, e, s, e, e, e, same},
 }
 
 // Castable checks whether the given symbol can be cast to the given type. This just checks the entry in the appropriate

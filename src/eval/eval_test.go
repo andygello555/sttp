@@ -3,8 +3,8 @@ package eval
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/data"
-	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/errors"
+	"github.com/andygello555/src/data"
+	"github.com/andygello555/src/errors"
 	"os/exec"
 	"syscall"
 	"testing"
@@ -17,29 +17,29 @@ const (
 )
 
 func TestCompute(t *testing.T) {
-	for testNo, test := range []struct{
-		op1 *data.Value
-		op2 *data.Value
+	for testNo, test := range []struct {
+		op1      *data.Value
+		op2      *data.Value
 		operator Operator
-		result *data.Value
-		err error
+		result   *data.Value
+		err      error
 	}{
 		// Unsupported operation
 		{
 			op1: &data.Value{
-				Value: nil,
-				Type:  data.Object,
+				Value:  nil,
+				Type:   data.Object,
 				Global: false,
 			},
 			op2: &data.Value{
-				Value: nil,
-				Type:  data.Null,
+				Value:  nil,
+				Type:   data.Null,
 				Global: false,
 			},
 			operator: Mul,
 			result: &data.Value{
-				Value: nil,
-				Type:  0,
+				Value:  nil,
+				Type:   0,
 				Global: false,
 			},
 			err: errors.InvalidOperation.Errorf(errors.GetNullVM(), "*", "object", "null"),
@@ -49,133 +49,133 @@ func TestCompute(t *testing.T) {
 
 		{
 			op1: &data.Value{
-				Value: []interface{}{1, 2, 3},
-				Type:  data.Array,
+				Value:  []interface{}{1, 2, 3},
+				Type:   data.Array,
 				Global: false,
 			},
 			op2: &data.Value{
-				Value: 4,
-				Type:  data.Number,
+				Value:  4,
+				Type:   data.Number,
 				Global: false,
 			},
 			operator: Add,
 			result: &data.Value{
-				Value: []interface{}{1, 2, 3, 4},
-				Type:  data.Array,
+				Value:  []interface{}{1, 2, 3, 4},
+				Type:   data.Array,
 				Global: false,
 			},
 			err: nil,
 		},
 		{
 			op1: &data.Value{
-				Value: []interface{}{1, 2, 3},
-				Type:  data.Array,
+				Value:  []interface{}{1, 2, 3},
+				Type:   data.Array,
 				Global: false,
 			},
 			op2: &data.Value{
-				Value: map[string]interface{}{"a": 1, "b": 2},
-				Type:  data.Object,
+				Value:  map[string]interface{}{"a": 1, "b": 2},
+				Type:   data.Object,
 				Global: false,
 			},
 			operator: Add,
 			result: &data.Value{
-				Value: []interface{}{1, 2, 3, map[string]interface{}{"a": 1, "b": 2}},
-				Type:  data.Array,
+				Value:  []interface{}{1, 2, 3, map[string]interface{}{"a": 1, "b": 2}},
+				Type:   data.Array,
 				Global: false,
 			},
 			err: nil,
 		},
 		{
 			op1: &data.Value{
-				Value: []interface{}{1, 2, 3},
-				Type:  data.Array,
+				Value:  []interface{}{1, 2, 3},
+				Type:   data.Array,
 				Global: false,
 			},
 			op2: &data.Value{
-				Value: []interface{}{4, 5, 6, 7},
-				Type:  data.Array,
+				Value:  []interface{}{4, 5, 6, 7},
+				Type:   data.Array,
 				Global: false,
 			},
 			operator: Add,
 			result: &data.Value{
-				Value: []interface{}{1, 2, 3, 4, 5, 6, 7},
-				Type:  data.Array,
+				Value:  []interface{}{1, 2, 3, 4, 5, 6, 7},
+				Type:   data.Array,
 				Global: false,
 			},
 			err: nil,
 		},
 		{
 			op1: &data.Value{
-				Value: []interface{}{1, 2, 3, 4},
-				Type:  data.Array,
+				Value:  []interface{}{1, 2, 3, 4},
+				Type:   data.Array,
 				Global: false,
 			},
 			op2: &data.Value{
-				Value: []interface{}{5, 6, 7},
-				Type:  data.Array,
+				Value:  []interface{}{5, 6, 7},
+				Type:   data.Array,
 				Global: false,
 			},
 			operator: Add,
 			result: &data.Value{
-				Value: []interface{}{1, 2, 3, 4, 5, 6, 7},
-				Type:  data.Array,
+				Value:  []interface{}{1, 2, 3, 4, 5, 6, 7},
+				Type:   data.Array,
 				Global: false,
 			},
 			err: nil,
 		},
 		{
 			op1: &data.Value{
-				Value: []interface{}{[]interface{}{1, 2, 3}, 2, 3},
-				Type:  data.Array,
+				Value:  []interface{}{[]interface{}{1, 2, 3}, 2, 3},
+				Type:   data.Array,
 				Global: false,
 			},
 			op2: &data.Value{
-				Value: nil,
-				Type:  data.Null,
+				Value:  nil,
+				Type:   data.Null,
 				Global: false,
 			},
 			operator: Sub,
 			result: &data.Value{
-				Value: []interface{}{2, 3},
-				Type:  data.Array,
+				Value:  []interface{}{2, 3},
+				Type:   data.Array,
 				Global: false,
 			},
 			err: nil,
 		},
 		{
 			op1: &data.Value{
-				Value: []interface{}{[]interface{}{1, 2, 3}, 2, 3},
-				Type:  data.Array,
+				Value:  []interface{}{[]interface{}{1, 2, 3}, 2, 3},
+				Type:   data.Array,
 				Global: false,
 			},
 			op2: &data.Value{
-				Value: []interface{}{[]interface{}{1, 2, 3}},
-				Type:  data.Array,
+				Value:  []interface{}{[]interface{}{1, 2, 3}},
+				Type:   data.Array,
 				Global: false,
 			},
 			operator: Sub,
 			result: &data.Value{
-				Value: []interface{}{2, 3},
-				Type:  data.Array,
+				Value:  []interface{}{2, 3},
+				Type:   data.Array,
 				Global: false,
 			},
 			err: nil,
 		},
 		{
 			op1: &data.Value{
-				Value: []interface{}{1, 2, 3},
-				Type:  data.Array,
+				Value:  []interface{}{1, 2, 3},
+				Type:   data.Array,
 				Global: false,
 			},
 			op2: &data.Value{
-				Value: []interface{}{nil, 2},
-				Type:  data.Array,
+				Value:  []interface{}{nil, 2},
+				Type:   data.Array,
 				Global: false,
 			},
 			operator: Sub,
 			result: &data.Value{
-				Value: []interface{}{3},
-				Type:  data.Array,
+				Value:  []interface{}{3},
+				Type:   data.Array,
 				Global: false,
 			},
 			err: nil,
@@ -185,76 +185,76 @@ func TestCompute(t *testing.T) {
 
 		{
 			op1: &data.Value{
-				Value: map[string]interface{}{"1": 1, "2": 2, "3": 3},
-				Type:  data.Object,
+				Value:  map[string]interface{}{"1": 1, "2": 2, "3": 3},
+				Type:   data.Object,
 				Global: false,
 			},
 			op2: &data.Value{
-				Value: []interface{}{1, 2, 3},
-				Type:  data.Array,
+				Value:  []interface{}{1, 2, 3},
+				Type:   data.Array,
 				Global: false,
 			},
 			operator: Div,
 			result: &data.Value{
-				Value: map[string]interface{}{"0": 1},
-				Type:  data.Object,
+				Value:  map[string]interface{}{"0": 1},
+				Type:   data.Object,
 				Global: false,
 			},
 			err: nil,
 		},
 		{
 			op1: &data.Value{
-				Value: map[string]interface{}{"1": 1, "2": 2, "3": 3},
-				Type:  data.Object,
+				Value:  map[string]interface{}{"1": 1, "2": 2, "3": 3},
+				Type:   data.Object,
 				Global: false,
 			},
 			op2: &data.Value{
-				Value: []interface{}{1, 2, 3},
-				Type:  data.Array,
+				Value:  []interface{}{1, 2, 3},
+				Type:   data.Array,
 				Global: false,
 			},
 			operator: Sub,
 			result: &data.Value{
-				Value: map[string]interface{}{"3": 3},
-				Type:  data.Object,
+				Value:  map[string]interface{}{"3": 3},
+				Type:   data.Object,
 				Global: false,
 			},
 			err: nil,
 		},
 		{
 			op1: &data.Value{
-				Value: map[string]interface{}{"1": 1, "2": 2, "3": 3},
-				Type:  data.Object,
+				Value:  map[string]interface{}{"1": 1, "2": 2, "3": 3},
+				Type:   data.Object,
 				Global: false,
 			},
 			op2: &data.Value{
-				Value: "{\"hello\":\"world\"}",
-				Type:  data.String,
+				Value:  "{\"hello\":\"world\"}",
+				Type:   data.String,
 				Global: false,
 			},
 			operator: Add,
 			result: &data.Value{
-				Value: map[string]interface{}{"1": 1, "2": 2, "3": 3, "hello": "world"},
-				Type:  data.Object,
+				Value:  map[string]interface{}{"1": 1, "2": 2, "3": 3, "hello": "world"},
+				Type:   data.Object,
 				Global: false,
 			},
 			err: nil,
 		},
 		{
 			op1: &data.Value{
-				Value: map[string]interface{}{"1": 1, "2": 2, "3": 3},
-				Type:  data.Object,
+				Value:  map[string]interface{}{"1": 1, "2": 2, "3": 3},
+				Type:   data.Object,
 				Global: false,
 			},
 			op2: &data.Value{
-				Value: 4,
-				Type:  data.Number,
+				Value:  4,
+				Type:   data.Number,
 				Global: false,
 			},
 			operator: Add,
 			result: &data.Value{
-				Value: map[string]interface{}{"1": 1, "2": 2, "3": 3, "4": nil},
-				Type:  data.Object,
+				Value:  map[string]interface{}{"1": 1, "2": 2, "3": 3, "4": nil},
+				Type:   data.Object,
 				Global: false,
 			},
 			err: nil,
@@ -264,171 +264,171 @@ func TestCompute(t *testing.T) {
 
 		{
 			op1: &data.Value{
-				Value: "abc",
-				Type:  data.String,
+				Value:  "abc",
+				Type:   data.String,
 				Global: false,
 			},
 			op2: &data.Value{
-				Value: map[string]interface{}{"a": float64(1), "b": float64(2), "c": float64(3)},
-				Type:  data.Object,
+				Value:  map[string]interface{}{"a": float64(1), "b": float64(2), "c": float64(3)},
+				Type:   data.Object,
 				Global: false,
 			},
 			operator: Sub,
 			result: &data.Value{
-				Value: "123",
-				Type:  data.String,
+				Value:  "123",
+				Type:   data.String,
 				Global: false,
 			},
 			err: nil,
 		},
 		{
 			op1: &data.Value{
-				Value: "moomoo cow is here",
-				Type:  data.String,
+				Value:  "moomoo cow is here",
+				Type:   data.String,
 				Global: false,
 			},
 			op2: &data.Value{
-				Value: []interface{}{"moo", "is"},
-				Type:  data.Array,
+				Value:  []interface{}{"moo", "is"},
+				Type:   data.Array,
 				Global: false,
 			},
 			operator: Sub,
 			result: &data.Value{
-				Value: " cow  here",
-				Type:  data.String,
+				Value:  " cow  here",
+				Type:   data.String,
 				Global: false,
 			},
 			err: nil,
 		},
 		{
 			op1: &data.Value{
-				Value: "123456",
-				Type:  data.String,
+				Value:  "123456",
+				Type:   data.String,
 				Global: false,
 			},
 			op2: &data.Value{
-				Value: float64(3),
-				Type:  data.Number,
+				Value:  float64(3),
+				Type:   data.Number,
 				Global: false,
 			},
 			operator: Sub,
 			result: &data.Value{
-				Value: "123",
-				Type:  data.String,
+				Value:  "123",
+				Type:   data.String,
 				Global: false,
 			},
 			err: nil,
 		},
 		{
 			op1: &data.Value{
-				Value: "moomoocow",
-				Type:  data.String,
+				Value:  "moomoocow",
+				Type:   data.String,
 				Global: false,
 			},
 			op2: &data.Value{
-				Value: "moo",
-				Type:  data.String,
+				Value:  "moo",
+				Type:   data.String,
 				Global: false,
 			},
 			operator: Sub,
 			result: &data.Value{
-				Value: "cow",
-				Type:  data.String,
+				Value:  "cow",
+				Type:   data.String,
 				Global: false,
 			},
 			err: nil,
 		},
 		{
 			op1: &data.Value{
-				Value: "is null nullable?",
-				Type:  data.String,
+				Value:  "is null nullable?",
+				Type:   data.String,
 				Global: false,
 			},
 			op2: &data.Value{
-				Value: nil,
-				Type:  data.Null,
+				Value:  nil,
+				Type:   data.Null,
 				Global: false,
 			},
 			operator: Sub,
 			result: &data.Value{
-				Value: "is  able?",
-				Type:  data.String,
+				Value:  "is  able?",
+				Type:   data.String,
 				Global: false,
 			},
 			err: nil,
 		},
 		{
 			op1: &data.Value{
-				Value: "Result is: ",
-				Type:  data.String,
+				Value:  "Result is: ",
+				Type:   data.String,
 				Global: false,
 			},
 			op2: &data.Value{
-				Value: []interface{}{1, 2, 3},
-				Type:  data.Array,
+				Value:  []interface{}{1, 2, 3},
+				Type:   data.Array,
 				Global: false,
 			},
 			operator: Add,
 			result: &data.Value{
-				Value: "Result is: [1,2,3]",
-				Type:  data.String,
+				Value:  "Result is: [1,2,3]",
+				Type:   data.String,
 				Global: false,
 			},
 			err: nil,
 		},
 		{
 			op1: &data.Value{
-				Value: "Result is: [%%, %%, %%]",
-				Type:  data.String,
+				Value:  "Result is: [%%, %%, %%]",
+				Type:   data.String,
 				Global: false,
 			},
 			op2: &data.Value{
-				Value: []interface{}{1, 2, 3},
-				Type:  data.Array,
+				Value:  []interface{}{1, 2, 3},
+				Type:   data.Array,
 				Global: false,
 			},
 			operator: Mod,
 			result: &data.Value{
-				Value: "Result is: [1, 2, 3]",
-				Type:  data.String,
+				Value:  "Result is: [1, 2, 3]",
+				Type:   data.String,
 				Global: false,
 			},
 			err: nil,
 		},
 		{
 			op1: &data.Value{
-				Value: "Result is: [%%]",
-				Type:  data.String,
+				Value:  "Result is: [%%]",
+				Type:   data.String,
 				Global: false,
 			},
 			op2: &data.Value{
-				Value: map[string]interface{}{"1": float64(1)},
-				Type:  data.Object,
+				Value:  map[string]interface{}{"1": float64(1)},
+				Type:   data.Object,
 				Global: false,
 			},
 			operator: Mod,
 			result: &data.Value{
-				Value: "Result is: [1]",
-				Type:  data.String,
+				Value:  "Result is: [1]",
+				Type:   data.String,
 				Global: false,
 			},
 			err: nil,
 		},
 		{
 			op1: &data.Value{
-				Value: "Result is: [%%]",
-				Type:  data.String,
+				Value:  "Result is: [%%]",
+				Type:   data.String,
 				Global: false,
 			},
 			op2: &data.Value{
-				Value: "nothing",
-				Type:  data.String,
+				Value:  "nothing",
+				Type:   data.String,
 				Global: false,
 			},
 			operator: Mod,
 			result: &data.Value{
-				Value: "Result is: [nothing]",
-				Type:  data.String,
+				Value:  "Result is: [nothing]",
+				Type:   data.String,
 				Global: false,
 			},
 			err: nil,
@@ -497,7 +497,7 @@ func TestCompute(t *testing.T) {
 			},
 			err: nil,
 		},
-	}{
+	} {
 		var ok bool
 		err, result := Compute(test.operator, test.op1, test.op2)
 		// Check if the actual result is Equal to the expected result only if there is no error.
@@ -506,21 +506,21 @@ func TestCompute(t *testing.T) {
 		}
 
 		if testing.Verbose() && result != nil {
-			fmt.Printf("%d: %v %s %v = %v\n", testNo + 1, test.op1.String(), test.operator.String(), test.op2.String(), result.String())
+			fmt.Printf("%d: %v %s %v = %v\n", testNo+1, test.op1.String(), test.operator.String(), test.op2.String(), result.String())
 		}
 
 		if test.err != nil {
 			if err.Error() != test.err.Error() {
-				t.Errorf("error \"%s\" for testNo: %d does not match the required error: \"%s\"", err.Error(), testNo + 1, test.err.Error())
+				t.Errorf("error \"%s\" for testNo: %d does not match the required error: \"%s\"", err.Error(), testNo+1, test.err.Error())
 			}
 		} else if !ok {
-			t.Errorf("result \"%v\" for testNo: %d does not match the required result: \"%v\"", result, testNo + 1, test.result)
+			t.Errorf("result \"%v\" for testNo: %d does not match the required result: \"%v\"", result, testNo+1, test.result)
 		}
 	}
 }
 
 func TestCast(t *testing.T) {
-	for testNo, test := range []struct{
+	for testNo, test := range []struct {
 		from   *data.Value
 		to     data.Type
 		result *data.Value
@@ -528,20 +528,20 @@ func TestCast(t *testing.T) {
 	}{
 		{
 			from: &data.Value{
-				Value:    "1",
-				Type:     data.String,
+				Value: "1",
+				Type:  data.String,
 			},
 			to: data.Number,
 			result: &data.Value{
-				Value:    float64(1),
-				Type:     data.Number,
+				Value: float64(1),
+				Type:  data.Number,
 			},
 			err: nil,
 		},
 		{
 			from: &data.Value{
-				Value:    "1.23",
-				Type:     data.String,
+				Value: "1.23",
+				Type:  data.String,
 			},
 			to: data.Number,
 			result: &data.Value{
@@ -552,8 +552,8 @@ func TestCast(t *testing.T) {
 		},
 		{
 			from: &data.Value{
-				Value:    "1.23abc",
-				Type:     data.String,
+				Value: "1.23abc",
+				Type:  data.String,
 			},
 			to: data.Number,
 			result: &data.Value{
@@ -562,7 +562,7 @@ func TestCast(t *testing.T) {
 			},
 			err: nil,
 		},
-	}{
+	} {
 		var ok bool
 		err, result := Cast(test.from, test.to)
 		// Check if the actual result is Equal to the expected result only if there is no error.
@@ -571,17 +571,17 @@ func TestCast(t *testing.T) {
 		}
 
 		if testing.Verbose() && result != nil {
-			fmt.Printf("%d: %s -(%s)-> %s\n", testNo + 1, test.from.String(), test.to.String(), result.String())
+			fmt.Printf("%d: %s -(%s)-> %s\n", testNo+1, test.from.String(), test.to.String(), result.String())
 		}
 
 		if test.err != nil {
 			if err.Error() != test.err.Error() {
-				t.Errorf("error \"%s\" for testNo: %d does not match the required error: \"%s\"", err.Error(), testNo + 1, test.err.Error())
+				t.Errorf("error \"%s\" for testNo: %d does not match the required error: \"%s\"", err.Error(), testNo+1, test.err.Error())
 			}
 		} else if err != nil {
-			t.Errorf("error \"%s\" should not have occurred (testNo: %d)", err.Error(), testNo + 1)
+			t.Errorf("error \"%s\" should not have occurred (testNo: %d)", err.Error(), testNo+1)
 		} else if !ok {
-			t.Errorf("result \"%v\" for testNo: %d does not match the required result: \"%v\"", result, testNo + 1, test.result)
+			t.Errorf("result \"%v\" for testNo: %d does not match the required result: \"%v\"", result, testNo+1, test.result)
 		}
 	}
 }
@@ -630,8 +630,8 @@ func TestMethod_Call(t *testing.T) {
 		{
 			args: []*data.Value{
 				{
-					Value:    "http://127.0.0.1:3000/hello/world?hello=world",
-					Type:     data.String,
+					Value: "http://127.0.0.1:3000/hello/world?hello=world",
+					Type:  data.String,
 				},
 				{
 					Value: map[string]interface{}{
@@ -664,7 +664,7 @@ func TestMethod_Call(t *testing.T) {
 			args: []*data.Value{
 				{
 					Value: "http://127.0.0.1:3000/hello/world?hello=world",
-					Type: data.String,
+					Type:  data.String,
 				},
 				{
 					Value: map[string]interface{}{
@@ -674,7 +674,7 @@ func TestMethod_Call(t *testing.T) {
 					Type: data.Object,
 				},
 				{
-					Value: map[string]interface{} {
+					Value: map[string]interface{}{
 						"cookie": "nom nom nom",
 					},
 					Type: data.Object,
@@ -704,14 +704,14 @@ func TestMethod_Call(t *testing.T) {
 			args: []*data.Value{
 				{
 					Value: "http://127.0.0.1:3000/hello/world?hello=world",
-					Type: data.String,
+					Type:  data.String,
 				},
 				{
 					Value: nil,
-					Type: data.Null,
+					Type:  data.Null,
 				},
 				{
-					Value: map[string]interface{} {
+					Value: map[string]interface{}{
 						"cookie": "nom nom nom",
 					},
 					Type: data.Object,
@@ -739,10 +739,10 @@ func TestMethod_Call(t *testing.T) {
 			args: []*data.Value{
 				{
 					Value: "http://127.0.0.1:3000/hello/world?hello=world",
-					Type: data.String,
+					Type:  data.String,
 				},
 				{
-					Value: map[string]interface{} {
+					Value: map[string]interface{}{
 						"hello": "world",
 					},
 					Type: data.Object,
@@ -774,7 +774,7 @@ func TestMethod_Call(t *testing.T) {
 			args: []*data.Value{
 				{
 					Value: "http://127.0.0.1:3000?format=html",
-					Type: data.String,
+					Type:  data.String,
 				},
 			},
 			result: []byte(`{
@@ -992,7 +992,7 @@ func TestMethod_Call(t *testing.T) {
   "type": "document"
 }`),
 			method: GET,
-			err: nil,
+			err:    nil,
 		},
 		{
 			args: []*data.Value{
@@ -1001,7 +1001,7 @@ func TestMethod_Call(t *testing.T) {
 					Type:  data.String,
 				},
 				{
-					Value: map[string]interface{} {
+					Value: map[string]interface{}{
 						"hello": "world",
 					},
 					Type: data.Object,
@@ -1276,7 +1276,7 @@ func TestMethod_Call(t *testing.T) {
 			method: POST,
 			err:    nil,
 		},
-	}{
+	} {
 		var ok bool
 		var j interface{}
 		err, result := test.method.Call(test.args...)
@@ -1289,7 +1289,7 @@ func TestMethod_Call(t *testing.T) {
 		}
 
 		if testing.Verbose() && result != nil {
-			fmt.Printf("%d: $%s(%v) = %s\n", testNo + 1, test.method.String(), test.args, result.String())
+			fmt.Printf("%d: $%s(%v) = %s\n", testNo+1, test.method.String(), test.args, result.String())
 		}
 
 		if test.err != nil {
@@ -1297,18 +1297,18 @@ func TestMethod_Call(t *testing.T) {
 				t.Errorf("error \"%s\" for testNo: %d does not match the required error: \"%s\"", err.Error(), testNo+1, test.err.Error())
 			}
 		} else if err != nil {
-			t.Errorf("error \"%s\" should not have occurred (testNo: %d)", err.Error(), testNo + 1)
+			t.Errorf("error \"%s\" should not have occurred (testNo: %d)", err.Error(), testNo+1)
 		} else if !ok {
 			fmt.Println()
 			fmt.Println()
 			fmt.Println((&data.Value{
-				Value:    result.Value.(map[string]interface{})["content"],
-				Type:     data.Object,
+				Value: result.Value.(map[string]interface{})["content"],
+				Type:  data.Object,
 			}).String())
 			fmt.Println("========================= VS ==========================")
 			fmt.Println(string(test.result))
 			fmt.Println()
-			t.Errorf("result \"%v\" for testNo: %d does not match the required result: \"%v\"", result, testNo + 1, string(test.result))
+			t.Errorf("result \"%v\" for testNo: %d does not match the required result: \"%v\"", result, testNo+1, string(test.result))
 		}
 	}
 

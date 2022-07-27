@@ -2,9 +2,9 @@ package parser
 
 import (
 	"fmt"
-	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/eval"
 	"github.com/alecthomas/participle/v2"
 	"github.com/alecthomas/participle/v2/lexer"
+	"github.com/andygello555/src/eval"
 	"strings"
 )
 
@@ -76,7 +76,7 @@ type JSONPathFactor struct {
 	Parts        []*Part        `( "." @@ )*`
 }
 
-// JSONPart acts similarly to Part. However, it matches a JSON literal as an initial property. Then matches any number 
+// JSONPart acts similarly to Part. However, it matches a JSON literal as an initial property. Then matches any number
 // of Index.
 type JSONPart struct {
 	Pos lexer.Position
@@ -85,13 +85,13 @@ type JSONPart struct {
 	Indices []*Index `@@*`
 }
 
-// StringLitPart acts similarly to Part. However, it matches a string literal token and any subsequent instances of 
-// Index. 
+// StringLitPart acts similarly to Part. However, it matches a string literal token and any subsequent instances of
+// Index.
 type StringLitPart struct {
 	Pos lexer.Position
 
-	StringLit  *string  `@StringLit`
-	Indices    []*Index `@@*`
+	StringLit *string  `@StringLit`
+	Indices   []*Index `@@*`
 }
 
 type Prec1Term struct {
@@ -287,10 +287,10 @@ type While struct {
 type For struct {
 	Pos lexer.Position
 
-	Var        *Assignment `For @@ ";"`
-	Condition  *Expression `@@`
-	Step       *Assignment `(";" @@)?`
-	Block      *Block      `Do @@ End`
+	Var       *Assignment `For @@ ";"`
+	Condition *Expression `@@`
+	Step      *Assignment `(";" @@)?`
+	Block     *Block      `Do @@ End`
 }
 
 // ForEach loop with iterator(s).

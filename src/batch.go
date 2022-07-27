@@ -3,8 +3,8 @@ package main
 import (
 	"container/heap"
 	"fmt"
-	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/data"
-	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/parser"
+	"github.com/andygello555/src/data"
+	"github.com/andygello555/src/parser"
 	"strings"
 	"sync"
 )
@@ -42,7 +42,7 @@ func (br *BatchResult) GetMethodCall() *parser.MethodCall {
 	return br.Method
 }
 
-// BatchResults implements heap.Interface, so that BatchResults can be quickly added back in the order in which they 
+// BatchResults implements heap.Interface, so that BatchResults can be quickly added back in the order in which they
 // arrived.
 type BatchResults []*BatchResult
 
@@ -58,7 +58,7 @@ func (b *BatchResults) Pop() interface{} {
 	old := *b
 	n := len(old)
 	x := old[n-1]
-	*b = old[0:n-1]
+	*b = old[0 : n-1]
 	return x
 }
 
@@ -77,22 +77,22 @@ type BatchSuite struct {
 	BatchStatement *parser.Batch
 	// Results is a heap.Interface that has the results of every job that was enqueued into the BatchSuite, in the order
 	// that it was enqueued.
-	Results        BatchResults
+	Results BatchResults
 	// CurrentId is a counter for the ID that is given to each enqueued job.
-	CurrentId      int
+	CurrentId int
 	// jobChan is a buffered channel that holds the jobs to execute within the worker goroutines.
-	jobChan        chan *BatchItem
+	jobChan chan *BatchItem
 	// resultChan is a buffered channel that the workers enqueue their results into.
-	resultChan     chan *BatchResult
-	// consumerDone is an unbuffered channel used to block the interpreter thread until the consumer has added all the 
+	resultChan chan *BatchResult
+	// consumerDone is an unbuffered channel used to block the interpreter thread until the consumer has added all the
 	// results to Results.
-	consumerDone   chan struct{}
+	consumerDone chan struct{}
 	// workerGroup is a sync.WaitGroup that is used to wait until all workers have executed the work that they have been
 	// given.
-	workerGroup    sync.WaitGroup
-	// close is used to execute the Stop only once, so that no panics occur if the channels (mentioned above) are 
+	workerGroup sync.WaitGroup
+	// close is used to execute the Stop only once, so that no panics occur if the channels (mentioned above) are
 	// already closed.
-	close          sync.Once
+	close sync.Once
 }
 
 // Batch creates a new BatchSuite. It creates buffered job and result channels that have a capacity of MaxWorkers.
@@ -107,12 +107,12 @@ func Batch(statement *parser.Batch) *BatchSuite {
 	}
 }
 
-// methodWorker is the worker routine used within the BatchSuite.Execute function. It reads from a channel of jobs and 
+// methodWorker is the worker routine used within the BatchSuite.Execute function. It reads from a channel of jobs and
 // writes to a channel of results. When finished, the worker decrements a sync.WaitGroup.
 func methodWorker(wg *sync.WaitGroup, jobs <-chan *BatchItem, results chan<- *BatchResult) {
 	defer wg.Done()
 	for j := range jobs {
-		// Call eval.Method.Call for the parser.MethodCall's eval.Method and queue the result and err up in a 
+		// Call eval.Method.Call for the parser.MethodCall's eval.Method and queue the result and err up in a
 		// BatchResult
 		err, result := j.Method.Method.Call(j.Args...)
 		results <- &BatchResult{
@@ -125,13 +125,13 @@ func methodWorker(wg *sync.WaitGroup, jobs <-chan *BatchItem, results chan<- *Ba
 }
 
 // AddWork will enqueue the given parser.MethodCall, and its args, as a BatchItem to be executed by the workers.
-func (b *BatchSuite) AddWork(method *parser.MethodCall, args... *data.Value) {
+func (b *BatchSuite) AddWork(method *parser.MethodCall, args ...*data.Value) {
 	b.jobChan <- &BatchItem{
 		Method: method,
 		Args:   args,
 		Id:     b.CurrentId,
 	}
-	b.CurrentId ++
+	b.CurrentId++
 }
 
 // GetStatement will return a pointer to a parser.Batch statement so that it can be compared and or set.
@@ -140,7 +140,7 @@ func (b *BatchSuite) GetStatement() *parser.Batch {
 }
 
 // Start will spin-up the worker goroutines that will be fed the work accumulated over the course of a batch statement.
-// Can be given the number of workers to spin up, if this is a negative integer, or the number of workers exceeds 
+// Can be given the number of workers to spin up, if this is a negative integer, or the number of workers exceeds
 // MaxWorkers, then MaxWorkers will be used instead. A consumer goroutine will pull results from the result channel and
 // push them to the Results heap.
 func (b *BatchSuite) Start(workers int) {
@@ -154,7 +154,7 @@ func (b *BatchSuite) Start(workers int) {
 		go methodWorker(&b.workerGroup, b.jobChan, b.resultChan)
 	}
 
-	// Start a consumer goroutine that will consume results and append them to the heap. We only start one consumer 
+	// Start a consumer goroutine that will consume results and append them to the heap. We only start one consumer
 	// because it does not make sense to try and manage a mutex between several.
 	go func() {
 		for result := range b.resultChan {

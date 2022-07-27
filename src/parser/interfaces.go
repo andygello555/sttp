@@ -3,9 +3,9 @@ package parser
 import (
 	"container/heap"
 	"fmt"
-	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/data"
-	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/errors"
 	"github.com/alecthomas/participle/v2/lexer"
+	"github.com/andygello555/src/data"
+	"github.com/andygello555/src/errors"
 	"io"
 )
 
@@ -48,7 +48,7 @@ type VM interface {
 	// GetDebug will return the io.Writer for the file used for debugging and whether that file is ioutil.Discard.
 	GetDebug() (io.Writer, bool)
 	// WriteDebug will write the format string and its arguments to the debug io.Writer.
-	WriteDebug(format string, a... interface{})
+	WriteDebug(format string, a ...interface{})
 	// GetBatch will return the BatchSuite as well as the batch results if there are any.
 	GetBatch() (BatchSuite, heap.Interface)
 	// DeleteBatch will set both the BatchSuite and the batch results to be nil. Forcing them to be garbage collected.
@@ -62,6 +62,8 @@ type VM interface {
 	StopBatch()
 	// GetEnvironment will return the currently used environment, or nil if there is no environment.
 	GetEnvironment() (err error, env Env)
+	// CheckREPL will return whether the VM is in REPL mode.
+	CheckREPL() bool
 }
 
 // CallStack is implemented by the call stack that is used within the VM.
@@ -71,22 +73,24 @@ type CallStack interface {
 	Call(caller *FunctionCall, current *FunctionDefinition, vm VM, args ...*data.Value) error
 	// Return will remove the top frame from the call stack and return it.
 	Return(vm VM) (err error, frame Frame)
-	// Current will return the top of the call stack but not return it.
+	// Current will return the top of the call stack but not remove it.
 	Current() Frame
+	// Size will return the number of Frames on the stack.
+	Size() int
 	// Stringer interface is used so that we can stringify the top couple of stack frames.
 	fmt.Stringer
 }
 
 // Frame is an entry on the call stack.
 type Frame interface {
-	GetCaller()  *FunctionCall
+	GetCaller() *FunctionCall
 	GetCurrent() *FunctionDefinition
-	GetHeap()    *data.Heap
-	GetReturn()  *data.Value
+	GetHeap() *data.Heap
+	GetReturn() *data.Value
 }
 
 // TestResults is a list of test results.
-type TestResults interface{
+type TestResults interface {
 	AddTest(node *TestStatement, passed bool)
 	GetConfig() Config
 	CheckPass() bool
@@ -112,7 +116,7 @@ type BatchResult interface {
 
 // BatchSuite represents the suite that is used to execute a Batch statement.
 type BatchSuite interface {
-	AddWork(method *MethodCall, args... *data.Value)
+	AddWork(method *MethodCall, args ...*data.Value)
 	GetStatement() *Batch
 	Start(workers int)
 	Stop() heap.Interface
@@ -122,7 +126,7 @@ type BatchSuite interface {
 type Env interface {
 	fmt.Stringer
 	Merge(env Env) (err error)
-	MergeN(envs... Env) (err error)
+	MergeN(envs ...Env) (err error)
 	GetPaths() []string
 	GetValue() *data.Value
 }
