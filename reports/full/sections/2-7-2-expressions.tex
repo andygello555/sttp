@@ -1,6 +1,7 @@
 \subsection{Expressions}
 \label{sec:development-ast-nodes-expressions}
 
+%TC:ignore
 \begin{center}
     \textbf{Git commit}
     \begin{minted}{markdown}
@@ -19,17 +20,23 @@ Language: Eval implementation on expression precedence levels
     \vspace{-1em}
     \tiny{December 3, 2021}
 \end{center}
+%TC:endignore
 
 To evaluate all AST node types that are used within the expression subtree (somewhat) easily, we use two main interfaces:
 
+%TC:ignore
 \inputminted[firstline=13, lastline=30, autogobble, breaklines, tabsize=4]{go}{../../src/parser/eval_expression.go}
+%TC:endignore
 
 This allows for each \verb|PrecNTerm| and \verb|PrecN| to be evaluated by calling an agnostic shared evaluation function for each: \verb|tEval| and \verb|fEval|. \verb|tEval| takes the \verb|term| to evaluate (a pointer to a \verb|PrecNTerm| that implements \verb|term|), as well as a \verb|VM| instance. First the node on the \verb|left| will be evaluated and stored within a \verb|Value| that is treated as an accumulator. Then each node on the \verb|right| will be iterated over. The current \verb|right| node's value will be evaluated. The operation described that is returned by the current \verb|right| node's \verb|operator| function will then be computed with the accumulator value and the evaluated \verb|right| node's value. The result of this computation will be stored back into the accumulator value. This effectively computes each \verb|term| in a left-associative manner. \verb|fTerm| is simpler, as it just needs to return the result of evaluating the \verb|inner| \verb|term| node.
 
+%TC:ignore
 \inputminted[firstline=51, lastline=92, autogobble, breaklines, tabsize=4]{go}{../../src/parser/eval_expression.go}
+%TC:endignore
 
 Examples of the implementations for \verb|PrecNTerm| and \verb|PrecN| can be found below. They can all be written comfortably on one line, as most of the implemented functions are just getters for certain fields in their respective AST structs. However, the \verb|right| implementation is a lot more verbose as a \verb|factor| array has to be constructed from the nodes within the \verb|Right| field.
 
+%TC:ignore
 \begin{minted}[breaklines]{go}    
 func (pt *PrecNTerm) left() evalNode { return pt.Left }
 func (pt *PrecNTerm) right() []factor {f := make([]factor, len(pt.Right)); for i, v := range pt.Right {f[i] = v}; return f}
@@ -37,15 +44,22 @@ func (pt *PrecNTerm) right() []factor {f := make([]factor, len(pt.Right)); for i
 func (p *PrecN) operator() eval.Operator { return p.Operator }
 func (p *PrecN) inner() term { return p.Factor }
 \end{minted}
+%TC:endignore
 
 Each expression tree within the AST, will have leaf nodes that are \verb|Factor|s. Therefore, we need to treat the \verb|Factor| AST node differently from the other \verb|term| nodes. \verb|left| will return the actual value held by the \verb|Factor|, whereas \verb|right| will return an empty array of \verb|factor|s. The \verb|left| instance method for \verb|Factor| also has to deal with values that are not represented as AST nodes that implement \verb|evalNode|. Such as tokens passed from the lexer or other native types.
 
+%TC:ignore
 \inputminted[firstline=32, lastline=49, autogobble, breaklines, tabsize=4]{go}{../../src/parser/eval_expression.go}
+%TC:endignore
 
+%TC:ignore
 \inputminted[firstline=130, lastline=179, autogobble, breaklines, tabsize=4]{go}{../../src/parser/eval_expression.go}
+%TC:endignore
 
 As you can see, when the \verb|Factor| is a \verb|Number| (\mintinline{go}{*float64}), or a \verb|StringLit| (\mintinline{go}{*string}) then we create an anonymous struct that uses \verb|protoEvalNode| as a template. We then set the \verb|evalMethod| to a function that returns either a \verb|Number| or a \verb|StringLit|, set \verb|stringMethod| to a function that returns the value as a string, and \verb|getPosMethod| to return an empty position (we do not have the context as it does not exist within the AST). \verb|protoEvalNode| implements the \verb|ASTNode| interface, which in turn means that it also implements \verb|evalNode|, and an instance of it can be returned from the \verb|left| instance method. In other words, we construct a temporary `faux' AST node for \verb|Factor|s that are numbers or string literals. \verb|protoEvalNode| is an example of how to implement the prototype design pattern\textsuperscript{\cite{prototype_2022}} within Go.
 
 Finally, we implement \verb|evalNode| for each \verb|PrecNTerm| and \verb|PrecN| by defining the \verb|Eval| instance method for each. The source code for expression evaluation is found within its own file: \verb|src/parser/eval_expression.go|.
 
+%TC:ignore
 \inputminted[firstline=182, lastline=194, fontsize=\footnotesize, autogobble, breaklines, tabsize=4]{go}{../../src/parser/eval_expression.go}
+%TC:endignore

@@ -1,0 +1,19 @@
+// Fetch topics so that we can create an extra blog for each
+topics = $GET("http://127.0.0.1:8000/api/topics");
+
+// We create a new blog for each topic
+for _, topic in topics.content do
+    blog_name = "Test Blog for %%, No %%" % [topic.name, topic.blog_count + 1];
+    blog_resp = $POST("http://127.0.0.1:8000/api/blogs", {
+        "name": blog_name,
+        "body": "Blah Blah",
+        "author": "Jane Doe",
+        "tags": [topic.name, "Test"],
+        "topic_id": topic.id
+    });
+
+    // Test for 201 code (Created)
+    test blog_resp.code == 201;
+    // Check if the name matches the name we wanted
+    test blog_resp.content.name == blog_name;
+end;

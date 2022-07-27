@@ -2,12 +2,12 @@ package parser
 
 import (
 	"fmt"
-	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/eval"
+	"github.com/andygello555/src/eval"
 	"testing"
 )
 
 func TestPath_Set(t *testing.T) {
-	for testNo, test := range []struct{
+	for testNo, test := range []struct {
 		path     Path
 		current  interface{}
 		to       interface{}
@@ -30,9 +30,9 @@ func TestPath_Set(t *testing.T) {
 			err: nil,
 		},
 		{
-			path: Path{"json", "hello", "world", 0},
+			path:    Path{"json", "hello", "world", 0},
 			current: nil,
-			to: true,
+			to:      true,
 			expected: map[string]interface{}{
 				"hello": map[string]interface{}{
 					"world": []interface{}{true},
@@ -41,9 +41,9 @@ func TestPath_Set(t *testing.T) {
 			err: nil,
 		},
 		{
-			path: Path{"json", 0, 0, 0},
+			path:    Path{"json", 0, 0, 0},
 			current: nil,
-			to: true,
+			to:      true,
 			expected: []interface{}{
 				[]interface{}{
 					[]interface{}{
@@ -54,9 +54,9 @@ func TestPath_Set(t *testing.T) {
 			err: nil,
 		},
 		{
-			path: Path{"json", 0, 1, 2, 3},
+			path:    Path{"json", 0, 1, 2, 3},
 			current: nil,
-			to: true,
+			to:      true,
 			expected: []interface{}{
 				[]interface{}{
 					nil,
@@ -79,15 +79,15 @@ func TestPath_Set(t *testing.T) {
 			current: 3.142,
 			to:      true,
 			expected: map[string]interface{}{
-				"": 3.142,
+				"":      3.142,
 				"hello": []interface{}{true},
 			},
 			err: nil,
 		},
 		{
-			path: Path{"json", 0, "hello"},
+			path:    Path{"json", 0, "hello"},
 			current: 3.142,
-			to: true,
+			to:      true,
 			expected: []interface{}{
 				map[string]interface{}{
 					"hello": true,
@@ -132,25 +132,25 @@ func TestPath_Set(t *testing.T) {
 			err: nil,
 		},
 		{
-			path: Path{"json", 0},
-			current: []interface{}{false},
-			to: true,
+			path:     Path{"json", 0},
+			current:  []interface{}{false},
+			to:       true,
 			expected: []interface{}{true},
-			err: nil,
+			err:      nil,
 		},
 		{
-			path: Path{"json"},
-			current: "hello",
-			to: "world",
+			path:     Path{"json"},
+			current:  "hello",
+			to:       "world",
 			expected: "world",
-			err: nil,
+			err:      nil,
 		},
 		{
-			path: Path{"json", "0"},
-			current: []interface{}{false},
-			to: true,
+			path:     Path{"json", "0"},
+			current:  []interface{}{false},
+			to:       true,
 			expected: nil,
-			err: fmt.Errorf("cannot access array with property"),
+			err:      fmt.Errorf("cannot access array with property"),
 		},
 		{
 			path: Path{"json", 3},
@@ -159,9 +159,9 @@ func TestPath_Set(t *testing.T) {
 				"a": 1,
 				"c": 3,
 			},
-			to: true,
+			to:       true,
 			expected: nil,
-			err: fmt.Errorf("cannot access object with index 3"),
+			err:      fmt.Errorf("cannot access object with index 3"),
 		},
 		{
 			path: Path{"json", 0, -5},
@@ -170,9 +170,9 @@ func TestPath_Set(t *testing.T) {
 				"a": 1,
 				"c": 3,
 			},
-			to: true,
+			to:       true,
 			expected: nil,
-			err: fmt.Errorf("cannot access non-object/array type with a negative index (-5)"),
+			err:      fmt.Errorf("cannot access non-object/array type with a negative index (-5)"),
 		},
 		{
 			path: Path{"json", 0, -1},
@@ -211,9 +211,9 @@ func TestPath_Set(t *testing.T) {
 				"a": []interface{}{1, 2, 3},
 				"c": 3,
 			},
-			to: true,
+			to:       true,
 			expected: nil,
-			err: fmt.Errorf("cannot access array with negative index that is out of array bounds (-4)"),
+			err:      fmt.Errorf("cannot access array with negative index that is out of array bounds (-4)"),
 		},
 		{
 			path: Path{"json", "hello", 3},
@@ -253,9 +253,9 @@ func TestPath_Set(t *testing.T) {
 			current: map[string]interface{}{
 				"hello": "world",
 			},
-			to: "egg",
+			to:       "egg",
 			expected: nil,
-			err: fmt.Errorf("cannot access string with negative index that is out of string bounds (-6)"),
+			err:      fmt.Errorf("cannot access string with negative index that is out of string bounds (-6)"),
 		},
 		{
 			path: Path{"json", "hello", 6},
@@ -297,14 +297,14 @@ func TestPath_Set(t *testing.T) {
 			},
 			to: "egg",
 			expected: map[string]interface{}{
-				"hello": map[string]interface{} {
-					"": "world",
+				"hello": map[string]interface{}{
+					"":      "world",
 					"world": "egg",
 				},
 			},
 			err: nil,
 		},
-	}{
+	} {
 		var equal bool
 		// Parsing in nil for VM parameter as we don't test filter blocks here.
 		err, result := test.path.Set(nil, test.current, test.to)
@@ -314,23 +314,23 @@ func TestPath_Set(t *testing.T) {
 		}
 
 		if testing.Verbose() && result != nil {
-			fmt.Printf("%d: %s to %v = %v\n", testNo + 1, test.path.String(), test.to, result)
+			fmt.Printf("%d: %s to %v = %v\n", testNo+1, test.path.String(), test.to, result)
 		}
 
 		if test.err != nil {
 			if err.Error() != test.err.Error() {
-				t.Errorf("error \"%s\" for testNo: %d does not match the required error: \"%s\"", err.Error(), testNo + 1, test.err.Error())
+				t.Errorf("error \"%s\" for testNo: %d does not match the required error: \"%s\"", err.Error(), testNo+1, test.err.Error())
 			}
 		} else if err != nil {
-			t.Errorf("error \"%s\" should not have occurred (testNo: %d)", err.Error(), testNo + 1)
+			t.Errorf("error \"%s\" should not have occurred (testNo: %d)", err.Error(), testNo+1)
 		} else if !equal {
-			t.Errorf("result \"%v\" for testNo: %d does not match the required result: \"%v\"", result, testNo + 1, test.expected)
+			t.Errorf("result \"%v\" for testNo: %d does not match the required result: \"%v\"", result, testNo+1, test.expected)
 		}
 	}
 }
 
 func TestPath_Get(t *testing.T) {
-	for testNo, test := range []struct{
+	for testNo, test := range []struct {
 		path     Path
 		current  interface{}
 		expected interface{}
@@ -344,13 +344,13 @@ func TestPath_Get(t *testing.T) {
 				},
 			},
 			expected: false,
-			err: nil,
+			err:      nil,
 		},
 		{
-			path: Path{"json", "hello", "world", 0},
-			current: nil,
+			path:     Path{"json", "hello", "world", 0},
+			current:  nil,
 			expected: nil,
-			err: nil,
+			err:      nil,
 		},
 		{
 			path: Path{"json", 0},
@@ -360,7 +360,7 @@ func TestPath_Get(t *testing.T) {
 				"c": 3,
 			},
 			expected: 1,
-			err: nil,
+			err:      nil,
 		},
 		{
 			path: Path{"json", 0, "hello"},
@@ -370,25 +370,25 @@ func TestPath_Get(t *testing.T) {
 				},
 			},
 			expected: 3.142,
-			err: nil,
+			err:      nil,
 		},
 		{
-			path: Path{"json", 0},
-			current: []interface{}{false},
+			path:     Path{"json", 0},
+			current:  []interface{}{false},
 			expected: false,
-			err: nil,
+			err:      nil,
 		},
 		{
-			path: Path{"json"},
-			current: "hello",
+			path:     Path{"json"},
+			current:  "hello",
 			expected: "hello",
-			err: nil,
+			err:      nil,
 		},
 		{
-			path: Path{"json", "0"},
-			current: []interface{}{false},
+			path:     Path{"json", "0"},
+			current:  []interface{}{false},
 			expected: nil,
-			err: nil,
+			err:      nil,
 		},
 		{
 			path: Path{"json", 3},
@@ -398,7 +398,7 @@ func TestPath_Get(t *testing.T) {
 				"c": 3,
 			},
 			expected: nil,
-			err: nil,
+			err:      nil,
 		},
 		{
 			path: Path{"json", 0, -5},
@@ -408,7 +408,7 @@ func TestPath_Get(t *testing.T) {
 				"c": 3,
 			},
 			expected: nil,
-			err: nil,
+			err:      nil,
 		},
 		{
 			path: Path{"json", 0, -1},
@@ -418,7 +418,7 @@ func TestPath_Get(t *testing.T) {
 				"c": 3,
 			},
 			expected: 3,
-			err: nil,
+			err:      nil,
 		},
 		{
 			path: Path{"json", 0, -3},
@@ -428,7 +428,7 @@ func TestPath_Get(t *testing.T) {
 				"c": 3,
 			},
 			expected: 1,
-			err: nil,
+			err:      nil,
 		},
 		{
 			path: Path{"json", 0, -4},
@@ -438,7 +438,7 @@ func TestPath_Get(t *testing.T) {
 				"c": 3,
 			},
 			expected: nil,
-			err: nil,
+			err:      nil,
 		},
 		{
 			path: Path{"json", "hello", 3},
@@ -446,7 +446,7 @@ func TestPath_Get(t *testing.T) {
 				"hello": "world",
 			},
 			expected: "l",
-			err: nil,
+			err:      nil,
 		},
 		{
 			path: Path{"json", "hello", 4},
@@ -454,7 +454,7 @@ func TestPath_Get(t *testing.T) {
 				"hello": "world",
 			},
 			expected: "d",
-			err: nil,
+			err:      nil,
 		},
 		{
 			path: Path{"json", "hello", -5},
@@ -462,7 +462,7 @@ func TestPath_Get(t *testing.T) {
 				"hello": "world",
 			},
 			expected: "w",
-			err: nil,
+			err:      nil,
 		},
 		{
 			path: Path{"json", "hello", -6},
@@ -470,7 +470,7 @@ func TestPath_Get(t *testing.T) {
 				"hello": "world",
 			},
 			expected: nil,
-			err: nil,
+			err:      nil,
 		},
 		{
 			path: Path{"json", "hello", 6},
@@ -478,7 +478,7 @@ func TestPath_Get(t *testing.T) {
 				"hello": "world",
 			},
 			expected: nil,
-			err: nil,
+			err:      nil,
 		},
 		{
 			path: Path{"json", "hello", 6, 0},
@@ -486,9 +486,9 @@ func TestPath_Get(t *testing.T) {
 				"hello": "world",
 			},
 			expected: nil,
-			err: nil,
+			err:      nil,
 		},
-	}{
+	} {
 		var equal bool
 		// Parsing in nil for VM parameter as we don't test filter blocks here.
 		err, result := test.path.Get(nil, test.current)
@@ -499,21 +499,20 @@ func TestPath_Get(t *testing.T) {
 
 		if testing.Verbose() && result != nil {
 			path := test.path[1:]
-			fmt.Printf("%d: (%v)%s%s = %v\n", testNo + 1, test.current, map[bool]string{
-				true: ".",
+			fmt.Printf("%d: (%v)%s%s = %v\n", testNo+1, test.current, map[bool]string{
+				true:  ".",
 				false: "",
 			}[len(path) > 0], path.String(), result)
 		}
 
 		if test.err != nil {
 			if err.Error() != test.err.Error() {
-				t.Errorf("error \"%s\" for testNo: %d does not match the required error: \"%s\"", err.Error(), testNo + 1, test.err.Error())
+				t.Errorf("error \"%s\" for testNo: %d does not match the required error: \"%s\"", err.Error(), testNo+1, test.err.Error())
 			}
 		} else if err != nil {
-			t.Errorf("error \"%s\" should not have occurred (testNo: %d)", err.Error(), testNo + 1)
+			t.Errorf("error \"%s\" should not have occurred (testNo: %d)", err.Error(), testNo+1)
 		} else if !equal {
-			t.Errorf("result \"%v\" for testNo: %d does not match the required result: \"%v\"", result, testNo + 1, test.expected)
+			t.Errorf("result \"%v\" for testNo: %d does not match the required result: \"%v\"", result, testNo+1, test.expected)
 		}
 	}
 }
-

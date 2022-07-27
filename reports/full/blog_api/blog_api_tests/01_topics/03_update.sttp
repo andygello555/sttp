@@ -1,0 +1,16 @@
+// Fetch all the topics so we can easily update the topics
+topics = $GET("http://127.0.0.1:8000/api/topics");
+
+for _, topic in topics.content do
+    // We will update the topic's name to be the existing name + "Updated"
+    new_name = topic.name + " Updated";
+    topic_resp = $PUT(
+        "http://127.0.0.1:8000/api/topics/%%" % topic.id,
+        {"name": new_name}
+    );
+
+    // Test the response code
+    test topic_resp.code == 200;
+    // Test whether the response from the server matches the updated name
+    test topic_resp.content.name == new_name;
+end;

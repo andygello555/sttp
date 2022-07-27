@@ -2,17 +2,17 @@ package main
 
 import (
 	"fmt"
-	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/data"
-	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/errors"
-	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/parser"
+	"github.com/andygello555/src/data"
+	"github.com/andygello555/src/errors"
+	"github.com/andygello555/src/parser"
 	"strings"
 )
 
 const (
 	// MaxStackFrames are the maximum number of stack frames that can exist on the stack before an overflow can occur.
-	MaxStackFrames      = 500
+	MaxStackFrames = 500
 	// MinStackFrames are the minimum number of stack frames that can exist on the stack before an underflow can occur.
-	MinStackFrames      = 0
+	MinStackFrames = 0
 	// MaxStackFramesPrint are the maximum number of stack frames that are printed when the stack is dumped (from the
 	// top).
 	MaxStackFramesPrint = 25
@@ -21,13 +21,13 @@ const (
 // Frame is a stack frame which is allocated on the call stack.
 type Frame struct {
 	// Caller is the reference to the FunctionCall node in the AST.
-	Caller  *parser.FunctionCall
+	Caller *parser.FunctionCall
 	// Current is the reference to the FunctionDefinition node in the AST.
 	Current *parser.FunctionDefinition
 	// Heap contains the parameters and local variables assigned within the function.
-	Heap    *data.Heap
+	Heap *data.Heap
 	// Return is the value/symbol returned by the function.
-	Return  *data.Value
+	Return *data.Value
 }
 
 func (f *Frame) GetCaller() *parser.FunctionCall {
@@ -61,7 +61,7 @@ func (cs *CallStack) Call(caller *parser.FunctionCall, current *parser.FunctionD
 	*cs = append(*cs, &Frame{
 		Caller:  caller,
 		Current: current,
-		Heap: &heap,
+		Heap:    &heap,
 		Return: &data.Value{
 			Value:  nil,
 			Type:   data.NoType,
@@ -72,7 +72,7 @@ func (cs *CallStack) Call(caller *parser.FunctionCall, current *parser.FunctionD
 	// We only do this if this isn't our first stack frame
 	if caller != nil && current != nil {
 		params := current.Body.Parameters
-		previous := (*cs)[len(*cs) - 2]
+		previous := (*cs)[len(*cs)-2]
 		// If there are more arguments than parameters then we'll return an error
 		if len(args) > len(params) {
 			return errors.MoreArgsThanParams.Errorf(vm, current.JSONPath.String(0), len(params), len(args))
@@ -134,7 +134,7 @@ func (cs *CallStack) Call(caller *parser.FunctionCall, current *parser.FunctionD
 
 // Current returns the currently "running" Frame and doesn't pop it.
 func (cs *CallStack) Current() parser.Frame {
-	return (*cs)[len(*cs) - 1]
+	return (*cs)[len(*cs)-1]
 }
 
 // Return pops off the topmost stack Frame and returns it. Also returns an error if there is a stack underflow.
@@ -144,9 +144,9 @@ func (cs *CallStack) Return(vm parser.VM) (err error, frame parser.Frame) {
 	}
 
 	// Pop off the topmost frame
-	frame = (*cs)[len(*cs) - 1]
-	(*cs)[len(*cs) - 1] = nil
-	*cs = (*cs)[:len(*cs) - 1]
+	frame = (*cs)[len(*cs)-1]
+	(*cs)[len(*cs)-1] = nil
+	*cs = (*cs)[:len(*cs)-1]
 	return nil, frame
 }
 
@@ -163,7 +163,7 @@ func (cs *CallStack) String() string {
 	var sb strings.Builder
 	for i := len(top) - 1; i > 0; i-- {
 		frame := top[i]
-		parentFrame := top[i - 1]
+		parentFrame := top[i-1]
 		parentCurrent := ""
 		if parentFrame.Current != nil {
 			parentCurrent = fmt.Sprintf(", in %s", parentFrame.Current.JSONPath.String(0))
@@ -186,7 +186,7 @@ func (cs *CallStack) String() string {
 	return sb.String()
 }
 
-// Value gets the sttp value of the most recent stack frames. The returned value will be a []interface{} array which is 
+// Value gets the sttp value of the most recent stack frames. The returned value will be a []interface{} array which is
 // supported by sttp.
 func (cs *CallStack) Value() []interface{} {
 	// We first get the most recent stack frames
@@ -197,9 +197,9 @@ func (cs *CallStack) Value() []interface{} {
 	top := (*cs)[start:]
 
 	getPosMap := func(node parser.ASTNode) map[string]interface{} {
-		return map[string]interface{} {
-			"line": float64(node.GetPos().Line),
-			"col": float64(node.GetPos().Column),
+		return map[string]interface{}{
+			"line":     float64(node.GetPos().Line),
+			"col":      float64(node.GetPos().Column),
 			"filename": node.GetPos().Filename,
 		}
 	}
@@ -207,20 +207,20 @@ func (cs *CallStack) Value() []interface{} {
 	val := make([]interface{}, 0)
 	for i := len(top) - 1; i > 0; i-- {
 		frame := top[i]
-		parentFrame := top[i - 1]
+		parentFrame := top[i-1]
 		frameMap := make(map[string]interface{})
 
 		if parentFrame.Current != nil {
-			frameMap["current"] = map[string]interface{} {
-				"pos": getPosMap(parentFrame.Current),
+			frameMap["current"] = map[string]interface{}{
+				"pos":      getPosMap(parentFrame.Current),
 				"function": parentFrame.Current,
-				"string": parentFrame.Current.String(0),
+				"string":   parentFrame.Current.String(0),
 			}
 		}
 
 		if frame.Caller != nil {
-			frameMap["caller"] = map[string]interface{} {
-				"pos": getPosMap(frame.Caller),
+			frameMap["caller"] = map[string]interface{}{
+				"pos":    getPosMap(frame.Caller),
 				"string": frame.Caller.String(0),
 			}
 		}
@@ -228,4 +228,8 @@ func (cs *CallStack) Value() []interface{} {
 		val = append(val, frameMap)
 	}
 	return val
+}
+
+func (cs *CallStack) Size() int {
+	return len(*cs)
 }

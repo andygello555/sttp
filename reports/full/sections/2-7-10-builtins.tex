@@ -1,6 +1,7 @@
 \section{Builtins}
 \label{sec:development-builtins}
 
+%TC:ignore
 \begin{center}
     \textbf{Git commit}
     \begin{minted}{markdown}
@@ -24,11 +25,13 @@ Language: rearranging examples + builtin function call + testing
     \vspace{-1em}
     \tiny{December 13, 2021}
 \end{center}
+%TC:endignore
 
-The number of builtin functions within \verb|sttp| at the time of writing is limited. This could be because many of the actions reserved for builtin functions in other languages, such as a length function, can be done through operators. However, there is still a need for them. Internally, all builtin functions are of the type \mintinline[breaklines]{go}{type BuiltinFunction func(vm VM, uncomputedArgs... *Expression) (err error, value *data.Value)}. Note how the arguments provided to a \verb|BuiltinFunction| are un-computed \verb|Expression| AST nodes, this is for reasons that will be discussed later. All the builtin functions are represented as a \mintinline[breaklines]{go}{map[string]BuiltinFunction}. Where the \mintinline{go}{string} represents the function name that will be called. All builtin functions are single identifiers, or \textbf{root properties}. This \mintinline{go}{map} is initialised via the \verb|init| function within \verb|src/parser/functions.go| that is run when the \verb|parser| package is first imported.
+The number of builtin functions within \verb|sttp| at the time of writing is limited. This could be because many of the actions reserved for builtin functions in other languages, such as a length function, can be done through operators. However, there is still a need for them. Internally, all builtin functions are of the type \mintinline[breaklines]{go}{type BuiltinFunction func(vm VM, uncomputedArgs... *Expression) (err error, value *data.Value)}. Note how the arguments provided to a \verb|BuiltinFunction| are un-computed \verb|Expression| AST nodes, this is for reasons that will be discussed later. All the builtin functions are represented as a \mintinline[breaklines]{go}{map[string]BuiltinFunction}, where \mintinline{go}{string} represents the function name that will be called. All builtin functions are single identifiers, or \textbf{root properties}. This \mintinline{go}{map} is initialised via the \verb|init| function within \verb|src/parser/functions.go| that is run when the \verb|parser| package is first imported.
 
-\verb|BuiltinFunction|s take a list of un-computed \verb|Expression|s because of the \verb|free| function. This function will look down the left-hand side of each \verb|Expression| tree, if it finds a \verb|JSONPath| node on the leftmost leaf, then the value that lies at this JSONPath will be `freed'. The value will only be garbage collected by Go if the JSONPath points to a root property, otherwise the JSONPath will just be set to \verb|null|. \verb|sttp| does not have a garbage collector itself, and because each \verb|Value| on the \verb|Heap| of each \verb|Frame| is allocated on Go's heap it means that we cannot rely on Go's garbage collector to de-allocate unused variables. This is because these values can be accessed through the \verb|VM| instance, that exists throughout the entire runtime of each script's evaluation. This can be tested by placing the following code within the \verb|Heap.Assign| method:
+\verb|BuiltinFunction|s take a list of un-computed \verb|Expression|s because of the \verb|free| function. This function will look down the left-hand side of each \verb|Expression| tree, if it finds a \verb|JSONPath| node on the leftmost leaf, then the value that lies at this JSONPath will be `freed'. The value will only be removed from the \verb|Heap|, and thus garbage collected by Go, if the JSONPath points to a root property, otherwise the JSONPath will just be set to \verb|null|. \verb|sttp| does not have a garbage collector itself, and because each \verb|Value| on the \verb|Heap| of each \verb|Frame| is allocated on Go's heap, it means that we cannot rely on Go's garbage collector to de-allocate unused variables. This is because these values can be accessed through the \verb|VM| instance, that exists throughout the entire runtime of each script's evaluation. This can be tested by placing the following code within the \verb|Heap.Assign| method:
 
+%TC:ignore
 \begin{figure}[H]
     \begin{minted}[breaklines]{go}
 // Check if there is an existing value to set
@@ -57,7 +60,8 @@ if existing != nil {
 }
     \end{minted}
 \end{figure}
+%TC:endignore
 
-This will set the function to be called when a newly allocated \verb|Value| has been `finalized' (marked for the GC). The only times this function will be called (and thus displaying the \verb|Value| which has been finalized) is after returning from a function and de-allocating the returned from \verb|Frame|, or when calling the \verb|free| builtin. In reality, \verb|sttp| should not be used for applications that require high memory loads, but the \verb|free| function is provided in case programmers are having memory issues.
+This will set the function to be called when a newly allocated \verb|Value| has been `finalized' (marked for the GC). The only times this function will be called (and thus outputting the \verb|Value| which has been finalized) is after returning from a function and de-allocating the returned from \verb|Frame|, or when calling the \verb|free| builtin. In reality, \verb|sttp| should not be used for applications that require high memory loads, but the \verb|free| function is provided in case programmers are having memory issues.
 
-The other builtin functions are described within the \hyperref[sec:builtins]{specification}. The source code for all the builtin functions are described within \verb|src/parser/functions.go|.
+The other builtin functions are described within the \hyperref[sec:builtins]{specification}. The source code for all the other builtin functions can be found in \verb|src/parser/functions.go|.

@@ -2,8 +2,8 @@ package eval
 
 import (
 	"fmt"
-	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/data"
-	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/errors"
+	"github.com/andygello555/src/data"
+	"github.com/andygello555/src/errors"
 	"reflect"
 )
 
@@ -86,21 +86,21 @@ var o = oFunc
 
 // operatorTable is a lookup which contains the functions which carry out operation calls. Each row represents the
 // operator that is being called. Whereas, each column represents the type on the left-hand side of the expression.
-var operatorTable = [13][8]func(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) {
+var operatorTable = [13][8]func(op1 *data.Value, op2 *data.Value) (err error, result *data.Value){
 	/*           NoType    Object    Array    String    Number    Boolean    Null    Function                    */
-	/* Mul */ {       o,        o,       o, muString, muNumber, anBoolean,    op1,          o},
-	/* Div */ {       o, diObject,       o,        o, diNumber, diBoolean,    op1,          o},
-	/* Mod */ {       o,        o,       o, moString, moNumber, moBoolean,    op1,          o},
-	/* Add */ {       o, adObject, adArray, adString, adNumber, orBoolean,    op1,          o},
-	/* Sub */ {       o, suObject, suArray, suString, suNumber, suBoolean,    op1,          o},
-	/* Lt  */ {       o, ltObject, ltArray, ltString, ltNumber, ltBoolean,      o,          o},
-	/* Gt  */ {       o, gtObject, gtArray, gtString, gtNumber, gtBoolean,      o,          o},
-	/* Lte */ {       o, leObject, leArray, leString, leNumber, leBoolean,      o,          o},
-	/* Gte */ {       o, geObject, geArray, geString, geNumber, geBoolean,      o,          o},
-	/* Eq  */ {       o, eqObject, eqArray, eqString, eqNumber, eqBoolean, eqNull,          o},
-	/* Ne  */ {       o, neObject, neArray, neString, neNumber, neBoolean, neNull,          o},
-	/* And */ {       o, anObject, anArray, anString, anNumber, anBoolean, anNull,          o},
-	/* Or  */ {       o, orObject, orArray, orString, orNumber, orBoolean, orNull,          o},
+	/* Mul */ {o, o, o, muString, muNumber, anBoolean, op1, o},
+	/* Div */ {o, diObject, o, o, diNumber, diBoolean, op1, o},
+	/* Mod */ {o, o, o, moString, moNumber, moBoolean, op1, o},
+	/* Add */ {o, adObject, adArray, adString, adNumber, orBoolean, op1, o},
+	/* Sub */ {o, suObject, suArray, suString, suNumber, suBoolean, op1, o},
+	/* Lt  */ {o, ltObject, ltArray, ltString, ltNumber, ltBoolean, o, o},
+	/* Gt  */ {o, gtObject, gtArray, gtString, gtNumber, gtBoolean, o, o},
+	/* Lte */ {o, leObject, leArray, leString, leNumber, leBoolean, o, o},
+	/* Gte */ {o, geObject, geArray, geString, geNumber, geBoolean, o, o},
+	/* Eq  */ {o, eqObject, eqArray, eqString, eqNumber, eqBoolean, eqNull, o},
+	/* Ne  */ {o, neObject, neArray, neString, neNumber, neBoolean, neNull, o},
+	/* And */ {o, anObject, anArray, anString, anNumber, anBoolean, anNull, o},
+	/* Or  */ {o, orObject, orArray, orString, orNumber, orBoolean, orNull, o},
 }
 
 // Compute will compute the result of the given binary operation with the given left and right operands. Internally this

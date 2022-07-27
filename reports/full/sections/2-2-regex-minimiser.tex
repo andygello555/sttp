@@ -1,5 +1,6 @@
 \section{Regex minimiser}
 
+%TC:ignore
 \begin{center}
     \textbf{Git commit}
     \begin{minted}{markdown}
@@ -12,9 +13,11 @@ correctly.
     \vspace{-1em}
     \tiny{October 5, 2021}
 \end{center}
+%TC:endignore
 
 After writing the four-function calculator implementation I decided to translate some of the algorithms and methods used within lexical analysis described by the \textit{CS3470: Compilers And Code Generation} course. I did this mainly to supplement my learning and to understand how the algorithms worked. The implementation consists of a participle attribute grammar which accepts a language of simple regular expressions. The accepted notation includes: concatenation, alternation, grouping, and Kleene Closure and is described by the following EBNF grammar:
 
+%TC:ignore
 \begin{figure}[H]
     \begin{minted}{ebnf}
 (*         Tokens        *)
@@ -30,6 +33,7 @@ Regex = Term [ "|" Regex ] ;
     \end{minted}
     \cprotect\caption{The tokens and grammar for the regular expression parser test program unwrapped from the Go code.}
 \end{figure}
+%TC:endignore
 
 The implementation minifies an input regular expression in three phases:
 
@@ -44,13 +48,15 @@ The implementation minifies an input regular expression in three phases:
 
 Thompson's construction is carried out in a single traversal of the produced AST. This is done by having each AST node implement the following interface:
 
+%TC:ignore
 \begin{minted}{go}
 type Thompsons interface {
     Thompson(graph *Graph) (start State, end State)
 }
 \end{minted}
+%TC:endignore
 
-The \verb|Thompsons| instance method takes a pointer to a \verb|Graph| type, which is represented as an adjacency list internally, and returns a start node and an end node. This is because each one of Thompson's constructions modifies the NFA and can also introduce a new start point and end point to the NFA. For instance, in the case of alternation (\verb+"|"+) the new start and end point will be set to the created nodes that join to the existing nodes using the epsilon transition.
+The \verb|Thompsons| instance method takes a pointer to a \verb|Graph| type, which is an adjacency list, and returns a start node and an end node. This is because when one of Thompson's constructions modifies the NFA it can introduce a new start point and end point to the NFA. For instance, in the case of alternation (\verb+"|"+) the new start and end point will be set to the created nodes that join to the existing nodes using the epsilon transition.
 
 \begin{figure}[!h]
     \centering
@@ -72,6 +78,7 @@ The \verb|Thompsons| instance method takes a pointer to a \verb|Graph| type, whi
     \cprotect\caption{The NFA, produced by Thompson's construction, for the regular expression: \verb+a | b+. Here, the start of the graph would be at the node: $0$, and the end/accepting node would be: $5$.}
 \end{figure}
 
+%TC:ignore
 \begin{figure}[H]
     \begin{minted}{go}
 // Thompson construction for a Regex symbol.
@@ -88,29 +95,34 @@ func (r *Regex) Thompson(graph *Graph) (start State, end State) {
     \end{minted}
     \cprotect\caption{An example taken from \verb|test_programs/thompsons/thompsons.go| showing the \verb|Thompson| instance method for the \verb|Regex| AST node/non-terminal.}
 \end{figure}
+%TC:endignore
 
 In the example shown above, the \verb|Term| node will be executed first. This will produce a sub-NFA that has a start, and an end point. If the \verb|Regex| field is not nil, this means that there is an alternation (\verb+"|"+) within the regular expression. This \verb|Regex| AST node/non-terminal will first be evaluated, and the alternation/union of the two will be constructed in the \verb|Graph| (using the \verb|Union| instance method). Due to \verb|Regex| being the start non-terminal of the grammar, it is possible that this method could return the finished start and end points of the fully constructed NFA.
 
 \subsection{Subset Construction}
 \cprotect\textit{Source located in: \verb|test_programs/thompsons/subset.go|}
 
-After the NFA has been produced, the \verb|Graph| instance mentioned above is then passed to the subset construction algorithm to construct a (non-minimal) DFA. It is important to note that the \verb|AdjacencyList| type, that is used within the \verb|Graph| type, has the signature:
+After the NFA has been produced, the \verb|Graph| instance mentioned above is then passed to the subset construction algorithm to construct a (non-minimal) DFA. A type used extensively whilst calculating the subset construction is the \verb|StateSetExistence| type. \verb|StateSetExistence| denotes a unique set of states, and is used when calculating the possible inputs accepted by the regular expression as well as the epsilon closure.
 
-\begin{minted}{go}
-type AdjacencyList map[StateKey][]Edge
+% It is important to note that the \verb|AdjacencyList| type, that is used within the \verb|Graph| type, has the signature:
 
-// StateKey represents the key used within AdjacencyLists.
-// It wraps both State and StateSet to provide a string key usable in maps.
-type StateKey interface {
-	// Key generates a key from a State or StateSet.
-	Key() string
-}
-\end{minted}
+% %TC:ignore
+% \begin{minted}{go}
+% type AdjacencyList map[StateKey][]Edge
 
-The \verb|StateKey| interface is used within the \verb|AdjacencyList| type so that both a single state (represented as the \verb|State|), and a set of states (represented as the \verb|StateSet| type) can be easily hashed and used within Go's native \mintinline[breaklines]{go}{map} type. This is useful when carrying out the subset construction, as it merges multiple states from the NFA into a smaller number of sets of states.
+% // StateKey represents the key used within AdjacencyLists.
+% // It wraps both State and StateSet to provide a string key usable in maps.
+% type StateKey interface {
+% 	// Key generates a key from a State or StateSet.
+% 	Key() string
+% }
+% \end{minted}
+% %TC:endignore
 
-Another type used extensively whilst calculating the subset construction is the \verb|StateSetExistence| type. \verb|StateSetExistence| denotes a unique set of states, and is used when calculating the possible inputs accepted by the regular expression as well as the epsilon closure.
+% The \verb|StateKey| interface is used within the \verb|AdjacencyList| type so that both a single state (represented as the \verb|State|), and a set of states (represented as the \verb|StateSet| type) can be easily hashed and used within Go's native \mintinline[breaklines]{go}{map} type. This is useful when carrying out the subset construction, as it merges multiple states from the NFA into a smaller number of sets of states.
 
+
+%TC:ignore
 \begin{minted}{go}
 // StateSetExistence represents a unique set of States.
 type StateSetExistence map[StateKeyString]bool
@@ -118,6 +130,7 @@ type StateSetExistence map[StateKeyString]bool
 // NOTE: A StateKeyString is the stringified version 
 //       of a StateKey, derived using StateKey.Key.
 \end{minted}
+%TC:endignore
 
 It makes use of an interesting side effect of Go's \mintinline[breaklines]{go}{map} type. In that, when accessing a \mintinline[breaklines]{go}{map} with a key that does not exist within the \mintinline[breaklines]{go}{map}, the default value of the value type will be returned. The default value for \mintinline[breaklines]{go}{bool}s is \mintinline[breaklines]{go}{false}. This creates a succinct way of checking whether an element exists within a set.
 
@@ -125,98 +138,12 @@ I will not be explaining how the \verb|Subset| and \verb|EClosure| instance meth
 
 \subsection{Dead State Minimisation}
 
-Dead State minimisation requires the DFA to translated into a transition table. To do this, I first created a \verb|TransitionTable| type. This type is essentially a matrix of \verb|StateKeyString| values, so I also created a constructor (\verb|InitTT|) along with it, which takes a \verb|Graph| and returns a newly allocated \verb|TransitionTable|.
+Dead State minimisation requires the DFA to translated into a transition table. To do this, I first created a \verb|TransitionTable| type. This type is essentially a matrix of \verb|StateKeyString| values, so I also created a constructor (\verb|InitTT|) along with it, which takes a \verb|Graph| (after having the subset construction applied to it) and returns a newly allocated \verb|TransitionTable|.
 
-\begin{figure}[H]    
-    \begin{minted}{go}
-// TransitionTable represents the table of all moves from all states with the
-// given language, including the dead state. Rows represent the language input
-// strings, and Cols represent the possible states from a DFA.
-type TransitionTable struct {
-    // Table is transition table itself.
-    Table           [][]StateKeyString
-    // Rows is the number of rows in the TT.
-    Rows            int
-    // Cols is the number of columns in the TT.
-    Cols            int
-    // States is an array of all states from the DFA including the DeadState.
-    States          []StateKey
-    // StateCols is a lookup for where each of the current StateKeyStrings 
-    // that span the columns of the TT are stored as column indices.
-    StateCols       map[StateKeyString]int
-    // Language is the possible inputs for the DFA.
-    Language        []string
-    // AcceptingStates are all the states that are accepting states. These 
-    // are found by doing a lookup within the NFA.
-    AcceptingStates StateSetExistence
-    // MergedStates is a mapping of StateKeyStrings to StateSetExistences 
-    // that indicates which states have been merged during Dead State Minimisation.
-    MergedStates    MergedStates
-    Verbose         bool
-}
-    \end{minted}
-\end{figure}
-
-\begin{figure}[H]\ContinuedFloat
-    \begin{minted}{go}
-// InitTT constructs a TransitionTable from the given Graph instance.
-func InitTT(graph *Graph, verbose bool) *TransitionTable {
-    // Setup the basic metadata for the transition table
-    // Truncated to make space...
-
-    // Then fill out the table itself
-    for i := range tt.Table {
-        tt.Table[i] = make([]StateKeyString, tt.Cols)
-        // Set each value accordingly in relation to the DFAs adjacency list.
-        for j := range tt.Table[i] {
-            if j == 0 {
-                // We insert the dead state at col 0 (the dead state)
-                tt.Table[i][j] = DeadState
-                tt.StateCols[DeadState] = 0
-            } else {
-                state := tt.States[j]
-                tt.StateCols[StateKeyString(state.Key())] = j
-                // Then we find out if the state is an accepting state by
-                // comparing the key to the NFA
-                if graph.CheckIfAccepting(state) {
-                    tt.AcceptingStates.Mark(state)
-                }
-
-                // Find out which inputs the state can accept
-                possibleInputs := make(map[string]*Edge)
-                for _, edge := range graph.DFA.Get(state) {
-                    possibleInputs[edge.Read] = &edge
-                }
-
-                // We set the transition to a dead state by default
-                tt.Table[i][j] = DeadState
-                for _, edge := range graph.DFA.Get(state) {
-                    if edge.Read == tt.Language[i] {
-                        tt.Table[i][j] = StateKeyString(edge.Ingoing.Key())
-                        break
-                    }
-                }
-            }
-        }
-    }
-    return &tt
-}
-    \end{minted}
-    \cprotect\caption{The \verb|TransitionTable| type and its constructor, that are used within the Dead State minimisation algorithm. This is taken from the \verb|test_programs/thompsons/minimisation.go| file.}
-\end{figure}
+%TC:ignore
+\inputminted[firstline=45, lastline=46, autogobble, breaklines, tabsize=4, ]{go}{../../test_programs/thompsons/minimisation.go}
+%TC:endignore
 
 The \verb|MergedStates| type is important to the execution of the Dead State minimisation algorithm. This is because it includes an instance method that can check if the given merged state differs from the instanced merged state, which is the main condition that must hold for Dead State minimisation to continue. Once this instance method returns \mintinline[breaklines]{go}{false}, this means that Dead State minimisation is complete and the DFA is minimal.
 
-The source code for the algorithm itself is implemented as an instance method for the \verb|TransitionTable| type, and can be found in the \verb|test_programs/thompsons/minimisation.go| file.
-
-\subsection{Visualisation}
-
-As well as computing the minimal DFA, the regex minimiser also renders the each phase of the execution using the \verb|graphviz| library. This Go version of the graphviz library (\href{https://github.com/goccy/go-graphviz}{go-graphviz}) comes pre-bundled with the C code for graphviz, which will be compiled through Go's compiler using the default C compiler on the target machine. Each time the regex minimiser is called it produces six output files:
-
-\begin{itemize}
-    \item \verb|thomspons.png| and \verb|thompsons.dot|: the NFA after carrying out Thompson's construction. \verb|thomspons.dot| is a text file containing code written in graphviz's DSL that can be passed to the graphviz executable to render the NFA. This is the same with the other \verb|*.dot| files below.
-    \item \verb|subset.png| and \verb|thompsons.dot|: the non-minimal DFA produced by the subset construction.
-    \item \verb|deadstate.png| and \verb|deadstate.dot|: the minimal DFA produced by the Dead State minimisation algorithm.
-\end{itemize}
-
-More information on how to run the regex minimiser can be found in the \verb|README|.
+The source code for the algorithm itself is implemented as an instance method for the \verb|TransitionTable| type, and can be found in the \verb|test_programs/thompsons/minimisation.go| file. More information on how to run the regex minimiser can be found in the \verb|README|.

@@ -2,11 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/data"
-	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/errors"
-	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/eval"
-	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/parser"
 	"github.com/alecthomas/participle/v2/lexer"
+	"github.com/andygello555/src/data"
+	"github.com/andygello555/src/errors"
+	"github.com/andygello555/src/eval"
+	"github.com/andygello555/src/parser"
 	"io"
 	"io/ioutil"
 	"path/filepath"
@@ -16,12 +16,12 @@ import (
 )
 
 // passFail is a lookup of the string to use for test outputs.
-var passFail = map[bool]string {
-	true: "PASS",
+var passFail = map[bool]string{
+	true:  "PASS",
 	false: "FAIL",
 }
 
-// TestResult is a single test result. There is a pointer to a TestStatement within an AST as well as whether the test 
+// TestResult is a single test result. There is a pointer to a TestStatement within an AST as well as whether the test
 // has passed.
 type TestResult struct {
 	Node   *parser.TestStatement
@@ -29,7 +29,7 @@ type TestResult struct {
 	Passed bool
 }
 
-// Passed implementors must be able to check whether tests have passed. Implemented by TestResults, TestSuite, and 
+// Passed implementors must be able to check whether tests have passed. Implemented by TestResults, TestSuite, and
 // TestPath.
 type Passed interface {
 	parser.IndentString
@@ -72,15 +72,16 @@ func (tp *TestPath) Run(stdout io.Writer, stderr io.Writer, debug io.Writer, mer
 	return tp.GetPath().Run(stdout, stderr, debug, mergedEnv)
 }
 
-// TestPaths represents a sorted array structure where TestPath(s) are ordered by their Path field in ascending 
-//lexicographical order. 
+// TestPaths represents a sorted array structure where TestPath(s) are ordered by their Path field in ascending
+//lexicographical order.
 type TestPaths []*TestPath
-func (tps TestPaths) Len() int { return len(tps) }
-func (tps TestPaths) Less(i, j int) bool { return tps[i].Path < tps[j].Path }
-func (tps TestPaths) Swap(i, j int) { tps[i], tps[j] = tps[j], tps[i] }
 
-// TestResults contains an array of pointers to TestResult, as well as maybe containing a list of inner suites. This 
-// represents all the test results within a given sttp script. Also contains a pointer back to the parent TestSuite's 
+func (tps TestPaths) Len() int           { return len(tps) }
+func (tps TestPaths) Less(i, j int) bool { return tps[i].Path < tps[j].Path }
+func (tps TestPaths) Swap(i, j int)      { tps[i], tps[j] = tps[j], tps[i] }
+
+// TestResults contains an array of pointers to TestResult, as well as maybe containing a list of inner suites. This
+// represents all the test results within a given sttp script. Also contains a pointer back to the parent TestSuite's
 // TestConfig, as well as the Path of the script that needs to be run.
 type TestResults struct {
 	Path    string
@@ -91,15 +92,15 @@ type TestResults struct {
 // Run will create and run a new VM for the script at the Path.
 func (t *TestResults) Run(stdout io.Writer, stderr io.Writer, debug io.Writer, mergedEnv *Env) error {
 	var err error
-	vm := New(t, stdout, stderr, debug, mergedEnv)
+	vm := New(false, t, stdout, stderr, debug, mergedEnv)
 	fileBytes, _ := ioutil.ReadFile(t.Path)
 	err, _ = vm.Eval(t.Path, string(fileBytes))
 	if err != nil {
 		var pos lexer.Position
 		failedTest := false
 		switch err.(type) {
-		case struct { errors.ProtoSttpError }:
-			sttpErr := err.(struct { errors.ProtoSttpError })
+		case struct{ errors.ProtoSttpError }:
+			sttpErr := err.(struct{ errors.ProtoSttpError })
 			if !sttpErr.FromNullVM {
 				pos = sttpErr.Pos
 			}
@@ -179,7 +180,7 @@ func (t *TestResults) String(indent int) string {
 // TestSuite is a map of directory paths to TestResults pointers. This can be used to construct a recursive test suite.
 // A TestSuite represents a directory within the test structure.
 type TestSuite struct {
-	// There are TestResults for each sttp script within the current test suite, and TestSuite(s) for each directory 
+	// There are TestResults for each sttp script within the current test suite, and TestSuite(s) for each directory
 	// within the current test suite. This is encapsulated within a TestPath instance.
 	Paths     TestPaths
 	Config    *TestConfig
@@ -190,8 +191,8 @@ type TestSuite struct {
 // NewSuite will create a new TestSuite.
 func NewSuite(path string, breakOnFailure bool, nestLevel int) *TestSuite {
 	return &TestSuite{
-		Paths:     make(TestPaths, 0),
-		Config:    &TestConfig{
+		Paths: make(TestPaths, 0),
+		Config: &TestConfig{
 			BreakOnFailure: breakOnFailure,
 		},
 		NestLevel: nestLevel,
@@ -199,7 +200,7 @@ func NewSuite(path string, breakOnFailure bool, nestLevel int) *TestSuite {
 	}
 }
 
-// GetPaths will first check if the Paths are sorted, if not then they will be sorted. The sorted Paths will be 
+// GetPaths will first check if the Paths are sorted, if not then they will be sorted. The sorted Paths will be
 // returned.
 func (ts *TestSuite) GetPaths() *TestPaths {
 	if !sort.IsSorted(ts.Paths) {
@@ -213,13 +214,13 @@ func (ts *TestSuite) GetNoScripts() int {
 	count := 0
 	for _, path := range ts.Paths {
 		if path.TestResults != nil {
-			count ++
+			count++
 		}
 	}
 	return count
 }
 
-// CheckPass will recursively check if each contained script and inner test suite has passed (or not passed) all their 
+// CheckPass will recursively check if each contained script and inner test suite has passed (or not passed) all their
 // tests.
 func (ts *TestSuite) CheckPass() bool {
 	passed := true
@@ -232,7 +233,7 @@ func (ts *TestSuite) CheckPass() bool {
 	return passed
 }
 
-// String will return an indented output representing the entire directory structure of the TestSuite. Should not be 
+// String will return an indented output representing the entire directory structure of the TestSuite. Should not be
 // called before Run has been called.
 func (ts *TestSuite) String(indent int) string {
 	var b strings.Builder
@@ -256,9 +257,9 @@ func (ts *TestSuite) String(indent int) string {
 	return b.String()
 }
 
-// Run will create a new VM for each test script in the current and any subdirectories and will also construct a new 
+// Run will create a new VM for each test script in the current and any subdirectories and will also construct a new
 // TestSuite for any subdirectories. The results of the test suite will be output at the end of the procedure. You can
-// also specify the io.Writer for stdout, stderr, and debug, if these are nil then these will default to os.Stdout, 
+// also specify the io.Writer for stdout, stderr, and debug, if these are nil then these will default to os.Stdout,
 // os.Stderr, and ioutil.Discard respectively. It also takes a mergedEnv which can either be nil, or an environment that
 // has been passed down from a parent TestSuite.
 func (ts *TestSuite) Run(stdout io.Writer, stderr io.Writer, debug io.Writer, mergedEnv *Env) error {
@@ -273,7 +274,7 @@ func (ts *TestSuite) Run(stdout io.Writer, stderr io.Writer, debug io.Writer, me
 			path := filepath.Join(ts.Path, file.Name())
 			if file.IsDir() {
 				// Create a new test suite (don't run just yet)
-				newSuite := NewSuite(path, ts.Config.BreakOnFailure, ts.NestLevel + 1)
+				newSuite := NewSuite(path, ts.Config.BreakOnFailure, ts.NestLevel+1)
 				ts.Paths = append(ts.Paths, &TestPath{
 					Path:      path,
 					TestSuite: newSuite,
@@ -363,11 +364,11 @@ type Env struct {
 	Value *data.Value
 }
 
-// EmptyEnv returns an empty Env. This environment will have a Value of an empty data.Object, and a Paths that is an 
+// EmptyEnv returns an empty Env. This environment will have a Value of an empty data.Object, and a Paths that is an
 // empty array of strings.
 func EmptyEnv() *Env {
 	return &Env{
-		Paths:  make([]string, 0),
+		Paths: make([]string, 0),
 		Value: &data.Value{
 			Value:    map[string]interface{}{},
 			Type:     data.Object,
@@ -403,7 +404,7 @@ func EnvFromFile(path string) (err error, env *Env) {
 	}
 }
 
-// String method so that we can easily return errors with environments within them. This will return a string in the 
+// String method so that we can easily return errors with environments within them. This will return a string in the
 // format:
 //  ("empty"|Paths[0]:Paths[1]:...:Paths[n]) = e.Value.String()
 func (e *Env) String() string {
@@ -414,10 +415,10 @@ func (e *Env) String() string {
 	return fmt.Sprintf("%s = %s", paths, e.Value.String())
 }
 
-// Merge the given environment into the referred to environment. This will first merge the sttp Value, and then 
+// Merge the given environment into the referred to environment. This will first merge the sttp Value, and then
 // concatenate the Paths from the given environment to the referred to environments. The merging of sttp data.Object is
-// handled using eval.Compute, so both the LHS and RHS values will be cast to data.Object and any similar keys within 
-// LHS will be overridden. 
+// handled using eval.Compute, so both the LHS and RHS values will be cast to data.Object and any similar keys within
+// LHS will be overridden.
 func (e *Env) Merge(env parser.Env) (err error) {
 	// We will cast the LHS to an Object so that we can merge it.
 	if e.Value.Type != data.Object {
@@ -441,7 +442,7 @@ func (e *Env) Merge(env parser.Env) (err error) {
 }
 
 // MergeN will apply the Merge method to each given environment.
-func (e *Env) MergeN(envs... parser.Env) (err error) {
+func (e *Env) MergeN(envs ...parser.Env) (err error) {
 	for _, env := range envs {
 		if err = e.Merge(env); err != nil {
 			return err

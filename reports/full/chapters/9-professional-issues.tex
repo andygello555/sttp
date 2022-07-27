@@ -1,0 +1,46 @@
+\chapter{Professional Issues}
+\label{chap:professional-issues}
+
+There are a few professional issues that exist within the area of programming language design:
+
+\begin{enumerate}
+    \item Programming language design and engineering in languages used within safety critical systems.
+    \item The role programming languages play in ethical and and unethical uses for technology.
+    \item Is there a right to literacy in programming, and if not should there be?
+\end{enumerate}
+
+To me, the most interesting professional issue to discuss is if there is a right to literacy in programming. The meaning of the word `literacy' has changed from word and letter recognition, which was more prominent before the 1950s, to become what is today, which is the ability to read and write\textsuperscript{\cite{gee_1991}}. Therefore, the right to literacy is the right to acquire the resources and teaching required to develop sufficient skills in reading and writing. This has been supported by the 1997 Hamburg Declaration\textsuperscript{\cite{hamburg_1997}} and is even a fundamental declaration within the European union\textsuperscript{\cite{edrl_2016}}.
+
+\section{Why the right to literacy within programming?}
+
+Recently, many people have thought that the right to literacy should also extend to programming. This would mean that anyone who wants to learn how to program should be able to. The point being made regularly is that programming literacy could be important in a world where data is progressively being moved onto computers. It would allow everyone to easily access, or even automate the collection and interpretation of different areas and forms of data. But what would the purpose of this be? Regular literacy allows people to think and communicate in new ways in order to express their ideas and opinions, as well as to form new ones. Thus, the importance of programming literacy should be similar to this. However, from personal experience, I don't think that programming literacy is as important as regular literacy, \textbf{at the moment}, but the need to teach it is as important as ever.
+
+What I mean by this is that as we progress into a world that is more and more dependant on computers for our everyday lives, it is important for people to understand how to think in a `computational' way so that they can be aware of how these systems work. More importantly, it's necessary for users to understand, and comment on, questions regarding the use of computer systems. For instance:
+
+\begin{itemize}
+    \item How the internet works and whether or not it is sustainable in its current state.
+    \item What is a digital footprint and how can you reduce it?
+    \item How can I solve a problem computationally/algorithmically?
+\end{itemize}
+
+All these questions tie into computer and programming literacy and are important in our understanding of the world currently. It also allows people to continue and pass down this knowledge, much of which will be lost to time otherwise.
+
+\section{How?}
+
+How do we design programming languages that are easily teachable, and learnable? Unfortunately there is not much information available on this subject other than personal opinions. However, the programming languages that are cited the most often for being easy to learn are the following (along with some of their characteristics):
+
+\begin{enumerate}
+    \item Python: \textbf{dynamically typed}, \textbf{multiple paradigms}, \textbf{core implementation (CPython) is interpreted}\textsuperscript{\cite{5_easiest_and_hardest_programming_languages_to_learn}}\textsuperscript{\cite{6_easiest_programming_languages_to_learn}}\textsuperscript{\cite{deery_2021}}
+    \item JavaScript: \textbf{dynamically typed}, \textbf{multiple paradigms}, \textbf{core implementations (V8 and SpiderMonkey) are compiled to machine code}\textsuperscript{\cite{5_easiest_and_hardest_programming_languages_to_learn}}\textsuperscript{\cite{6_easiest_programming_languages_to_learn}}\textsuperscript{\cite{deery_2021}}
+    \item Ruby: \textbf{dynamically typed}, \textbf{multiple paradigms}, \textbf{core implementation (Ruby MRI) is interpreted}\textsuperscript{\cite{6_easiest_programming_languages_to_learn}}\textsuperscript{\cite{deery_2021}}
+    \item Java: \textbf{statically typed}, \textbf{object-oriented}, \textbf{compiled to bytecode then interpreted}\textsuperscript{\cite{5_easiest_and_hardest_programming_languages_to_learn}}\textsuperscript{\cite{6_easiest_programming_languages_to_learn}}
+    \item C: \textbf{statically typed}, \textbf{imperative and structured}, \textbf{compiled}\textsuperscript{\cite{5_easiest_and_hardest_programming_languages_to_learn}}\textsuperscript{\cite{6_easiest_programming_languages_to_learn}}
+\end{enumerate}
+
+Three out of five of these languages are designed to be \textbf{dynamically typed}, meaning types are checked at runtime. Many beginner programmers can be enticed by this, as it abstracts a potentially alienating part of programming for them. This might be because most beginners come from a background of mathematical notation, which has no concept of defining types for values.
+
+Four out of five of these languages are designed with multiple paradigms in mind or are object-oriented. Supporting multiple paradigms within a language can be useful for teachers to teach whatever beginners feel more comfortable with learning. In my experience, when I was learning, object-oriented came across as too abstract, whereas an imperative/procedural style seemed more natural.
+
+When it comes to whether a programming language's implementation uses an interpreter or a compiler, it seems that this is not as relevant as the syntactical qualities of the language. Although there might be some elitism attached to compiled languages, I don't think this would skew the decision made by beginners for either front. The argument could be made that an interpreter is easier to use than a compiler, as all the user needs to do is download the interpreter's binary and run code with it. Whereas, compilers might require teaching to understand concepts such as how (and where from) libraries are linked, which might alienate beginners. I think this depends on the implementation of the compiler. For instance, the Go compiler discerns all 3\textsuperscript{rd} party dependencies from the \verb|go.mod| file and will then generate an executable (which can be run and cleaned up instantly via the \verb|go run| command).
+
+As for \verb|sttp|, it was designed to be familiar with users accustomed to shell scripting languages. It is dynamically typed, but only really supports an imperative/procedural style. Whether or not this makes it on par with some of the languages mentioned above is something to be asked of beginners. I think that \verb|sttp| has an understandable syntax with a typing system that is flexible. However, one place that \verb|sttp| might alienate newer programmers is in its operator semantics. As mentioned in the \hyperref[chap:evaluation]{evaluation} chapter, this is something that I plan on addressing with builtin functions which, hopefully, should be more agreeable.

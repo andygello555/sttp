@@ -1,5 +1,6 @@
 \cprotect\subsection{Test suites and the \verb|test| statement}
 
+%TC:ignore
 \begin{center}
     \textbf{Git commit}
     \begin{minted}{markdown}
@@ -16,25 +17,32 @@ Language: implementation of TestSuite capabilities + TestStatement
     \vspace{-1em}
     \tiny{December 12, 2021}
 \end{center}
+%TC:endignore
 
 Test suites and \verb|test| statements are one of the most important features and motivations behind creating \verb|sttp|. They allow the programmer to construct test suites using a directory structure containing \verb|sttp| scripts. The \hyperref[sec:data-structures-vm]{VM section} mentions the \verb|TestResults| field that exists within the \verb|VM| interface's implementation. This is a pointer to an instance of the \verb|TestResults| type that has the following definition:
 
-\inputminted[firstline=27, lastline=33, autogobble, breaklines, tabsize=4]{go}{../../src/test.go}
+%TC:ignore
+\inputminted[firstline=29, lastline=35, autogobble, breaklines, tabsize=4]{go}{../../src/test.go}
+%TC:endignore
 
-\verb|TestResults|' purpose is to store the results of all \verb|test| statements that have been evaluated by the interpreter thus far. \verb|TestStatement.Eval| will first create a new instance of \verb|TestResults| if there is not one already defined within the \verb|VM|. Then it will evaluate the expression that follows the \verb|test| statement, casting it to boolean if necessary. The result of this will then be added to the \verb|TestResults| using the \verb|TestResults.AddTest| method. This will append a \verb|TestResult| to \verb|TestResults|.
+\verb|TestResults|' purpose is to store the results of all \verb|test| statements that have been evaluated by the interpreter thus far. \verb|TestStatement.Eval| will first create a new instance of \verb|TestResults| if there is not one already defined within the \verb|VM|. Then it will evaluate the expression that follows the \verb|test| statement, casting it to boolean if necessary. The result of this will then be added to the \verb|TestResults| using the \verb|TestResults.AddTest| method. This will append a \verb|TestResult| (definition below) to \verb|TestResults|.
 
-\inputminted[firstline=19, lastline=25, autogobble, breaklines, tabsize=4]{go}{../../src/test.go}
+%TC:ignore
+\inputminted[firstline=21, lastline=27, autogobble, breaklines, tabsize=4]{go}{../../src/test.go}
+%TC:endignore
 
 Here, a pointer is stored to the \verb|TestStatement| that was evaluated for this result. This is in order to retrieve the position of the \verb|test| statement within the script (via \verb|TestStatement.GetPos|) and so that the \verb|test| statement can be `pretty-printed' (via \verb|TestStatement.String|).
 
 When the interpreter is evaluating a directory structure of \verb|sttp| scripts, an instance of \verb|TestSuite| will be constructed:
 
-\inputminted[firstline=76, lastline=86, autogobble, breaklines, tabsize=4]{go}{../../src/test.go}
+%TC:ignore
+\inputminted[firstline=88, lastline=98, autogobble, breaklines, tabsize=4]{go}{../../src/test.go}
+%TC:endignore
 
 The \verb|TestSuite| is a recursive data-structure, in that if a \verb|TestSuite| represents the root directory, then a new \verb|TestSuite| will be created for each directory (and directory's directory) within the root directory. Each \verb|TestSuite| level can also have a set of \verb|sttp| scripts, that can all produce their own \verb|TestResults|.
 
-After an instance of \verb|TestSuite| has been constructed for a root directory structure of \verb|sttp| scripts, the \verb|TestSuite.Run| method can be run to evaluate all the \verb|sttp| scripts found. \verb|TestSuite.Run| will walk the directory structure recursively. Each time it encounters an \verb|sttp| file, it will create a \verb|VM| to evaluate it and will store the resulting \verb|TestResults| within the current \verb|TestSuite|. Otherwise, if the current file is a directory, a new \verb|TestSuite| will be created, that inherits the \verb|Config| from current \verb|TestSuite|, and \verb|TestSuite.Run| will be called recursively. This new \verb|TestSuite| will be stored in the \verb|InnerSuites| field of the current \verb|TestSuite|. \verb|TestSuite| implements the \verb|Stringer| interface, so the \cprotect{\hyperref[sec:test-suites-and-the-test-statement-test-suite-output]}{`results' of the \verb|TestSuite| can be displayed back to the user}. However, one downside of doing it this way is that test results won't be displayed to the user in real-time.
+After an instance of \verb|TestSuite| has been constructed for a root directory structure of \verb|sttp| scripts, the \verb|TestSuite.Run| method can be run to evaluate all the \verb|sttp| scripts found. \verb|TestSuite.Run| will walk the directory structure recursively. Each time it encounters an \verb|sttp| file, it will create a \verb|VM| to evaluate it, storing the resulting \verb|TestResults| within the current \verb|TestSuite|. Otherwise, if the current file is a directory, a new \verb|TestSuite| will be created; inheriting the \verb|Config| from current \verb|TestSuite|. \verb|TestSuite.Run| will then be called recursively on this new \verb|TestSuite|. This new \verb|TestSuite| will be stored in the \verb|InnerSuites| field of the current \verb|TestSuite|. \verb|TestSuite| implements the \verb|Stringer| interface, so the \cprotect{\hyperref[sec:test-suites-and-the-test-statement-test-suite-output]}{`results' of the \verb|TestSuite| can be displayed back to the user}. However, one downside of doing it this way is that test results won't be displayed to the user in real-time.
 
-Each \verb|TestSuite|, \verb|TestResults|, and \verb|TestResult| inherits a pointer to a \verb|TestConfig| instance. This is just a simple struct that stores some configuration flags on how the \verb|TestSuite| and \verb|test| statement should behave. Currently it only has one available flag: \verb|BreakOnFailure|. If \verb|BreakOnFailure| is set then if an expression following a \verb|test| statement evaluates to \verb|false|, \hyperref[sec:development-try-catch-throw-errors-context]{and an uncatchable error will be thrown}.
+Each \verb|TestSuite|, \verb|TestResults|, and \verb|TestResult| inherits a pointer to a \verb|TestConfig| instance. This is just a simple struct that stores some configuration flags on how the \verb|TestSuite| and \verb|test| statement should behave. Currently it only has one available flag: \verb|BreakOnFailure|. If \verb|BreakOnFailure| is set then if an expression following a \verb|test| statement evaluates to \verb|false|, \hyperref[sec:development-try-catch-throw-errors-context]{an uncatchable error will be thrown}; stopping the execution of \verb|VM.Eval| or \verb|TestSuite.Run|.
 
 The source code for \verb|TestSuite|, \verb|TestResults|, and \verb|TestResult| can be found within the \verb|src/test.go| file. Whereas, the source code for the \verb|test| statement can be found in the \verb|src/parser/eval.go| file.

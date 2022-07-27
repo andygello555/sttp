@@ -13,9 +13,11 @@ Casting is a large part of \verb|sttp|, as it is a dynamically-typed programming
 
 All cast functions are implemented within a two-dimensional array of functions with the signature: \mintinline{go}{func(symbol *data.Value) (err error, cast *data.Value)}. As the \verb|Type| type actually has an underlying type of \mintinline{go}{int}, the rows and columns of this array can be accessed after converting a \verb|Type| to \mintinline{go}{int} (e.g. \mintinline{go}{int(data.Number) == 4}). We define the \verb|Type| to cast \textbf{from} as the rows of this array, and the \verb|Type| to cast \textbf{to} as the columns of the array, creating an eight-by-eight grid. We also define a function that performs the lookup for the given value and return \verb|Value| returned by the function that was fetched.
 
+%TC:ignore
 \inputminted[firstline=26, lastline=43, autogobble, breaklines, tabsize=4]{go}{../../src/eval/casting.go}
+%TC:endignore
 
-The \verb|Castable| method checks whether the cast function in the given cell within the cast table, is a pointer to the variable \verb|e|. \verb|e| is a variable containing a reference to the function: \verb|eFunc|. If this variable lies within the cast table in a given cell for a given \verb|from| type and \verb|to| type. It means that the cast from \verb|from| to \verb|to| cannot be done. The package global variable \verb|e| is used to store the reference to the function \verb|eFunc| as the pointers to function's in Go cannot be compared, even with the \verb|reflect| package. This is because Go disallows equivalence comparisons between function pointers. The \verb|reflect| package can compare pointer equivalence of functions, but the Go compiler can and might merge multiple functions into a single implementation. Therefore, there is no guarantee that this will provide the correct behaviour. In order to compare functions properly, one must first define a \textbf{unique} variable that points to the function. The reference to this variable can then be compared with another variable to check whether the variable points to the same function.
+The \verb|Castable| method checks whether the cast function in the given cell within the cast table, is a pointer to the variable \verb|e|. \verb|e| is a variable containing a reference to the function: \verb|eFunc|. If this variable lies within the cast table in a given cell for a given \verb|from| type and \verb|to| type. It means that the cast from \verb|from| to \verb|to| cannot be done. The package global variable \verb|e| is used to store the reference to the function \verb|eFunc| as the pointers to function's in Go cannot be compared. The \verb|reflect| package can compare pointer equivalence of functions, but the Go compiler can and might merge multiple functions into a single implementation. Therefore, there is no guarantee that this will provide the correct behaviour. In order to compare functions properly, one must first define a \textbf{unique} variable that points to the function. The reference to this variable can then be compared with another variable to check whether the variable points to the same function.
 
 % Please add the following required packages to your document preamble:
 % \usepackage[table,xcdraw]{xcolor}
@@ -48,22 +50,22 @@ Within the cast table, there are multiple different types of cast functions. Som
     \item \verb|lBool|: the length of the \verb|Value| converted to a Boolean (\verb|true| if $l > 0$, \verb|false| otherwise).
 \end{itemize}
 
-Many of the other cast functions work as expected although there are a few which have more interesting behaviour, such as:
+Many of the other cast functions work as expected although there are a few which have more interesting behaviour, this is explained further in the \hyperref[sec:hello-sttp-casting]{first part} of this report.
 
-\begin{itemize}
-    \item \verb|stNumber|: will try to parse the \verb|Value| to an integer, then a float, and finally will just take the length of the String.
-    \item \verb|obArray|: extracts the keys from the Object.
-    \item Functions prefixed with \verb|st|: will try to parse the String \verb|Value| into JSON of the required type.
-\end{itemize}
+% \begin{itemize}
+%     \item \verb|stNumber|: will try to parse the \verb|Value| to an integer, then a float, and finally will just take the length of the String.
+%     \item \verb|obArray|: extracts the keys from the Object.
+%     \item Functions prefixed with \verb|st|: will try to parse the String \verb|Value| into JSON of the required type.
+% \end{itemize}
 
-It is also worth noting why casting \verb|Object|s, \verb|Array|s, and \verb|String|s to a \verb|Number| returns the length of the \verb|Value|. This is because, \verb|sttp| was initially designed so that the semantics of what would usually be designated to a builtin function or a property of a value, such as the length of a value, can be fetched by manipulating the casting system. For instance, fetching the length of an \verb|Array| can be done via:
+% It is also worth noting why casting \verb|Object|s, \verb|Array|s, and \verb|String|s to a \verb|Number| returns the length of the \verb|Value|. This is because, \verb|sttp| was initially designed so that the semantics of what would usually be designated to a builtin function or a property of a value, such as the length of a value, can be fetched by manipulating the casting system. For instance, fetching the length of an \verb|Array| can be done via:
 
-\begin{verbatim}
-a = [1, 2, 3];
-print(0 + a);
-// Output: 3
-\end{verbatim}
+% \begin{verbatim}
+% a = [1, 2, 3];
+% print(0 + a);
+% // Output: 3
+% \end{verbatim}
 
-This is because the addition \verb|Operator| acting on a left-hand \verb|Value| that is of \verb|Type|: \verb|Number|, will first cast the right-hand side to a \verb|Number|, and then perform the addition. This allows the programmer to fetch the length of an \verb|Array| without the use of a builtin or property.
+% This is because the addition \verb|Operator| acting on a left-hand \verb|Value| that is of \verb|Type|: \verb|Number|, will first cast the right-hand side to a \verb|Number|, and then perform the addition. This allows the programmer to fetch the length of an \verb|Array| without the use of a builtin or property.
 
 Not much has changed since the original implementation of the casting system, apart from a few additions and changes to certain cast functions. The cast table is located in the \verb|src/eval/casting.go| file, whereas the cast functions used within it are located in \\\verb|src/eval/cast_funcs.go|.

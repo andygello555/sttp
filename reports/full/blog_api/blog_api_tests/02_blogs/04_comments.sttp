@@ -1,0 +1,24 @@
+// We have to create some comments for each blog to test this endpoint.
+// We do this by iterating over each blog and creating comments for them.
+blogs = $GET("http://127.0.0.1:8000/api/blogs");
+blogs_no = 0 + blogs.content;
+
+batch this
+    for i, blog in blogs.content do
+        // Create (blogs_no - i) comments for the blog
+        for j = blogs_no - i; j > 0; j = j - 1 do
+            $POST("http://127.0.0.1:8000/api/comments", {
+                "body": "Great blog! This is comment number %% for %%" % [j, blog.name],
+                "commenter": "John Doe",
+                "blog_id": blog.id
+            });
+        end;
+    end;
+end;
+
+for i, blog in blogs.content do
+    // We need to make the request outside the batch because order is important
+    comments = $GET("http://127.0.0.1:8000/api/blogs/%%/comments" % blog.id);
+    test comments.code == 200;
+    test 0 + comments.content == blogs_no - i;
+end;

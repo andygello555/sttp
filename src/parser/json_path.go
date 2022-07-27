@@ -3,16 +3,16 @@ package parser
 import (
 	"container/heap"
 	"fmt"
-	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/data"
-	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/errors"
-	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/eval"
 	"github.com/andygello555/gotils/strings"
+	"github.com/andygello555/src/data"
+	"github.com/andygello555/src/errors"
+	"github.com/andygello555/src/eval"
 	"reflect"
 	str "strings"
 )
 
 const (
-	DefaultObjectKey = ""
+	DefaultObjectKey        = ""
 	CurrentNodeVariableName = "curr"
 )
 
@@ -26,7 +26,7 @@ func abs(x int) int {
 }
 
 func mod(x, n int) int {
-	return (x % n + n) % n
+	return (x%n + n) % n
 }
 
 func firstKey(obj map[string]interface{}, idx int) (key string, ok bool) {
@@ -62,7 +62,7 @@ func set(vm VM, current interface{}, to interface{}, path *Path) interface{} {
 		}
 
 		if current == nil {
-			// We don't pop the next element from the path because we need to use this frame to construct a new value 
+			// We don't pop the next element from the path because we need to use this frame to construct a new value
 			// and interface then we can use the next called frame to set the property of index.
 			if property {
 				// If the path is a property we construct a new object
@@ -89,8 +89,8 @@ func set(vm VM, current interface{}, to interface{}, path *Path) interface{} {
 			}
 
 			filterNodeEval := func(node *data.Element) bool {
-				if err = heap.Assign(CurrentNodeVariableName, map[string]interface{} {
-					"key": node.Key.Value,
+				if err = heap.Assign(CurrentNodeVariableName, map[string]interface{}{
+					"key":   node.Key.Value,
 					"value": node.Val.Value,
 				}, false, false); err != nil {
 					panic(err)
@@ -135,7 +135,7 @@ func set(vm VM, current interface{}, to interface{}, path *Path) interface{} {
 				if !filter {
 					var key string
 					if !property {
-						// If the current path is a number index then we will sort the keys of the current value 
+						// If the current path is a number index then we will sort the keys of the current value
 						// lexicographically to find correct key
 						var ok bool
 						if key, ok = firstKey(obj, p.(int)); !ok {
@@ -210,7 +210,7 @@ func set(vm VM, current interface{}, to interface{}, path *Path) interface{} {
 				}
 			default:
 				if property {
-					// If accessing a property then we will wrap the value in an object, assigning it to the key 
+					// If accessing a property then we will wrap the value in an object, assigning it to the key
 					// DefaultObjectKey
 					obj := make(map[string]interface{})
 					obj[DefaultObjectKey] = current
@@ -284,7 +284,7 @@ func set(vm VM, current interface{}, to interface{}, path *Path) interface{} {
 									if err, value = eval.CastInterface(set(vm, node.Val.Value, to, path), data.String); err != nil {
 										panic(err)
 									}
-									// Add the current node's index and value to the replacementIndices and 
+									// Add the current node's index and value to the replacementIndices and
 									// replacementStrings arrays respectively.
 									replacementStrings = append(replacementStrings, value.StringLit())
 									replacementIndices = append(replacementIndices, node.Key.Int())
@@ -295,7 +295,7 @@ func set(vm VM, current interface{}, to interface{}, path *Path) interface{} {
 							filterTeardown()
 						}
 					default:
-						// If accessing an index then we will create an array with p.(int) + 2 spaces. Recursing down the 
+						// If accessing an index then we will create an array with p.(int) + 2 spaces. Recursing down the
 						// p.(int) space and inserting the existing value in the p.(int) + 1 space.
 						idx := p.(int)
 						if idx >= 0 {
@@ -326,8 +326,8 @@ func (p *Path) Set(vm VM, current interface{}, to interface{}) (err error, new i
 	defer func() {
 		if p := recover(); p != nil {
 			switch p.(type) {
-			case struct { errors.ProtoSttpError }:
-				err = p.(struct { errors.ProtoSttpError })
+			case struct{ errors.ProtoSttpError }:
+				err = p.(struct{ errors.ProtoSttpError })
 			default:
 				err = fmt.Errorf("%v", p)
 			}
@@ -335,21 +335,21 @@ func (p *Path) Set(vm VM, current interface{}, to interface{}) (err error, new i
 		}
 	}()
 
-	c := make(Path, len(*p) - 1)
+	c := make(Path, len(*p)-1)
 	// Copy everything but the first element (variable name)
 	copy(c, (*p)[1:])
 	new = set(vm, current, to, &c)
 	return err, new
 }
 
-// Get iterates over the referred to Path and descends the given value and returns the value pointed to by the path. 
+// Get iterates over the referred to Path and descends the given value and returns the value pointed to by the path.
 // If the path doesn't lead anywhere it will return nil.
 func (p *Path) Get(vm VM, current interface{}) (err error, gotten interface{}) {
 	defer func() {
 		if p := recover(); p != nil {
 			switch p.(type) {
-			case struct { errors.ProtoSttpError }:
-				err = p.(struct { errors.ProtoSttpError })
+			case struct{ errors.ProtoSttpError }:
+				err = p.(struct{ errors.ProtoSttpError })
 			default:
 				err = fmt.Errorf("%v", p)
 			}
@@ -357,7 +357,7 @@ func (p *Path) Get(vm VM, current interface{}) (err error, gotten interface{}) {
 		}
 	}()
 
-	c := make(Path, len(*p) - 1)
+	c := make(Path, len(*p)-1)
 	// Copy everything but the first element (variable name)
 	copy(c, (*p)[1:])
 
@@ -374,8 +374,8 @@ func (p *Path) Get(vm VM, current interface{}) (err error, gotten interface{}) {
 		for it.Len() > 0 {
 			// We get the next node and assign the key and the value to the self variable
 			node := it.Next()
-			if err = heap.Assign(CurrentNodeVariableName, map[string]interface{} {
-				"key": node.Key.Value,
+			if err = heap.Assign(CurrentNodeVariableName, map[string]interface{}{
+				"key":   node.Key.Value,
 				"value": node.Val.Value,
 			}, false, false); err != nil {
 				panic(err)
@@ -444,7 +444,7 @@ func (p *Path) Get(vm VM, current interface{}) (err error, gotten interface{}) {
 					})
 					break
 				} else if !property {
-					// If the current path is a number index then we will sort the keys of the current value 
+					// If the current path is a number index then we will sort the keys of the current value
 					// lexicographically to find correct key
 					var ok bool
 					if key, ok = firstKey(obj, e.(int)); !ok {
@@ -468,7 +468,7 @@ func (p *Path) Get(vm VM, current interface{}) (err error, gotten interface{}) {
 				} else {
 					arr := current.([]interface{})
 					idx := e.(int)
-					// If the absolute value of the idx is greater than the length of the array then we set current to 
+					// If the absolute value of the idx is greater than the length of the array then we set current to
 					// nil
 					if abs(idx) >= len(arr) {
 						current = nil
@@ -490,7 +490,7 @@ func (p *Path) Get(vm VM, current interface{}) (err error, gotten interface{}) {
 				} else {
 					str := current.(string)
 					idx := e.(int)
-					// If the absolute value of the idx is greater than the length of the string then we set current to 
+					// If the absolute value of the idx is greater than the length of the string then we set current to
 					// nil
 					if abs(idx) >= len(str) {
 						current = nil
@@ -545,7 +545,7 @@ type Pathable interface {
 	Convert(vm VM) (err error, path Path)
 }
 
-// Convert will convert a JSONPathFactor AST node into an iterable Path which will only be used to Get values from a 
+// Convert will convert a JSONPathFactor AST node into an iterable Path which will only be used to Get values from a
 // value.
 func (j *JSONPathFactor) Convert(vm VM) (err error, path Path) {
 	path = make(Path, 0)
@@ -592,8 +592,8 @@ func (jp *JSONPart) Convert(vm VM) (err error, path Path) {
 func (slp *StringLitPart) Convert(vm VM) (err error, path Path) {
 	path = make(Path, 0)
 	path = append(path, &data.Value{
-		Value:  *slp.StringLit,
-		Type:   data.String,
+		Value: *slp.StringLit,
+		Type:  data.String,
 	})
 
 	for _, i := range slp.Indices {
@@ -627,7 +627,7 @@ func (p *Part) Convert(vm VM) (err error, path Path) {
 	return nil, path
 }
 
-// Convert will convert an Index AST node into an iterable Path. Indices act as a leaf for Pathable so all recursion 
+// Convert will convert an Index AST node into an iterable Path. Indices act as a leaf for Pathable so all recursion
 // will end here.
 func (i *Index) Convert(vm VM) (err error, path Path) {
 	path = make(Path, 1)

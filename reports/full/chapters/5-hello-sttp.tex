@@ -1,0 +1,780 @@
+\cprotect\chapter{Hello \verb|sttp|}
+
+\begin{center}
+    \textit{How would someone go about maintaining, testing, and extending the web API described above?}
+\end{center}
+
+This question might be asked when the project passes hands or a new developer is brought in who needs to be onboarded quickly. A rudimentary answer to this question might be to create test scripts using the command-line HTTP clients discussed in \hyperref[sec:meet-sttp-http-clients]{chapter 2}. However, from experience, this soon becomes quite unweildy as you need to create a test runner that crawls a given directory structure, or worse yet, whenever a new test needs to be added the whole test runner needs to be rewritten.
+
+\begin{center}
+    \textit{Is there another solution?}
+\end{center}
+
+Yes. As server side web APIs became more popular, many other people experienced similar problems with conventional HTTP clients. API clients, such as \href{https://insomnia.rest/}{Insomnia} and \href{https://www.postman.com/}{Postman}, are HTTP clients that allow the user to not only make HTTP requests, but to test specific endpoints, and sometimes even to design entire APIs. Although these API clients are feature rich, they lack the control flow available when using a scripting language. \verb|sttp| hopes to be the API client/HTTP client/scripting language that fits between these two domains.
+
+In the following section I will give a rough overview on the look-and-feel of the \verb|sttp| language. This is so that when explaining how \verb|sttp| would be used to \hyperref[sec:hello-sttp-using-sttp-to-test]{test web APIs}, the language won't seem as alien.
+
+\cprotect\section{What does \verb|sttp| look like?}
+
+\verb|sttp| is an interpreted imperative/procedural programming language that is dynamically-typed. The native types in \verb|sttp| are exactly similar to the ones used in the JSON interchange format:
+
+\begin{verbatim}
+string = "this is a string";
+number = 1.23;  // 123 is also a number
+boolean = true;
+array = [1, "2", [3]];
+object = {"hello": "world", "pi": 3.142};
+n = null;
+\end{verbatim}
+
+\begin{itemize}
+    \item \textbf{Strings}: sequences of characters surrounded by double quotes.
+    \item \textbf{Numbers}: both integers and real numbers.
+    \item \textbf{Booleans}: either \verb|false|, or \verb|true|.
+    \item \textbf{Arrays}: an unbounded list of elements that can take any type, enclosed within square braces. Zero-indexed.
+    \item \textbf{Objects}: a set of key-value pairs enclosed within curly braces. Keys must be String values.
+    \item \textbf{Null}: \verb|null| is a falsy (evaluates to \verb|false|) value that indicates an empty value.
+    \item Along with the types defined within the \verb|JSON| specification, we also have the additional \textbf{Function} type that represents the `pointer' to a function definition.
+    \begin{verbatim}
+// More on this later...
+function foo()
+    return "bar";
+end;
+// func contains a copy of the reference to foo
+func = foo;    
+    \end{verbatim}
+\end{itemize}
+
+Compound statements (anything that takes a nested `block') such as \verb|if|, \verb|while|, and \verb|for| are all terminated using the \verb|end| keyword, reminscient to Lua. Statements are seperated by semicolons, and functions are invoked by suffixing the function's path with a \verb|$| character. A comment is any line beginning with two forward slashes: \verb|//|. \verb|sttp| is whitespace independent, meaning that a program can be written on a single line. This is useful for quick prototyping through the command-line.
+
+\begin{verbatim}
+// Compound statements are still statements, so
+// have to end with ";"
+if true then
+    // Call the print builtin using the "$" prefix
+    $print("True is true, who would've known?");
+end;
+
+// Or write everything on one line...
+if false then $print("Won't print..."); end;
+\end{verbatim}
+
+\subsection{JSONPath}
+
+Variable assignment and dereference is achieved through JSONPath-like syntax. JSONPath is a syntax which can describe the path to any value within a \verb|JSON| Object, Array, or String. It is reminiscent to member access within Javascript.
+
+\begin{verbatim}
+// We define a variable foo, holding an Object value...
+foo = {
+    "array": [1, "2", [3]],
+    "bar": "baz",
+    "pi": 3.142
+};
+
+// If we wanted to print the 3rd element from the array
+// with the key: "array", within the variable foo...
+$print(foo.array[2]);
+
+// We could also do...
+$print(foo["array"][2]);
+
+// Or even...
+$print(foo[0][2]);
+
+// All Objects in sttp are ordered lexicographically by
+// their keys. This allows you to use integer indices to
+// access values within Objects.
+\end{verbatim}
+
+Note the three ways of accessing a named property within an Object: \verb|.property|, \verb|["property"]|, or \verb|[i]|; where \verb|i| is the lexicographical index of the property to access in relation to the other keys.
+
+\label{sec:hello-sttp-jsonpath-filter}
+
+Aside from simple member access, each property (\verb|.property|), or pair of square braces (\verb|[...]|), can be followed by a filter block. This is a block of \verb|sttp| code that will be run against each element of the value currently pointed to by the path. If this block returns a truthy value for an element, then that element will be added to a resulting Array. Otherwise, that element will not be added. Filter blocks are enclosed between two triple backticks: \verb|```...```|.
+
+Each time a filter block is run against an element within the value, the variable \verb|curr| is set. \verb|curr| is an Object that has a \verb|key| key, and a \verb|value| key.
+
+\verb|key| stores the key of the currently iterated element within the value that is being iterated over. This will be a Number index when iterating over a String, or an Array, and a String key when iterating over Objects.
+
+\verb|value| stores the value of the currently iterated element within the value that is being iterated over. This can be any one of \verb|sttp|'s native types.
+
+\begin{verbatim}
+// If "foo" stores the value in the previous example...
+
+// This will print the 3rd element from the value of the
+// "array" key within foo. Note the final index access 
+// after the filter to select the first element from the
+// result Array.
+$print(foo.array```
+    return curr.key == 2;
+```[0]);
+\end{verbatim}
+
+The examples up until now have been showcasing dereferencing variables via JSONPath, but \textbf{what if you want to assign a variable?} When it comes to assignment, \verb|sttp| employs a technique that (from what I can tell) is unique to \verb|sttp| alone. This technique is something that I've dubbed: \textbf{sparse-fill}. It allows Objects, Arrays, and Strings to be dynamically extended arbitrarily deep. For example:
+
+\begin{verbatim}
+foo = {"pi": 3.142};
+
+// This will create the "bar" key within "foo"...
+foo.bar = "foo bar";
+// Same as: foo["bar"]
+
+// This will create the "baz" key within a newly
+// created Object residing within "bar"'s value
+// within foo...
+foo.bar.baz = "foo bar baz";
+// Same as: foo["bar"]["baz"], foo.bar["baz"], ...
+
+// But what about the value that was assigned to
+// foo.bar? Don't worry it's still there...
+$print(foo);
+
+// The above print would output:
+// {
+//     "bar": {
+//         "": "foo bar",
+//         "baz": "foo bar baz"
+//     },
+//     "pi": 3.142
+// }
+
+// What are the ways of retrieving the old value
+// of foo.bar?
+$print(foo.bar[""]);
+// Or...
+$print(foo.bar[0]);
+\end{verbatim}
+
+Notice somethings interesting happens when sparsely filling \verb|foo.bar.baz|, when \verb|foo.bar| is already set to be a String. In this case, the next property within the JSONPath is accessing an Object key: \verb|.baz|, so the value initially stored at \verb|foo.bar| is moved to be the value of the empty string key (\verb|""|) within a `new' Object. There are two takeaways from this:
+
+\begin{enumerate}
+    \item When sparsely-filling a value, the next property in the JSONPath signifies what value will be created at that point.
+    \begin{itemize}
+        \item If the next property is a String index (\verb|["property"]|) or an Object key (\verb|.property|), then an Object will be created.
+        \begin{enumerate}
+            \item If a value already resides at that path, then it will be placed as a value of the empty string key (\verb|""|) within this newly created Object.
+            \item This is done so that the old value can be retrieved by either a zero index (\verb|[0]|), as an \textbf{empty String will always be lexicographically first}, or by using a String index (\verb|[""]|).
+        \end{enumerate}
+        \item If the next property is a integer index (square braces container an integer), and the value to be set is not an Object, Array, or String, then an Array will be created.
+        \begin{enumerate}
+            \item If a value already resides at that path, then it will be placed in the position one index after the one being set.
+            \item When creating a new Array, and setting an element greater than 0, \verb|null|s will be inserted up until the value to be set.
+            \begin{verbatim}
+foo = {"pi": 3.142};
+foo.pi[3] = "not pi";
+$print(foo);
+// The above print would output:
+// {
+//     "pi": [
+//         null,
+//         null,
+//         null,
+//         "not pi",
+//         3.142
+//     ]
+// }
+            \end{verbatim}
+        \end{enumerate}
+    \end{itemize}
+    \item JSONPath assignment is very \textbf{permissive} in what it can do, and will \textbf{rarely throw an error}. This is was one of the main design philosophies when creating \verb|sttp|.
+\end{enumerate}
+
+JSONPath assignment on String values also has an interesting behaviour, and you can achieve some pretty complex String formatting by using it.
+
+\begin{verbatim}
+foo = "foo";
+
+// Concatenation...
+foo[3] = "bar";
+$print(foo);
+// Outputs: foobar
+
+// Concatenating with whitespace...
+foo[4] = "bar";
+$print(foo);
+// Outputs: foo bar
+
+// Replacing characters with Strings...
+foo[0] = "bo";
+$print(foo);
+// Outputs: booo
+\end{verbatim}
+
+There are quite a lot of intricacies when it comes to JSONPath assignment and dereferencing within \verb|sttp|, and not all of it will be covered in the scope of this part.
+
+\subsection{Expressions}
+
+Both \textbf{boolean and arithmetic expressions are a part of the same precedence hierarchy}. \textbf{All operators are left-to-right associative}.
+
+\subsubsection{Operator precedence}
+
+\begin{figure}[H]
+    \begin{center}
+        \begin{tabular}{| m{2cm} | m{2cm} | m{5cm} |}
+            \hline
+            Precedence & Operators & Description\\
+            \hline
+            \textbf{0} & \verb|* / %| & Multiplication, division, and modulus\\
+            \hline
+            \textbf{1} & \verb|+ -| & Addition and subtraction\\
+            \hline
+            \textbf{2} & \verb|< > <= >=| & Less than, greater than, less than or equal to, and greater than or equal to\\
+            \hline
+            \textbf{3} & \verb|== !=| & Equal and not equal\\
+            \hline
+            \textbf{4} & \verb|&&| & Logical and\\
+            \hline
+            \textbf{5} & \verb+||+ & Logical or\\
+            \hline
+        \end{tabular}
+    \end{center}
+    \caption{Operators and their precedence from highest precedence (top) to lowest precedence (bottom)}
+\end{figure}
+
+Expressions, and subsequently operators, are evaluated from left to right. Most operator actions involve casting the right-hand side into the type of the value on the left-hand side, then finally performing the operation. This can be used to the benefit of the programmer for various needs, such as casting a value to another type.
+
+\begin{verbatim}
+// Here the Array will be cast to a Number, which will 
+// result in the Array's length
+array = [1, 2, 3];
+array_length = 0 + [1, 2, 3];
+\end{verbatim}
+
+\subsubsection{Conditions}
+
+In statements that require a predicate (such as `if-elif-else', `while', and `for' statements) a purely arithmetic, a purely logical operator expression, or a mixed expression can all be used. If the expression does not result in a value of a Boolean type, then the result will be cast into a Boolean using the truthy and falsy values below.
+
+\begin{figure}[H]
+    \begin{center}
+        \begin{tabular}{| c | c | c |}
+            \hline
+            Type & Truthy value & Falsy value\\
+            \hline
+            Boolean & \verb|true| & \verb|false|\\
+            \hline
+            null & & \verb|null|\\
+            \hline
+            Number & \verb|!= 0| & \verb|0|\\
+            \hline
+            String & \verb|"..."| & \verb|""|\\
+            \hline
+            Object & \verb|{...}| & \verb|{}|\\
+            \hline
+            Array & \verb|[...]| & \verb|[]|\\
+            \hline
+        \end{tabular}
+    \end{center}
+    \caption{Table of truthy and falsy values of each type}
+\end{figure}
+
+\begin{verbatim}
+if null then
+    $print("This won't be printed as null is coerced to false...");
+elif 0 then
+    $print("Also won't be printed as 0 is coerced to false...");
+elif "" then
+    $print("Also won't be printed as the empty String is coerced to false...");
+elif {} then
+    $print("Also won't be printed as the empty Object is coerced to false...");
+elif [false, null, 0, "", {}] then
+    $print("This will be printed as a non-empty Array is coerced to true!");
+end;
+\end{verbatim}
+
+\subsection{Operators}
+\label{sec:hello-sttp-operators}
+
+Instead of having built-in functions for operations such as appending to an array, removing from an array, merging objects, etc. Operators, perform most of these actions. The following operators remain unchanged for all types:
+
+\begin{itemize}
+    \item \textbf{Equal}: \textbf{Deep} equal. \textbf{Returns boolean}.
+    \item \textbf{Not-equal}: \textbf{Deep} not-equal. \textbf{Returns boolean}.
+    \item \textbf{Less-than, greater-than, less-than or equal, greater-than or equal}: First checks if the first operand is of type Number or String (comparable types). If not then the first operand will be tried to be cast into a Number, and then a String, and if it still cannot, an error will be returned. Then the second operand is cast into the type of the newly cast first operand, returning an error if required. Then these newly cast operands are compared and a Boolean value is returned. \textbf{Null cannot be compared}.
+    \item \textbf{Logical And}: Compares by casting both operands to boolean values.
+    \item \textbf{Logical Or}: Compares by casting both operands to boolean values.
+\end{itemize}
+
+Below, is a run through of each supported operation for each type. \textit{Note that this presumes that all of the types below are on the left-hand side of the operator.}
+
+\subsubsection{Objects}
+
+\begin{itemize}
+    \item \textbf{Addition}: Will merge the RHS into the left overriding any values with the same key, returning a new Object.
+    \begin{verbatim}
+{"a": 1, "b": 2} + {"b": 3, "c": 4} == {"a": 1, "b": 3, "c": 4};
+    \end{verbatim}
+    \item \textbf{Subtraction}: Left value will have keys found in right value deleted from it, returning a new Object.
+    \begin{verbatim}
+{"a": 1, "b": 2, "c": 3} - {"b": "2", "d": "4"} == {"a": 1, "c": 3};
+    \end{verbatim}
+    \item \textbf{Divide}: Right associative set difference. $op2 - op1$ or $op2 \setminus op1$. This will still have to cast the RHS to an Object. It also returns a new Object.
+    \begin{verbatim}
+{"a": 1, "b": 2, "c": 3} / {"b": "2", "d": "4"} == {"d": "4"};
+    \end{verbatim}
+\end{itemize}
+
+\subsubsection{Arrays}
+
+\begin{itemize}
+    \item \textbf{Addition}: If the right-hand value is not an Array, then it will be appended to the left value. If the right-hand value is an Array then the elements of the right-hand Array will be appended to the left-hand Array. This will return a new Array. Note that the RHS is \textbf{never cast} to the Array type.
+    \begin{verbatim}
+[1, 2] + 3 == [1, 2, 3]; [1] + [2, 3] == [1, 2, 3];
+    \end{verbatim}
+    \item \textbf{Subtraction}: Subtract elements from Array. All elements on the LHS Equal to the elements in the RHS will be removed. If the element is \verb|null| then the head of the Array is removed. The same element cannot be removed more than once in the same operation. This includes \verb|null|. A new Array will be returned.
+    \begin{verbatim}
+["foo", 1, 2, 3, "bar"] - [null, null, "bar"] == [1, 2, 3];
+    \end{verbatim}
+\end{itemize}
+
+\subsubsection{Strings}
+
+\begin{itemize}
+    \item \textbf{Multiply}: Will repeat the String on the left $n$ times, where $n$ is the RHS cast to a Number.
+    \begin{verbatim}
+"foo" + "o" * 6 + "bar" == "foooooooobar";
+    \end{verbatim}
+    \item \textbf{Modulus}: If the RHS value is not of type String, then the RHS will be cast to an Array. String interpolation is performed on the String on the LHS using the verb `\verb|%%|'. If the RHS value is a String then this String will be treated as a singleton array, and the String interpolation will be carried out using this value.
+    \begin{verbatim}
+"Give me %%%!" % 110 == "Give me 110%!";
+    \end{verbatim}
+    \item \textbf{Addition}: Concatenation.
+    \begin{verbatim}
+"foo" + "bar" == "foobar";
+    \end{verbatim}
+    \item \textbf{Subtraction}: Depending on the type of the RHS the following will happen:
+    \begin{itemize}
+        \item \textbf{Number}:  Remove the last n digits from the String.
+        \begin{verbatim}
+"foobar" - 3 == "foo";
+        \end{verbatim}
+        \item \textbf{String}:  Remove all occurrences of the RHS from the LHS.
+        \begin{verbatim}
+"is null nullable?" - "null" == "is  able?";
+        \end{verbatim}
+        \item \textbf{Object}:  Replaces all occurrences of RHS's keys with String versions of their values.
+        \begin{verbatim}
+"foobarfoobaz" - {"foo": "bar", "baz": "foo"} == "barbarbarfoo";
+        \end{verbatim}
+        \item \textbf{Array}:   Casts each element in the array to a string and removes all occurrences of each from the LHS.
+        \begin{verbatim}
+"foobarmoobaz" - ["foo", "bar", "baz"] == "moo";
+        \end{verbatim}
+        \item \textbf{Default}: Casts RHS to string and removes all occurrences of it from the LHS.
+        \begin{verbatim}
+"truefalse" - false == "true";
+        \end{verbatim}
+    \end{itemize}
+\end{itemize}
+
+\subsubsection{Numbers}
+
+All arithmetic and logical operators function as expected. Internally, Numbers are 64 bit floating point numbers that are represented as integers only if there are only zeroes after the decimal point.
+
+\subsubsection{Booleans}
+
+\begin{itemize}
+    \item \textbf{Multiply}: Same as Logical And.
+    \begin{verbatim}
+a * b == a && b;
+    \end{verbatim}
+    \item \textbf{Divide}: Inverse of Logical And (NAND).
+    \begin{verbatim}
+a / b != a && b;
+    \end{verbatim}
+    \item \textbf{Modulus}: The material conditional/Implies that. $op1 \rightarrow op2$.
+    \begin{verbatim}
+a % b == (a / a) || b;
+    \end{verbatim}
+    \item \textbf{Addition}: Same as Logical Or.
+    \begin{verbatim}
+a + b == a || b;
+    \end{verbatim}
+    \item \textbf{Subtraction}: Inverse of Logical Or (NOR).
+    \begin{verbatim}
+a - b != a || b;
+    \end{verbatim}
+\end{itemize}
+
+\subsubsection{Nulls}
+
+Multiply, Divide, Modulus, Addition, and Subtraction will all `nullify' the operation (result is \verb|null|). Null cannot be compared but can be used in logical expressions where it will be cast into \verb|false|.
+
+\subsection{Casting}
+\label{sec:hello-sttp-casting}
+
+\begin{center}
+\textit{If a type is not mentioned in any of the sections below it means that the type cannot be cast to the missing type, and will return an error.}
+\end{center}
+
+\subsubsection{Casting from Objects}
+
+\begin{itemize}
+    \item \textbf{To Array}: Extracts the keys from the Object. Will always be an Array of Strings.
+    \item \textbf{To String}: Marshals the Object as a JSON string.
+    \item \textbf{To Number}: Returns the number of keys in the Object.
+    \item \textbf{To Boolean}: If the Object is not empty (length is greater than 0) then the Object is truthy, otherwise the Object is falsy.
+\end{itemize}
+
+\subsubsection{Casting from Arrays}
+
+\begin{itemize}
+    \item \textbf{To Object}: Creates an Object where each key is an index of an element in the Array, the value of which is the element that lies at that index.
+    \item \textbf{To String}: Marshals the Object as a JSON string.
+    \item \textbf{To Number}: Returns the number of elements in the Array.
+    \item \textbf{To Boolean}: If the Array is not empty then the Array is truthy, otherwise the Array is falsy.
+\end{itemize}
+
+\subsubsection{Casting from Strings}
+
+\begin{itemize}
+    \item \textbf{To Object}: Attempts to parse the String into a JSON Object.
+    \item \textbf{To Array}: Attempts to parse the String into a JSON Array.
+    \item \textbf{To Number}: Attempts to parse the String to an integer, then a float, and will finally just take the length of the String.
+    \item \textbf{To Boolean}: If the String is not empty then the String is truthy, otherwise the String is falsy.
+\end{itemize}
+
+\subsubsection{Casting from Numbers}
+
+\begin{itemize}
+    \item \textbf{To Object}: Constructs a singleton Object where the key is the String representation of the Number, and the value is Null.
+    \item \textbf{To Array}: Constructs a singleton Array where the first and only element is the Number.
+    \item \textbf{To String}: Marshals the Number as a JSON number.
+    \item \textbf{To Boolean}: Whether or not the Number is greater than 0.
+\end{itemize}
+
+\subsubsection{Casting from Boolean}
+
+\begin{itemize}
+    \item \textbf{To Object}: Constructs a singleton Object where the key is the String representation of the Boolean, and the value is Null.
+    \item \textbf{To Array}: Constructs a singleton Array where the first and only element is the Boolean.
+    \item \textbf{To String}: Marshals the Boolean as a JSON boolean.
+    \item \textbf{To Number}: 0 if false, 1 otherwise.
+\end{itemize}
+
+\subsubsection{Casting from Null}
+
+\begin{itemize}
+    \item \textbf{To Object}: Constructs a singleton Object where the key is the String representation of Null (\verb|null|), and the value is Null.
+    \item \textbf{To Array}: Constructs a singleton Array where the first and only element is Null.
+    \item \textbf{To String}: \verb|null|.
+    \item \textbf{To Number}: Returns false.
+\end{itemize}
+
+\subsubsection{Casting from Functions}
+
+\begin{itemize}
+    \item \textbf{To String}: \verb|function:JSON_PATH:SAFE_PTR|.
+\end{itemize}
+
+\subsection{A note on Functions}
+
+Functions are defined as follows:
+
+\begin{verbatim}
+function foo(a, b)
+    return a + b;
+end;
+\end{verbatim}
+
+This places the value \verb|foo| on the heap of the current stack frame, with a value of type Function. This value points to the function's corresponding FunctionDefinition AST node. In \verb|sttp| this value will be treated as a String in the format: \verb|function:JSON_PATH:SAFE_PTR|.
+
+\subsection{Call Stack}
+\label{sec:function-call-stack}
+
+Each time a function is called, the heap will be checked first for the called function, if the found value is not a function then the table of builtin functions will be checked.
+
+\begin{verbatim}
+// This will override the print builtin
+function print(a) return a; end;
+
+// This will just return "foo"
+$print("foo");
+\end{verbatim}
+
+Each stack frame, including the first/main/global frame, will have a new heap allocated to it. This contains a mapping of variable names to \verb|sttp| values. Each local variable defined within the current frame will be allocated to this heap. All values defined as a global variable from the previous stack frame are copied by reference over to the new stack stack frame.
+
+Each argument is assigned to the JSONPath defined in the function's parameters and placed on this heap. If there is no argument for a defined function parameter, then that parameter will be set to \verb|null|. If there are more arguments provided then there are parameters, then an error is thrown.
+
+A \verb|self| variable is also placed on the heap which contains the value pointed to by the first/root property (in \verb|foo.bar.baz| this would be \verb|foo|) of the JSONPath of the function. For instance:
+
+\begin{verbatim}
+hello_world = {"name": "John Smith"};
+
+function hello_world.hello()
+    $print("Hello", self.name + "!");
+end;
+
+$hello_world.hello();
+// Output: Hello John Smith!
+\end{verbatim}
+
+Parameters are assigned in order from left to right, with the \verb|self| parameter defined first. This can give way to some interesting behaviour such as the following:
+
+\begin{verbatim}
+foo = {"name": "John Smith"};
+
+// "foo" is populated with new keys "a", "b", and "c"
+function foo.zoo(self.a, self.b, foo.c)
+    self.result = self.a * self.b * self.c;
+end;
+
+$foo.zoo(3, 7, 2);
+$print(foo);
+// Output: {
+//     "a": 3,
+//     "b": 7,
+//     "c": 2,
+//     "name": "John Smith",
+//     "result": 42,
+//     "zoo": "function:foo.zoo:XXXXXXX"
+// }
+\end{verbatim}
+
+Once the function has completed execution, the current stack frame is popped from the call-stack.
+
+\subsection{Method Calls (HTTP requests)}
+
+\verb|sttp| is a HTTP client, so there must be a way of making HTTP requests. In \verb|sttp| these are called Method Calls. They are treated similarly to how you invoke a Function but the only supported signatures are:
+
+\begin{itemize}
+    \item \verb|$GET(URL String, Headers Object, Cookies Object)|
+    \item \verb|$HEAD(URL String, Headers Object, Cookies Object)|
+    \item \verb|$OPTIONS(URL String, Headers Object, Cookies Object)|
+    \item \verb|$POST(URL String, Body Any, Headers Object, Cookies Object)|
+    \item \verb|$PUT(URL String, Body Any, Headers Object, Cookies Object)|
+    \item \verb|$DELETE(URL String, Body Any, Headers Object, Cookies Object)|
+    \item \verb|$PATCH(URL String, Body Any, Headers Object, Cookies Object)|
+\end{itemize}
+
+Each signature accepts the \verb|URL|, \verb|Headers| and \verb|Cookies| parameter but only the HTTP methods that support a body within the request (\verb|POST|, \verb|PUT|, \verb|DELETE|, and \verb|PATCH|) accept the \verb|Body| parameter. As these parameters must be the types described in the signatures above, all arguments will be type checked and cast to ensure they have the correct types.
+
+The response from a Method Call will be an Object that looks like the following:
+
+\begin{verbatim}
+{
+    "content": The body of the response (Object / String),
+    "cookies": [
+        {
+            "name": The cookie's name (String),
+            "value": The cookie's value (String),
+            "max_age": The cookie's max age (Number),
+            "secure": Whether or not the cookie is secure (Boolean),
+            "http_only": Whether or not the cookie is HTTP only (Boolean),
+            "same_site": See https://pkg.go.dev/net/http#SameSite (Number),
+            "raw": The raw representation of the cookie (String),
+        },
+        ...
+    ],
+    "headers": {
+        "name": ["value_1", "value_2"],
+        ...
+    },
+    "received": "2006-01-02 15:04:05.999999999 -0700 MST" (String),
+    "size": Size in bytes (Number),
+    "status": "200 OK" (String),
+    "code": 200 (Number),
+    "time": "0h0m0.5s" (String),
+}
+\end{verbatim}
+
+\subsubsection{Content parsing}
+
+If there is a body to the response then the interpreter will attempt to parse the body. The body will be first attempted to be parsed using Go's JSON library. If this fails then the body will be returned as a String.
+
+If the body returned has a content type of `\verb|text/html|', the body will be parsed using Go's native HTML parser library, then the produced DOM will be traversed to construct an \verb|sttp| Object. The following rules are followed when traversing each node of the DOM to create the Object:
+
+\begin{enumerate}
+    \item If the node is a TextNode who's data is just whitespace (\verb|[ \t\n]|), then it will be ignored.
+    \item Each of the node's children will be recursed down.
+\end{enumerate}
+
+Parsing HTML to an \verb|sttp| Object makes it easier to use with \verb|sttp|'s builtin object searching functions (such as \verb|find|), and could potentially be used for \textbf{web scraping}.
+
+\cprotect\subsubsection{The \verb|batch| statement}
+
+When a Method Call is used within a \verb|batch| statement then it will be added to a `batch', which will then be executed in parallel at the end of the batch statement. This has \hyperref[chap:eval-ast-nodes-batch-edge-cases]{many caveats} but is useful for making a lot of requests quickly.
+
+\begin{verbatim}
+responses = [];
+batch this
+    for i = 0; i < 50; i = i + 1 do
+        response = $GET("https://blog.service/api/blogs/" + i);
+        // We need to check if the response is not null. This
+        // is because in the first pass of the batch MethodCalls
+        // return null.
+        if response != null then
+            responses = responses + response;
+        end;
+    end;
+end;
+\end{verbatim}
+
+\cprotect\section{Using \verb|sttp| to test web APIs}
+\label{sec:hello-sttp-using-sttp-to-test}
+
+Using the \verb|sttp| command you can execute a directory of \verb|sttp| scripts as a test suite. \textbf{What does this mean?} Take the following directory structure, which tests the blogging service web API designed in the \hyperref[chap:designing-rest-api]{previous chapter}, as an example:
+
+\begin{verbatim}
+blog_api_tests
+├── 01_topics
+│   ├── 01_create.sttp
+│   ├── 02_list_retrieve.sttp
+│   ├── 03_update.sttp
+│   ├── 04_top_10.sttp
+│   └── 05_blogs.sttp
+├── 02_blogs
+│   ├── 01_create.sttp
+│   ├── 02_list_retrieve.sttp
+│   ├── 03_update.sttp
+│   └── 04_comments.sttp
+├── 03_comments
+│   ├── 01_create.sttp
+│   ├── 02_retrieve.sttp
+│   └── 03_update.sttp
+└── 04_cleanup
+    ├── 01_comments.sttp
+    ├── 02_blogs.sttp
+    └── 03_topics.sttp
+\end{verbatim}
+
+As you can see, the directory structure is split up into the \hyperref[sec:designing-rest-api-blogging-service]{resources}, apart from the \verb|04_cleanup| directory, used by the blogging web API. These act as \textbf{nested test suites} of the root test suite (canonically named the \textbf{penthouse suite}). The directories and scripts are prefixed with the order that they should be executed in. This is because when running this test suite using the command: \verb|sttp blog_api_tests|, the directories and scripts are evaluated in lexicographical order. It also \textbf{makes sense for the Topics to be tested first, so that they can be used within the tests for Blogs}, and the same goes for Blogs and Comments.
+
+\subsection{Nested sub suites}
+
+It is worth noting that sub suites can be nested within other sub suites. This could happen if a resource resides completely within another logically, and is not used outside of actions for the parent resource. Such is the case for Blogs and Topics, as well as Comments and Blogs. Thus we could restructure the \verb|blog_api_tests| directory to become the following:
+
+This is quite confusing so I will stick to the former directory structure. In the end, in this version of \verb|sttp|, nested sub suites act as niceties because a parent sub suite cannot pass data to a lower one. I will address this more in the \hyperref[sec:hello-sttp-problems-to-be-fixed]{`problems to be fixed'} section below.
+
+\subsection{Cleaning up resources}
+
+The reason for the \verb|04_cleanup| test suite is that it serves as the test for the deletion action of the resources created in the previous test suites. It also makes sense from a repeatability point of view, as the state of the blogging service's internal database is restored to it's starting state.
+
+Of course this is not the best solution to this problem. If the test fails before reaching the \verb|04_cleanup| test suite (and the \verb|BreakOnFailure| flag is set in the interpreter), the test will exit without cleaning up the created resources. A better solution would be to create a `test mode' for the web API that will create a temporary database, with the same schema as the production database, for the web API to use. This can be dropped and recreated each time the tests need to be run. The delete actions could then be tested in a similar way to the create, list, retrieve, and update endpoints within their appropriate resource test suites. This can still be seen as an inelegant solution, and is described further in the \hyperref[sec:hello-sttp-problems-to-be-fixed]{`problems to be fixed'} section below.
+
+\subsection{Scripts and test cases}
+
+The scripts test the actions described by the script's filename, which are provided by the different endpoints for the resource described by the parent directory. For instance, \\\verb|blog_api_tests/01_topics/01_create.sttp| will test the create action for Topics residing at the endpoint: \verb|POST /topics|. These scripts are also ordered in the natural progression of a resource: creation, retrieval, updating, then deletion.
+
+These scripts use the \verb|test| statement to test if an expression is truthy. These act as the \textbf{test cases} of each test suite.
+
+\begin{verbatim}
+test 1 + 1 == 2; // Would be reported as a successful test case
+\end{verbatim}
+
+In the bullets below we will discuss the test suite for the Topics resource and the body of the scripts within this suite. The suite is constructed with the following scripts that test their corresponding actions:
+
+\begin{itemize}
+    \item \verb|blog_api_tests/01_topics/01_create.sttp|: is testing the \verb|POST /topics| endpoint. \textit{It will create a couple of test Topics for use in the following scripts and check the responses from the API.}
+    %TC:ignore
+    \inputminted[autogobble, breaklines, tabsize=4]{text}{blog_api/blog_api_tests/01_topics/01_create.sttp}
+    %TC:endignore
+    \item \verb|blog_api_tests/01_topics/02_list_retrieve.sttp|: is testing the \verb|GET /topics| and \verb|GET /topics/{topic_id}| endpoints. \textit{It will check that the Topics created in the previous script are fetched from using the list and retrieve actions.}
+    %TC:ignore
+    \inputminted[autogobble, breaklines, tabsize=4]{text}{blog_api/blog_api_tests/01_topics/02_list_retrieve.sttp}
+    %TC:endignore
+    \item \verb|blog_api_tests/01_topics/03_update.sttp|: is testing the \verb|PUT /topics/{topic_id}| endpoint. \textit{It will update the the Topics created in the first script and check whether retrieving and listing each updated Topic serves the correct response.}
+    %TC:ignore
+    \inputminted[autogobble, breaklines, tabsize=4]{text}{blog_api/blog_api_tests/01_topics/03_update.sttp}
+    %TC:endignore
+    \item \verb|blog_api_tests/01_topics/04_top_10.sttp|: is testing the \verb|GET /topics/top| endpoint. \textit{This will have to create some test Blogs, then check whether the endpoint returns the correct ordering of Topics.}
+    %TC:ignore
+    \inputminted[autogobble, breaklines, tabsize=4]{text}{blog_api/blog_api_tests/01_topics/04_top_10.sttp}
+    %TC:endignore
+    \item \verb|blog_api_tests/01_topics/05_blogs.sttp|: is testing the \verb|GET /topics/{topic_id}/blogs| endpoint. \textit{Checks whether the Blogs created in the previous script are in the response returned by the API.}
+    %TC:ignore
+    \inputminted[autogobble, breaklines, tabsize=4]{text}{blog_api/blog_api_tests/01_topics/05_blogs.sttp}
+    %TC:endignore
+\end{itemize}
+
+\subsection{Running the tests and the output}
+
+\subsubsection{Implementation of the blogging service web API}
+
+To run the test suite directory, I had to first implement the blogging service web API. The method used to implement this is outside the scope of this report, but the source code can be found in the: \verb|reports/full/blog_api/blog_api_server/| directory. To run the server it is recommended to first create a python3.10 virtual environment: \mintinline[breaklines]{shell}{python3.10 -m venv .venv} (whilst within the \verb|blog_api_server| directory). You can then activate, install dependencies, and run the web server using the following commands (on UNIX based systems):
+
+%TC:ignore
+\begin{center}
+    \begin{minted}{shell}
+source .venv/bin/activate
+pip3 install -r requirements.txt
+# Will start a gunicorn web server with 4 workers, each with 4 threads
+gunicorn --reload --threads 4 -w 4 --log-level debug blog_api_server.wsgi
+    \end{minted}
+\end{center}
+%TC:endignore
+
+\subsubsection{Running the test suite}
+
+To run the test suite at \verb|reports/full/blog_api/blog_api_tests/| you will first need to build the \verb|sttp| executable. This can be done by installing latest minor version of \verb|go1.17|. After doing so, you can then navigate to the \verb|src/| directory and run: \verb|go build -o sttp|. This will produce an executable named: \verb|sttp|. It is recommended that you move this into the \verb|reports/full/blog_api/| directory (or onto your \verb|PATH| if you're inclined). To execute the \verb|sttp| test suite described above, you should first move to the \verb|reports/full/blog_api/| directory, and then run the command: \verb|./sttp blog_api_tests|. This should (hopefully) result in the following output.
+
+\begin{center}
+    \textit{Note the output has been truncated to only include the Topics test suite}
+\end{center}
+
+%TC:ignore
+\begin{minted}[fontsize=\scriptsize, breaklines]{text}
+PENTHOUSE SUITE: blog_api_tests NO SCRIPTS (PASS)
+    SUB SUITE: blog_api_tests/01_topics  (PASS)
+        blog_api_tests/01_topics/01_create.sttp:11:5 - "test topic_resp.code == 201" (PASS)
+        blog_api_tests/01_topics/01_create.sttp:13:5 - "test topic_resp.content.name == topic.name" (PASS)
+        blog_api_tests/01_topics/01_create.sttp:11:5 - "test topic_resp.code == 201" (PASS)
+        blog_api_tests/01_topics/01_create.sttp:13:5 - "test topic_resp.content.name == topic.name" (PASS)
+        blog_api_tests/01_topics/01_create.sttp:11:5 - "test topic_resp.code == 201" (PASS)
+        blog_api_tests/01_topics/01_create.sttp:13:5 - "test topic_resp.content.name == topic.name" (PASS)
+        blog_api_tests/01_topics/02_list_retrieve.sttp:4:1 - "test 0 + topics.content == 3" (PASS)
+        blog_api_tests/01_topics/02_list_retrieve.sttp:10:5 - "test topic.name == "Test Topic %%" % (i + 1)" (PASS)
+        blog_api_tests/01_topics/02_list_retrieve.sttp:11:5 - "test topic.blog_count == 0" (PASS)
+        blog_api_tests/01_topics/02_list_retrieve.sttp:15:5 - "test topic_resp.content.name == topic.name" (PASS)
+        blog_api_tests/01_topics/02_list_retrieve.sttp:10:5 - "test topic.name == "Test Topic %%" % (i + 1)" (PASS)
+        blog_api_tests/01_topics/02_list_retrieve.sttp:11:5 - "test topic.blog_count == 0" (PASS)
+        blog_api_tests/01_topics/02_list_retrieve.sttp:15:5 - "test topic_resp.content.name == topic.name" (PASS)
+        blog_api_tests/01_topics/02_list_retrieve.sttp:10:5 - "test topic.name == "Test Topic %%" % (i + 1)" (PASS)
+        blog_api_tests/01_topics/02_list_retrieve.sttp:11:5 - "test topic.blog_count == 0" (PASS)
+        blog_api_tests/01_topics/02_list_retrieve.sttp:15:5 - "test topic_resp.content.name == topic.name" (PASS)
+        blog_api_tests/01_topics/03_update.sttp:13:5 - "test topic_resp.code == 200" (PASS)
+        blog_api_tests/01_topics/03_update.sttp:15:5 - "test topic_resp.content.name == new_name" (PASS)
+        blog_api_tests/01_topics/03_update.sttp:13:5 - "test topic_resp.code == 200" (PASS)
+        blog_api_tests/01_topics/03_update.sttp:15:5 - "test topic_resp.content.name == new_name" (PASS)
+        blog_api_tests/01_topics/03_update.sttp:13:5 - "test topic_resp.code == 200" (PASS)
+        blog_api_tests/01_topics/03_update.sttp:15:5 - "test topic_resp.content.name == new_name" (PASS)
+        blog_api_tests/01_topics/04_top_10.sttp:26:5 - "test topic.blog_count == 3 - i" (PASS)
+        blog_api_tests/01_topics/04_top_10.sttp:27:5 - "test topic.name == "Test Topic %% Updated" % (i + 1)" (PASS)
+        blog_api_tests/01_topics/04_top_10.sttp:26:5 - "test topic.blog_count == 3 - i" (PASS)
+        blog_api_tests/01_topics/04_top_10.sttp:27:5 - "test topic.name == "Test Topic %% Updated" % (i + 1)" (PASS)
+        blog_api_tests/01_topics/04_top_10.sttp:26:5 - "test topic.blog_count == 3 - i" (PASS)
+        blog_api_tests/01_topics/04_top_10.sttp:27:5 - "test topic.name == "Test Topic %% Updated" % (i + 1)" (PASS)
+        blog_api_tests/01_topics/05_blogs.sttp:8:5 - "test 0 + blogs.content == topic.blog_count" (PASS)
+        blog_api_tests/01_topics/05_blogs.sttp:9:5 - "test 0 + blogs.content == 3 - i" (PASS)
+        blog_api_tests/01_topics/05_blogs.sttp:8:5 - "test 0 + blogs.content == topic.blog_count" (PASS)
+        blog_api_tests/01_topics/05_blogs.sttp:9:5 - "test 0 + blogs.content == 3 - i" (PASS)
+        blog_api_tests/01_topics/05_blogs.sttp:8:5 - "test 0 + blogs.content == topic.blog_count" (PASS)
+        blog_api_tests/01_topics/05_blogs.sttp:9:5 - "test 0 + blogs.content == 3 - i" (PASS)
+    SUB SUITE: blog_api_tests/02_blogs  (PASS)
+        ...
+    SUB SUITE: blog_api_tests/03_comments  (PASS)
+        ...
+    SUB SUITE: blog_api_tests/04_cleanup  (PASS)
+        ...
+\end{minted}
+%TC:endignore
+
+The output from \verb|sttp| is indented to show any sub test suite's, or directories, and suffixed with either \verb|PASS| or \verb|FAIL| to indicate whether that sub suite has passed or failed all the tests within each script within that sub suite. The individual tests from each script within the sub suite are then listed below the sub suite. Each test's file, line number, and column number are shown in the first half of the line, with the test statement itself pretty-printed in the second half. The pretty-printed test statement is quite useful as, when combined with the logs from the web API, it can help squash bugs without even having to open an editor to inspect the \verb|sttp| code.
+
+\cprotect\subsection{Problems to be fixed in later versions of \verb|sttp|}
+\label{sec:hello-sttp-problems-to-be-fixed}
+
+When using \verb|sttp| to test web APIs that I have been creating for work, and also for the example mentioned previously, I have noticed a few problems that I would like to fix in later versions of \verb|sttp|.
+
+\begin{itemize}
+    \item \textbf{There is a lot of duplicated code.} A solution to this has been discussed in the \hyperref[sec:evaluation-environments]{evaluation chapter}. It proposes introducing environments which are \verb|.json| files that can reside within any test suite. These will be parsed to an \verb|sttp| Object that will be inherited by each script and test suite. Environments at a lower level inherit and overwrite the properties from any environments above. This allows global constants like test data, domains and URLs to be passed to each test directory, and allows the behaviour of the test to completely change when substituting in other environments.
+    \begin{itemize}
+        \item \textbf{What about duplicated functions?} This is a bit harder.
+        
+        One solution would be to permit function definitions within the grammar of \verb|sttp|, then only parse Object literals instead of whole programs within these environments. While on paper this may seem like the ideal solution, I am against the idea of adding more and more production rules to the grammar. This is because adding grammar idioms can become quite a slippery slope and I want \verb|sttp| to relatively `bare-bones' in its syntax.
+
+        Another solution would be to create global \verb|sttp| scripts that act as environments. For instance, any script prefixed/suffixed with `global' will be passed an environment variable that can be filled throughout that script. This object will then be extracted from the interpreter after execution and will serve as the environment that is passed to lower test suites. Within these `global' scripts you could copy function references to this environment variable, thus allowing definition of global functions. This is also not a very ideal solution as it seems more like a `hack' than an actual solution.
+    \end{itemize}
+    \item \textbf{\texttt{sttp} should be able to have setup and teardown procedures that run at the start and end of test suites.} This could be useful for setting up test databases and dropping test databases to avoid cleanup of individual resources. This is something that could be added to environments as definable functions. These functions will then be saved within each test suite.
+\end{itemize}
+
+As explained in the \hyperref[chap:evaluation]{evaluation chapter} at the end of this report, I have already started theorising and implementing some of the solutions to these problems within the \verb|after-evaluation| branch, but I felt that it deserved some further usage before incorporating the changes into the specification. It also did not make sense to rewrite large sections of this report to incorporate these new changes.

@@ -2,7 +2,7 @@ package data
 
 import (
 	"encoding/json"
-	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/errors"
+	"github.com/andygello555/src/errors"
 	"reflect"
 	"strconv"
 	"strings"
@@ -13,7 +13,8 @@ type Heap map[string]*Value
 
 // Exists will check whether the variable of the given name is on the heap.
 func (h *Heap) Exists(name string) bool {
-	_, ok := (*h)[name]; return ok
+	_, ok := (*h)[name]
+	return ok
 }
 
 // Delete will delete the symbol of the given name in the given scope. If scope is negative then the most recent symbol
@@ -22,7 +23,7 @@ func (h *Heap) Delete(name string) {
 	delete(*h, name)
 }
 
-// Assign will create a new entry in the heap if the variable does not exist yet. Otherwise, will assign the new value 
+// Assign will create a new entry in the heap if the variable does not exist yet. Otherwise, will assign the new value
 // and type to the existing symbol. The type of the symbol will be decided by Type.Get
 func (h *Heap) Assign(name string, value interface{}, global bool, ro bool) (err error) {
 	var t Type
@@ -77,11 +78,11 @@ func (v *Value) String() string {
 	return string(ss)
 }
 
-func (v *Value) Float64() float64 { return v.Value.(float64) }
-func (v *Value) Int() int { return int(v.Float64()) }
-func (v *Value) StringLit() string { return v.Value.(string) }
+func (v *Value) Float64() float64            { return v.Value.(float64) }
+func (v *Value) Int() int                    { return int(v.Float64()) }
+func (v *Value) StringLit() string           { return v.Value.(string) }
 func (v *Value) Map() map[string]interface{} { return v.Value.(map[string]interface{}) }
-func (v *Value) Array() []interface{} { return v.Value.([]interface{}) }
+func (v *Value) Array() []interface{}        { return v.Value.([]interface{}) }
 func (v *Value) Len() int {
 	switch v.Type {
 	case Object:
@@ -180,23 +181,23 @@ const (
 )
 
 var Types = map[Type]bool{
-	NoType: true,
-	Object: true,
-	Array: true,
-	String: true,
-	Number: true,
-	Boolean: true,
-	Null: true,
+	NoType:   true,
+	Object:   true,
+	Array:    true,
+	String:   true,
+	Number:   true,
+	Boolean:  true,
+	Null:     true,
 	Function: true,
 }
 
 var typeNames = map[Type]string{
-	NoType: "<error>",
-	Object: "object",
-	Array: "array",
-	String: "string",
-	Number: "number",
-	Boolean: "bool",
-	Null: "null",
+	NoType:   "<error>",
+	Object:   "object",
+	Array:    "array",
+	String:   "string",
+	Number:   "number",
+	Boolean:  "bool",
+	Null:     "null",
 	Function: "function",
 }

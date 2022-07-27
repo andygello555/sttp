@@ -1,0 +1,69 @@
+\chapter{Web APIs and where to find them}
+
+In this chapter we will discuss the types of web-APIs, design a small web API that serves as an interface for a \textbf{blog website}, and finally introduce \verb|sttp| and explain how it fits in this domain.
+
+\section{Web-APIs}
+
+One important disambiguation to establish before continuing with the report is what kind web APIs that we are going to focus on.
+
+\subsection{Client side Web APIs}
+
+When a web API is client side, it means that it is running directly within a user's web browser or HTTP client. The Mozilla Foundation \href{https://developer.mozilla.org/en-US/docs/Web/API}{outlines all of the client side web APIs} that can be used when developing a HTML5 application. These are \textbf{not} the web APIs that we will refer to for the rest of the report.
+
+\subsection{Server side Web APIs}
+
+As mentioned in the \hyperref[chap:motivations]{motivations} chapter, server side web APIs offer one-or-more user exposed endpoints that perform specific actions within a service. \cprotect\textbf{\verb|sttp| was written in order to test these actions}.
+
+\cprotect\section{\verb|sttp| is a HTTP client}
+\label{sec:meet-sttp-http-clients}
+
+Server side web APIs require the use of a HTTP client to communicate with them. HTTP clients make and accept HTTP requests and responses. Examples of HTTP clients include: \href{https://github.com/curl/curl}{cURL}, \href{https://www.gnu.org/software/wget/}{Wget}, \href{https://httpie.io/}{HTTPie}, and web browsers. On its base level, \cprotect\textbf{\verb|sttp| is just a HTTP client} wrapped within an iterative/procedural programming language.
+
+For instance, when visiting the domain: \verb|https://www.example.com/| within a web browser; the web browser will act as a HTTP client, requesting the resource found at that URL (this might be a webpage, CSV, PDF, JSON, etc.). Below shows some similar commands for retrieving this resource using the different HTTP clients mentioned above:
+
+\begin{enumerate}
+    \item cURL: \mintinline[breaklines]{sh}{curl https://www.example.com/}
+    \item Wget: \mintinline[breaklines]{sh}{wget https://www.example.com/}
+    \item HTTPie: \mintinline[breaklines]{sh}{http GET https://www.example.com/}
+    \item \verb|sttp|: \verb|$GET("https://www.example.com/")|
+\end{enumerate}
+
+\section{Web API services}
+
+Typically, when talking about server side web APIs we assume that a web API \textbf{talks to a service}. For example, a service could be a database of exchange rates. The web API for this service might have an \textbf{endpoint} consisting of the following URL path construction: \verb|/{from}/{to}|. Thus, making a \verb|GET| request to the URL: \verb|/GBP/USD| (using a HTTP client) could return the exchange rate from GBP to USD for the previous day as a \verb|JSON| object.
+
+This allows subscribers to these services to \textbf{access them without much knowledge of the internal system itself}. \textbf{Endpoints} is the term usually given for a URL schema with a specific action tied to it. Information pertaining to the request is usually encoded within the URL itself: \verb|/GBP/USD|, placed within the query parameters: \verb|/today?from=GBP&to=USD|, or placed in the body of the HTTP request itself (if the HTTP method allows it). These endpoints are then tied to certain actions within these services by the web API developers. Actions such as: getting, creating, updating, and deleting resources are commonly tied to external endpoints.
+
+\section{Web API intricacies}
+
+When web APIs are modelled for large and intricate services, the layout of the endpoints for them can become cluttered very quickly. Thus, web API developers usually find it necessary to follow a convention for defining these endpoints. These conventions define how a set of actions might be mapped onto a URL and HTTP request methods (GET, POST, PUT, ...). One of the most popular of these conventions at the moment is: REST.
+
+\section{REpresentational State Transfer}
+
+A web API is considered RESTful if it adhere to a set of architectural constraints\textsuperscript{\cite{richardson_ruby_2007}}. This is in order to create independent components encapsulating resources within a service. Each component employs a uniform endpoint `style' and response caching to create user accessible server side web APIs.
+
+The most relevant of these principles, to the current discussion on endpoints, is the \textbf{uniform interface} principle. This enforces that all RESTful APIs must\textsuperscript{\cite{fielding_2000}}:
+
+% https://archive.org/details/restfulwebservic00rich_0
+
+\begin{enumerate}
+    \item \textbf{Identify resources within endpoints that access that specific resource}. For instance, if the web API is an interface for a blogging service, and blog resources are identified by a \href{https://www.uuidgenerator.net/version4}{UUID4}, then the following URL path might be constructed to access the comments on a blog: \verb|/blogs/1a88249b-4b93-4b7f-b38c-d967af5a7993/comments|.
+    \item \textbf{Manipulate resources through representations of the internal structure of said resources}. Continuing the blogging service example, when requesting a specific blog this might fetch a row from the service's database and then \textbf{serialise} it into a media type such as \verb|JSON|. For example, the request \verb|GET /blogs/1a88249b-4b93-4b7f-b38c-d967af5a7993| might return the following \verb|JSON| data:
+%TC:ignore
+    \begin{minted}{json}
+{
+    "id": "1a88249b-4b93-4b7f-b38c-d967af5a7993",
+    "name": "RESTful APIs",
+    "author": "Jane Doe",
+    "tags": [
+        "Web APIs",
+        "APIs",
+        "REST"
+    ]
+}    
+    \end{minted}
+%TC:endignore
+    This serialised blog returns all the data necessary to manipulate it. For instance, to update the name of the blog, the author might send the following request: \\\verb|PUT /blogs/1a88249b-4b93-4b7f-b38c-d967af5a7993| with the body: \mintinline[breaklines]{json}{{"name": "RESTful Web APIs"}}. \cprotect\textit{Note how the body of the request can be a partial version of the data returned by \verb|GET|ting the same endpoint}.
+\end{enumerate}
+
+Hopefully this gives some indication as to how web APIs are created and used to access services. In the following chapter I will create an example web API that will be used throughout the rest of the first part of this report.
