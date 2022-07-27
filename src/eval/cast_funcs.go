@@ -1,8 +1,8 @@
 package eval
 
 import (
-	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/data"
-	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/errors"
+	"github.com/andygello555/src/data"
+	"github.com/andygello555/src/errors"
 	"strconv"
 )
 
@@ -19,9 +19,9 @@ func same(symbol *data.Value) (err error, cast *data.Value) {
 // s marshals the JSON value and then creates a String data.Value.
 func s(symbol *data.Value) (err error, cast *data.Value) {
 	return err, &data.Value{
-		Value: symbol.String(),
-		Type:  data.String,
-		Global: symbol.Global,
+		Value:    symbol.String(),
+		Type:     data.String,
+		Global:   symbol.Global,
 		ReadOnly: symbol.ReadOnly,
 	}
 }
@@ -48,9 +48,9 @@ func l(symbol *data.Value) (err error, cast *data.Value) {
 	var n float64
 	err, n = length(symbol.Value)
 	return err, &data.Value{
-		Value: n,
-		Type:  data.Number,
-		Global: symbol.Global,
+		Value:    n,
+		Type:     data.Number,
+		Global:   symbol.Global,
 		ReadOnly: symbol.ReadOnly,
 	}
 }
@@ -60,9 +60,9 @@ func lBool(symbol *data.Value) (err error, cast *data.Value) {
 	var n float64
 	err, n = length(symbol.Value)
 	return err, &data.Value{
-		Value: n > 0,
-		Type:  data.Boolean,
-		Global: symbol.Global,
+		Value:    n > 0,
+		Type:     data.Boolean,
+		Global:   symbol.Global,
 		ReadOnly: symbol.ReadOnly,
 	}
 }
@@ -73,9 +73,9 @@ func obSing(symbol *data.Value) (err error, cast *data.Value) {
 	ob := make(map[string]interface{})
 	ob[symbol.String()] = nil
 	return nil, &data.Value{
-		Value: ob,
-		Type:  data.Object,
-		Global: symbol.Global,
+		Value:    ob,
+		Type:     data.Object,
+		Global:   symbol.Global,
 		ReadOnly: symbol.ReadOnly,
 	}
 }
@@ -85,9 +85,9 @@ func arSing(symbol *data.Value) (err error, cast *data.Value) {
 	array := make([]interface{}, 1)
 	array[0] = symbol.Value
 	return nil, &data.Value{
-		Value: array,
-		Type:  data.Array,
-		Global: symbol.Global,
+		Value:    array,
+		Type:     data.Array,
+		Global:   symbol.Global,
 		ReadOnly: symbol.ReadOnly,
 	}
 }
@@ -99,13 +99,13 @@ func obArray(symbol *data.Value) (err error, cast *data.Value) {
 	i := 0
 	for _, v := range ob {
 		array[i] = v
-		i ++
+		i++
 	}
 
 	return nil, &data.Value{
-		Value: array,
-		Type:  data.Array,
-		Global: symbol.Global,
+		Value:    array,
+		Type:     data.Array,
+		Global:   symbol.Global,
 		ReadOnly: symbol.ReadOnly,
 	}
 }
@@ -118,9 +118,9 @@ func arObject(symbol *data.Value) (err error, cast *data.Value) {
 		ob[strconv.Itoa(i)] = v
 	}
 	return nil, &data.Value{
-		Value: ob,
-		Type:  data.Object,
-		Global: symbol.Global,
+		Value:    ob,
+		Type:     data.Object,
+		Global:   symbol.Global,
 		ReadOnly: symbol.ReadOnly,
 	}
 }
@@ -174,9 +174,9 @@ func stNumber(symbol *data.Value) (err error, cast *data.Value) {
 // nuBoolean: from Number to Boolean. Checks whether the number is greater than 0.
 func nuBoolean(symbol *data.Value) (err error, cast *data.Value) {
 	return nil, &data.Value{
-		Value: symbol.Value.(float64) > 0,
-		Type:  data.Boolean,
-		Global: symbol.Global,
+		Value:    symbol.Value.(float64) > 0,
+		Type:     data.Boolean,
+		Global:   symbol.Global,
 		ReadOnly: symbol.ReadOnly,
 	}
 }
@@ -188,9 +188,9 @@ func boNumber(symbol *data.Value) (err error, cast *data.Value) {
 		n = float64(1)
 	}
 	return nil, &data.Value{
-		Value: n,
-		Type:  data.Number,
-		Global: symbol.Global,
+		Value:    n,
+		Type:     data.Number,
+		Global:   symbol.Global,
 		ReadOnly: symbol.ReadOnly,
 	}
 }
@@ -198,9 +198,9 @@ func boNumber(symbol *data.Value) (err error, cast *data.Value) {
 // nlNumber: from Null to Number. Returns a Number symbol with value 0.
 func nlNumber(symbol *data.Value) (err error, cast *data.Value) {
 	return nil, &data.Value{
-		Value: float64(0),
-		Type:  data.Number,
-		Global: symbol.Global,
+		Value:    float64(0),
+		Type:     data.Number,
+		Global:   symbol.Global,
 		ReadOnly: symbol.ReadOnly,
 	}
 }
@@ -208,9 +208,9 @@ func nlNumber(symbol *data.Value) (err error, cast *data.Value) {
 // nlBoolean: from Null to Boolean. Returns a Boolean symbol with value false.
 func nlBoolean(symbol *data.Value) (err error, cast *data.Value) {
 	return nil, &data.Value{
-		Value: false,
-		Type:  data.Boolean,
-		Global: symbol.Global,
+		Value:    false,
+		Type:     data.Boolean,
+		Global:   symbol.Global,
 		ReadOnly: symbol.ReadOnly,
 	}
 }

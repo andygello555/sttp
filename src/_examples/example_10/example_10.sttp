@@ -1,23 +1,23 @@
 // TryCatch statements
 try this
     throw {"msg": "Oh no", "code": 400};
-catch as e then
+catch as e do
     $print(e);
-end;
+end
 
 try this
     a = [1, 2, 3];
     a[-4] = -1;
-catch as e then
+catch as e do
     $print(e);
-end;
+end
 
-function foo(a, b)
+fun foo(a, b)
     try this
         return a * b;
-    catch as e then
+    catch as e do
         $print(e);
-    end;
-end;
+    end
+end
 
 $foo(2, 4);

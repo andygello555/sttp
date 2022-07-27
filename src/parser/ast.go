@@ -2,9 +2,9 @@ package parser
 
 import (
 	"fmt"
-	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/eval"
 	"github.com/alecthomas/participle/v2"
 	"github.com/alecthomas/participle/v2/lexer"
+	"github.com/andygello555/src/eval"
 	"strings"
 )
 
@@ -56,15 +56,42 @@ type Array struct {
 type Factor struct {
 	Pos lexer.Position
 
-	Null          *Null         `  @Null`
-	Boolean       *Boolean      `| @(True | False)`
-	Number        *float64      `| @Number`
-	StringLit     *string       `| @StringLit`
-	JSONPath      *JSONPath     `| @@`
-	JSON          *JSON         `| @@`
-	FunctionCall  *FunctionCall `| @@`
-	MethodCall    *MethodCall   `| @@`
-	SubExpression *Expression   `| "(" @@ ")"`
+	Null           *Null           `  @Null`
+	Boolean        *Boolean        `| @(True | False)`
+	Number         *float64        `| @Number`
+	JSONPathFactor *JSONPathFactor `| @@`
+	FunctionCall   *FunctionCall   `| @@`
+	MethodCall     *MethodCall     `| @@`
+	SubExpression  *Expression     `| "(" @@ ")"`
+}
+
+// JSONPathFactor acts similarly to JSONPath, in that it is the root of a JSONPath. However, on top of the root property
+// being able to be Part, it can also be a FunctionCall, a MethodCall, or a JSON literal.
+type JSONPathFactor struct {
+	Pos lexer.Position
+
+	RootProperty *Part          `(   @@`
+	RootJSON     *JSONPart      `  | @@`
+	RootString   *StringLitPart `  | @@ )`
+	Parts        []*Part        `( "." @@ )*`
+}
+
+// JSONPart acts similarly to Part. However, it matches a JSON literal as an initial property. Then matches any number
+// of Index.
+type JSONPart struct {
+	Pos lexer.Position
+
+	JSON    *JSON    `@@`
+	Indices []*Index `@@*`
+}
+
+// StringLitPart acts similarly to Part. However, it matches a string literal token and any subsequent instances of
+// Index.
+type StringLitPart struct {
+	Pos lexer.Position
+
+	StringLit *string  `@StringLit`
+	Indices   []*Index `@@*`
 }
 
 type Prec1Term struct {
@@ -226,10 +253,10 @@ type Index struct {
 type Statement struct {
 	Pos lexer.Position
 
-	Assignment         *Assignment         `  @@`
-	FunctionCall       *FunctionCall       `| @@`
-	MethodCall         *MethodCall         `| @@`
-	Break              *string             `| @Break`
+	Assignment         *Assignment         `  @@ ";"`
+	FunctionCall       *FunctionCall       `| @@ ";"`
+	MethodCall         *MethodCall         `| @@ ";"`
+	Break              *string             `| @Break ";"`
 	Test               *TestStatement      `| @@`
 	While              *While              `| @@`
 	For                *For                `| @@`
@@ -260,10 +287,10 @@ type While struct {
 type For struct {
 	Pos lexer.Position
 
-	Var        *Assignment `For @@ ";"`
-	Condition  *Expression `@@`
-	Step       *Assignment `(";" @@)?`
-	Block      *Block      `Do @@ End`
+	Var       *Assignment `For @@ ";"`
+	Condition *Expression `@@`
+	Step      *Assignment `(";" @@)?`
+	Block     *Block      `Do @@ End`
 }
 
 // ForEach loop with iterator(s).
@@ -289,7 +316,7 @@ type TryCatch struct {
 	Pos lexer.Position
 
 	Try     *Block  `Try This @@`
-	CatchAs *string `Catch As @Ident Then`
+	CatchAs *string `Catch As @Ident Do`
 	Caught  *Block  `@@ End`
 }
 
@@ -323,7 +350,7 @@ type Elif struct {
 type Block struct {
 	Pos lexer.Position
 
-	Statements []*Statement     `( @@? ";" )*`
+	Statements []*Statement     `( @@ | ";" )*`
 	Return     *ReturnStatement `( @@ |`
 	Throw      *ThrowStatement  `  @@ )?`
 }
@@ -335,7 +362,7 @@ type Program struct {
 	Block *Block `@@`
 }
 
-var lex = lexer.MustSimple([]lexer.Rule{
+var Lex = lexer.MustSimple([]lexer.Rule{
 	{"comment", `//.*`, nil},
 
 	{"StringLit", `(")([^"\\]*(?:\\.[^"\\]*)*)(")`, nil},
@@ -345,13 +372,13 @@ var lex = lexer.MustSimple([]lexer.Rule{
 	{"Do", `\sdo\s`, nil},
 	{"This", `this\s`, nil},
 	{"Break", `break`, nil},
-	{"Then", `\sthen\s`, nil},
+	{"Then", `\?\s`, nil},
 	{"End", `end`, nil},
-	{"Function", `function\s`, nil},
+	{"Function", `fun\s`, nil},
 	{"Return", `return`, nil},
 	{"Throw", `throw`, nil},
-	{"If", `if\s`, nil},
-	{"Elif", `elif\s`, nil},
+	{"If", `is\s`, nil},
+	{"Elif", `elis\s`, nil},
 	{"Else", `else\s`, nil},
 	{"Catch", `catch\s`, nil},
 	{"Test", `test\s`, nil},
@@ -372,7 +399,7 @@ var lex = lexer.MustSimple([]lexer.Rule{
 
 func Parse(filename, s string) (error, *Program) {
 	parser := participle.MustBuild(&Program{},
-		participle.Lexer(lex),
+		participle.Lexer(Lex),
 		participle.CaseInsensitive("Ident"),
 		participle.Unquote("StringLit"),
 		participle.UseLookahead(2),

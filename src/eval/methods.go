@@ -2,8 +2,8 @@ package eval
 
 import (
 	"fmt"
-	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/data"
-	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/errors"
+	"github.com/andygello555/src/data"
+	"github.com/andygello555/src/errors"
 	"github.com/go-resty/resty/v2"
 	"golang.org/x/net/html"
 	"net/http"
@@ -25,7 +25,7 @@ const (
 
 // MethodStrings returns an Array of all accepted HTTP methods as strings.
 func MethodStrings() []string {
-	ms := make([]string, PATCH + 1)
+	ms := make([]string, PATCH+1)
 	for i := 0; i <= int(PATCH); i++ {
 		method := Method(i)
 		ms[i] = method.String()
@@ -63,8 +63,8 @@ const (
 )
 
 var methodParamTypeName = map[MethodParamType]string{
-	Url: "url",
-	Body: "body",
+	Url:     "url",
+	Body:    "body",
 	Headers: "headers",
 	Cookies: "cookies",
 }
@@ -75,7 +75,7 @@ func (mpt MethodParamType) String() string {
 
 // methodParams is a lookup of parameters which are required for all the supported Methods. true indicates the argument
 // is required, false indicates that the argument is not required.
-var methodParams = map[Method]map[MethodParamType]bool {
+var methodParams = map[Method]map[MethodParamType]bool{
 	GET:     {Url: true, Headers: false, Cookies: false},
 	HEAD:    {Url: true, Headers: false, Cookies: false},
 	POST:    {Url: true, Headers: false, Cookies: false, Body: false},
@@ -139,8 +139,8 @@ func (mpt MethodParamType) ApplyArg(arg *data.Value, request *resty.Request) err
 		} else {
 			for n, v := range stringMap {
 				request.SetCookie(&http.Cookie{
-					Name:       n,
-					Value:      v,
+					Name:  n,
+					Value: v,
 				})
 			}
 		}
@@ -200,7 +200,7 @@ func (m *Method) Call(args ...*data.Value) (err error, value *data.Value) {
 			var construct func(curr *html.Node) map[string]interface{}
 			construct = func(curr *html.Node) map[string]interface{} {
 				if !(curr.Type == html.TextNode && strings.TrimSpace(curr.Data) == "") {
-					nodeMap := map[string]interface{} {
+					nodeMap := map[string]interface{}{
 						"type": func() string {
 							switch curr.Type {
 							case html.TextNode:
@@ -248,19 +248,19 @@ func (m *Method) Call(args ...*data.Value) (err error, value *data.Value) {
 		}
 
 		value = &data.Value{
-			Value:    map[string]interface{}{
+			Value: map[string]interface{}{
 				"content": body.Value,
 				"cookies": func() (cookies []interface{}) {
 					cookies = make([]interface{}, len(resp.Cookies()))
 					for i, cookie := range resp.Cookies() {
 						cookies[i] = map[string]interface{}{
-							"name": cookie.Name,
-							"value": cookie.Value,
-							"max_age": float64(cookie.MaxAge),
-							"secure": cookie.Secure,
+							"name":      cookie.Name,
+							"value":     cookie.Value,
+							"max_age":   float64(cookie.MaxAge),
+							"secure":    cookie.Secure,
 							"http_only": cookie.HttpOnly,
 							"same_site": float64(cookie.SameSite),
-							"raw": cookie.Raw,
+							"raw":       cookie.Raw,
 						}
 					}
 					return cookies
@@ -273,10 +273,10 @@ func (m *Method) Call(args ...*data.Value) (err error, value *data.Value) {
 					return headers
 				}(),
 				"received": resp.ReceivedAt().String(),
-				"size": float64(resp.Size()),
-				"status": resp.Status(),
-				"code": float64(resp.StatusCode()),
-				"time": resp.Time().String(),
+				"size":     float64(resp.Size()),
+				"status":   resp.Status(),
+				"code":     float64(resp.StatusCode()),
+				"time":     resp.Time().String(),
 			},
 			Type:     data.Object,
 			Global:   false,

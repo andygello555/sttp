@@ -2,25 +2,25 @@ a = {"hello": "world"};
 
 // This function is considered as mutable as it is stored within a root property and can be overwritten. If this is the
 // only reference to that function then you can lose the ability to use it. 
-function a[0].mutable(self[0].mutable, self[0].bar, foo, bar)
+fun a[0].mutable(self[0].mutable, self[0].bar, foo, bar)
     out = "";
     for i = 0; i < self[0].mutable; i = i + 1 do
         out = out + i + self[0].bar + foo + bar;
-    end;
+    end
     self[0].bar = out + (a[0].bar == self[0].bar);
     return out;
-end;
+end
 
 a.mutmut[0] = a[0].mutable;
 a[0] = a[0] - {"mutable": null};
 
 // This function is read only as it is stored in as a root property on the heap. It cannot be deleted, but can be copied
 // to a different place.
-function immutable(foo, bar)
+fun immutable(foo, bar)
     c = self + foo * bar;
     $print("calling immutable. 6 =", c["6"]);
     return c;
-end;
+end
 
 // a[0].mutable is a mutable reference to the immutable function.
 a[0].mutable = immutable;
@@ -37,31 +37,31 @@ b = {
     "results": []
 };
 
-function b.range()
+fun b.range()
     for i = 0; i < self.upper; i = i + 1 do
-        if i % 2 == 0 then
+        is i % 2 == 0?
             $print(i, "is even");
             // self will be the same reference to b as just using b
             self.results = self.results + i;
         else
             $print(i, "is odd");
             b.results = b.results + i;
-        end;
-    end;
-end;
+        end
+    end
+end
 
 $b.range();
 $print(b.results);
 
 // Functions can be defined within a function
-function foo(a, b, c)
-    function bar(a, b)
-        function baz(a)
+fun foo(a, b, c)
+    fun bar(a, b)
+        fun baz(a)
             return a;
-        end;
+        end
         return $baz(a) + b;
-    end;
+    end
     return $bar(a, b) + c;
-end;
+end
 
 $print($foo(1, 2, 3));

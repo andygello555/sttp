@@ -1,7 +1,7 @@
-function foo()
+fun foo()
     try this
         return $GET("http://127.0.0.1:3000/this/might/fail");
-    catch as e then
+    catch as e do
         $print(e);
     end;
 end;
@@ -11,7 +11,7 @@ $foo();
 try this
     // This throws an uncatchable error as the break is outside iterator.
     break;
-catch as e then
+catch as e do
     $print(e);
 end;
 

@@ -3,39 +3,39 @@ a = {
 };
 
 // If statements. Enuff said.
-if a then
-    a.first_if = true;
-end;
+is a?
+    a.first_is = true;
+end
 
-if a.first_if == false then
-    a.second_if = true;
+is a.first_is == false?
+    a.second_is = true;
 else
-    a.second_if = false;
-end;
+    a.second_is = false;
+end
 
 // If-else ambiguity
-if true then
-    if false then
+is true?
+    is false?
         $print("Shouldn't have gotten here...");
     else
         $print("Got to where we needed to be...");
-    end;
-end;
+    end
+end
 
-if a.second_if then
+is a.second_if?
     a.done = false;
-elif a.first_if == false then
+elis a.first_is == false?
     a.done = false;
-elif 0 + a.hello == 5 then
-    if true then
-        if true then
+elis 0 + a.hello == 5?
+    is true?
+        is true?
             a.done = true;
-        elif a.done then
+        elis a.done?
             a.done = false;
-        end;
-    end;
+        end
+    end
 else
     a.done = false;
-end;
+end
 
 $print("a =", a);

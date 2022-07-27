@@ -3,9 +3,9 @@ package parser
 import (
 	"container/heap"
 	"fmt"
-	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/data"
-	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/errors"
-	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/eval"
+	"github.com/andygello555/src/data"
+	"github.com/andygello555/src/errors"
+	"github.com/andygello555/src/eval"
 	"reflect"
 	"strings"
 )
@@ -17,25 +17,45 @@ type evalNode interface {
 
 // Eval for program will...
 //
-// - Push a new nil Frame to the callstack.
+// • Push a new nil Frame to the callstack.
 //
-// - The Block will be evaluated.
+// • The Block will be evaluated.
 //
-// - The Frame will be returned from.
+// • The Frame will be returned from.
 //
 // Any errors or results that have bubbled up from lower AST nodes will be returned.
 func (p *Program) Eval(vm VM) (err error, result *data.Value) {
 	vm.SetPos(p.GetPos())
-
-	// We insert a nil stack frame to indicate the bottom of the stack. We check if stack size is zero because if the 
+	// We insert a nil stack frame to indicate the bottom of the stack. We check if stack size is zero because if the
 	// VM is in REPL mode, we do not want to add another bottommost stack frame onto of the original.
 	if vm.GetCallStack().Size() == 0 {
 		err = vm.GetCallStack().Call(nil, nil, vm)
 	}
 
-	if err != nil {
+	// We insert the environment (if we have one)
+	var env Env
+	if err, env = vm.GetEnvironment(); err != nil {
 		return err, nil
+	} else if env != nil {
+		// Assign the "env" variable to the environment
+		if err = vm.GetCallStack().Current().GetHeap().Assign(
+			"env",
+			env.GetValue().Value,
+			true,
+			true,
+		); err != nil {
+			return err, nil
+		}
+		if debug, ok := vm.GetDebug(); ok {
+			_, _ = fmt.Fprintf(debug, "environment was given: %s\n", env.String())
+		}
+	} else {
+		if debug, ok := vm.GetDebug(); ok {
+			_, _ = fmt.Fprint(debug, "environment was not given\n")
+		}
 	}
+
+	// Evaluate the inner Block
 	if err, result = p.Block.Eval(vm); err == nil {
 		if debug, ok := vm.GetDebug(); ok {
 			_, _ = fmt.Fprintf(debug, "final stack frame heap: %v\n", vm.GetCallStack().Current().GetHeap())
@@ -65,7 +85,7 @@ func (p *Program) Eval(vm VM) (err error, result *data.Value) {
 	return err, result
 }
 
-// Eval for Block will evaluate each Statement within it. A Block can end with either a ReturnStatement or a 
+// Eval for Block will evaluate each Statement within it. A Block can end with either a ReturnStatement or a
 // ThrowStatement. If either exist they will also be evaluated and returned before the Statements are returned.
 func (b *Block) Eval(vm VM) (err error, result *data.Value) {
 	vm.SetPos(b.GetPos())
@@ -86,7 +106,7 @@ func (b *Block) Eval(vm VM) (err error, result *data.Value) {
 	return err, result
 }
 
-// Eval for ReturnStatement, will evaluate the Value if it exists. If it doesn't, then the Value returned will be 
+// Eval for ReturnStatement, will evaluate the Value if it exists. If it doesn't, then the Value returned will be
 // data.Null. This data.Value will then be returned with an errors.Return purposeful error.
 func (r *ReturnStatement) Eval(vm VM) (err error, result *data.Value) {
 	vm.SetPos(r.GetPos())
@@ -118,7 +138,7 @@ func (r *ReturnStatement) Eval(vm VM) (err error, result *data.Value) {
 	return errors.Return, result
 }
 
-// Eval for ThrowStatement works in a similar way to ReturnStatement.Eval. It will calculate the Value (or data.Null) 
+// Eval for ThrowStatement works in a similar way to ReturnStatement.Eval. It will calculate the Value (or data.Null)
 // and return errors.Throw, which is a purposeful error.
 func (t *ThrowStatement) Eval(vm VM) (err error, result *data.Value) {
 	vm.SetPos(t.GetPos())
@@ -192,10 +212,10 @@ func (a *Assignment) Eval(vm VM) (err error, result *data.Value) {
 	// We get the root identifier of the JSONPath. This is the variable name.
 	variableName := path[0].(string)
 
-	heap := vm.GetCallStack().Current().GetHeap()
+	hp := vm.GetCallStack().Current().GetHeap()
 
 	// Then we get value of the variable.
-	variableVal := heap.Get(variableName)
+	variableVal := hp.Get(variableName)
 	// If it cannot be found then we will set the value to be null initially.
 	if variableVal == nil {
 		variableVal = &data.Value{
@@ -211,7 +231,7 @@ func (a *Assignment) Eval(vm VM) (err error, result *data.Value) {
 		return err, nil
 	}
 
-	// If the value we are setting to is a Function, then we will create a new *FunctionDefinition. This will be 
+	// If the value we are setting to is a Function, then we will create a new *FunctionDefinition. This will be
 	// composed of the body of the function and the JSONPath of the variable that we are setting.
 	if result.Type == data.Function {
 		// This will only create a new pointer to store the function pointer in
@@ -234,13 +254,13 @@ func (a *Assignment) Eval(vm VM) (err error, result *data.Value) {
 	}
 
 	// Finally, we assign the new value to the variable on the heap
-	err = heap.Assign(variableName, val, *vm.GetScope() == 0, false)
+	err = hp.Assign(variableName, val, *vm.GetScope() == 0, false)
 	if err != nil {
 		return errors.UpdateError(err, vm), nil
 	}
 
 	if debug, ok := vm.GetDebug(); ok {
-		_, _ = fmt.Fprintf(debug, "after assignment of %s heap is: %v global: %t scope: %d\n", a.JSONPath.String(0), heap, heap.Get(variableName).Global, *vm.GetScope())
+		_, _ = fmt.Fprintf(debug, "after assignment of %s heap is: %v global: %t scope: %d\n", a.JSONPath.String(0), hp, hp.Get(variableName).Global, *vm.GetScope())
 	}
 	return nil, nil
 }
@@ -250,9 +270,9 @@ func (a *Assignment) Eval(vm VM) (err error, result *data.Value) {
 //
 // First pass of Batch: add the MethodCall as work to the work queue.
 //
-// Second pass of Batch: pop the next result in the BatchSuite's result queue. If there isn't a result to pop then 
+// Second pass of Batch: pop the next result in the BatchSuite's result queue. If there isn't a result to pop then
 // return an errors.MethodCallMismatchInBatch. If there is one but the pointer does not point to the current MethodCall,
-// then also errors.MethodCallMismatchInBatch. Otherwise, the result and error from the freshly popped result will be 
+// then also errors.MethodCallMismatchInBatch. Otherwise, the result and error from the freshly popped result will be
 // returned.
 //
 // Not in Batch: returns the synchronously evaluated MethodCall.
@@ -291,7 +311,7 @@ func (m *MethodCall) Eval(vm VM) (err error, result *data.Value) {
 			return errors.UpdateError(r.GetErr(), vm), r.GetValue()
 		} else {
 			// If we have not got anymore results then we have a mismatch of batched MethodCalls.
-			return errors.MethodCallMismatchInBatch.Errorf(vm,"null (no more results)", m.String(0)), nil
+			return errors.MethodCallMismatchInBatch.Errorf(vm, "null (no more results)", m.String(0)), nil
 		}
 	} else {
 		// Otherwise, we are just executing the MethodCall normally.
@@ -303,12 +323,12 @@ func (m *MethodCall) Eval(vm VM) (err error, result *data.Value) {
 // Eval for TestStatement will first check if there are TestResults defined within the VM, if not then fresh TestResults
 // will be created just for the execution of this script. It's worth noting that if there are TestResults defined within
 // the VM, this means that either TestResults have been generated earlier in the script, or the script is being executed
-// as part of a TestSuite. After this, a function is deferred to add the result of the test to the TestResults. Then, 
-// the Expression is evaluated and cast to a data.Boolean, if it is not already. If the BreakOnFailure flag is set on 
+// as part of a TestSuite. After this, a function is deferred to add the result of the test to the TestResults. Then,
+// the Expression is evaluated and cast to a data.Boolean, if it is not already. If the BreakOnFailure flag is set on
 // the TestResults' config, and the test does not pass, then we will return an errors.FailedTest.
 func (t *TestStatement) Eval(vm VM) (err error, result *data.Value) {
 	vm.SetPos(t.GetPos())
-	// If we don't have any TestResults, this means that we are not running in a test suite. We still want to create 
+	// If we don't have any TestResults, this means that we are not running in a test suite. We still want to create
 	// TestResults to store results in just for this script.
 	if !vm.CheckTestResults() {
 		vm.CreateTestResults()
@@ -317,6 +337,7 @@ func (t *TestStatement) Eval(vm VM) (err error, result *data.Value) {
 	// We defer the addition of the test to simplify the logic within this node a bit
 	passed := false
 	defer func() {
+		fmt.Println("adding", t, "to results")
 		vm.GetTestResults().AddTest(t, passed)
 	}()
 
@@ -328,7 +349,7 @@ func (t *TestStatement) Eval(vm VM) (err error, result *data.Value) {
 		}
 
 		passed = result.Value.(bool) == true
-		// If the test has not passed and the BreakOnFailure flag has been set in the TestConfig, then we'll set the 
+		// If the test has not passed and the BreakOnFailure flag has been set in the TestConfig, then we'll set the
 		// error to FailedTest.
 		if vm.GetTestResults().GetConfig().Get("BreakOnFailure").(bool) && !passed {
 			err = errors.FailedTest
@@ -344,8 +365,8 @@ func (w *While) Eval(vm VM) (err error, result *data.Value) {
 	defer func() {
 		if p := recover(); p != nil {
 			switch p.(type) {
-			case struct { errors.ProtoSttpError }:
-				err = p.(struct { errors.ProtoSttpError })
+			case struct{ errors.ProtoSttpError }:
+				err = p.(struct{ errors.ProtoSttpError })
 			case errors.PurposefulError:
 				// We ignore any errors thrown by the break statement
 				if p.(errors.PurposefulError) == errors.Break {
@@ -381,7 +402,7 @@ func (w *While) Eval(vm VM) (err error, result *data.Value) {
 	return err, nil
 }
 
-// Eval for For loop. Will evaluate the Block until the condition does not hold. Will also apply the Step assignment 
+// Eval for For loop. Will evaluate the Block until the condition does not hold. Will also apply the Step assignment
 // after evaluating each iteration.
 func (f *For) Eval(vm VM) (err error, result *data.Value) {
 	vm.SetPos(f.GetPos())
@@ -394,8 +415,8 @@ func (f *For) Eval(vm VM) (err error, result *data.Value) {
 	defer func() {
 		if p := recover(); p != nil {
 			switch p.(type) {
-			case struct { errors.ProtoSttpError }:
-				err = p.(struct { errors.ProtoSttpError })
+			case struct{ errors.ProtoSttpError }:
+				err = p.(struct{ errors.ProtoSttpError })
 			case errors.PurposefulError:
 				// We ignore any errors thrown by the break statement
 				if p.(errors.PurposefulError) == errors.Break {
@@ -440,8 +461,8 @@ func (f *For) Eval(vm VM) (err error, result *data.Value) {
 	return err, nil
 }
 
-// Eval for ForEach loop. Will iterate over each value in the In value. If the In value is not a data.String, 
-// data.Object, or data.Array, then we will first try to eval.Cast In into a data.String, then a data.Object, and 
+// Eval for ForEach loop. Will iterate over each value in the In value. If the In value is not a data.String,
+// data.Object, or data.Array, then we will first try to eval.Cast In into a data.String, then a data.Object, and
 // finally data.Array. If we cannot cast In to any of these, we will return an errors.CannotCast error. A data.Iterator
 // will then be constructed to iterate over the values in the In value.
 func (f *ForEach) Eval(vm VM) (err error, result *data.Value) {
@@ -451,7 +472,7 @@ func (f *ForEach) Eval(vm VM) (err error, result *data.Value) {
 		return err, nil
 	}
 
-	// Check if the Value is a string, object or an array. If not then we will check if the value is castable. This is 
+	// Check if the Value is a string, object or an array. If not then we will check if the value is castable. This is
 	// done in the order:
 	// - String
 	// - Object
@@ -466,7 +487,9 @@ func (f *ForEach) Eval(vm VM) (err error, result *data.Value) {
 		} else if eval.Castable(result, data.Array) {
 			to = data.Array
 		} else {
-			object := data.Object; array := data.Array; str := data.String
+			object := data.Object
+			array := data.Array
+			str := data.String
 			return errors.CannotCast.Errorf(vm, result.Type.String(), strings.Join([]string{object.String(), array.String(), str.String()}, ", ")), nil
 		}
 
@@ -480,8 +503,8 @@ func (f *ForEach) Eval(vm VM) (err error, result *data.Value) {
 	defer func() {
 		if p := recover(); p != nil {
 			switch p.(type) {
-			case struct { errors.ProtoSttpError }:
-				err = p.(struct { errors.ProtoSttpError })
+			case struct{ errors.ProtoSttpError }:
+				err = p.(struct{ errors.ProtoSttpError })
 			case errors.PurposefulError:
 				// We ignore any errors thrown by the break statement
 				if p.(errors.PurposefulError) == errors.Break {
@@ -527,31 +550,34 @@ func (f *ForEach) Eval(vm VM) (err error, result *data.Value) {
 // 1. If there is a BatchSuite or results for the BatchSuite set up already then we will assume that there is a Batch
 //    within a Batch. This means we will return an errors.BatchWithinBatch.
 //
-// 2. We cache the stdout and stderr file handlers. Then we create a deep copy of the current Frame's data.Heap, and set
-//    this copy as the new data.Heap for the current Frame.
+// 2. We cache the stdout and stderr file handlers, and set the interpreter to use temporary string buffers instead.
+//    Then we create a deep copy of the current Frame's data.Heap, and set this copy as the new data.Heap for the
+//    current Frame.
 //
-// 3. A BatchSuite is created and the first pass of the Block is initiated. We then set the stdout and stderr file 
-//    handlers to the ones cached before the first pass was initiated.
+// 3. A BatchSuite is created, and its workers are started. The first pass of the Block is then initiated.
 //
-// 4. If we have no work to execute, then we will write the temporary stdout and stderr to the cached stdout and stderr
-//    and set them back as the defaults. This effectively just skips the second pass as it is unnecessary.
+// 4. After this succeeds, we set the stdout and stderr file handlers to the ones cached before the first pass was
+//    initiated. We also wait for the BatchSuite to execute all the work it was given just now.
 //
-// 5. Otherwise, we will execute the work in the Batch, set the heap back to the old one, and then execute the second 
-//    pass of the Block.
+// 5. If the BatchSuite has not executed any work (aka. there were no MethodCall(s) within the Batch) we will write the
+//    temporary stdout and stderr to the cached stdout and stderr and set them back as the defaults. This effectively
+//    just skips the second pass as it is unnecessary.
 //
-// 6. If we still have results in the BatchSuite result queue after executing the second pass, we will return an 
+// 6. Otherwise, we will set the heap back to the old one, and then execute the second pass of the Block. If we still
+//    have results in the BatchSuite result queue after executing the second pass, we will return an
 //    errors.MethodCallMismatchInBatch.
 //
-// If an error occurs at any point in these steps, we will first set the stdout and stderr back to the cached ones, if 
-// we haven't done already. As well as deleting the BatchSuite, so that the interpreter knows to not Batch anymore.
+// If an error occurs at any point in these steps, we will first set the stdout and stderr back to the cached ones, if
+// we haven't done already. We will also delete the BatchSuite, so that the interpreter knows to not Batch anymore.
 func (b *Batch) Eval(vm VM) (err error, result *data.Value) {
 	vm.SetPos(b.GetPos())
 	batch, results := vm.GetBatch()
 	if batch == nil && results == nil {
-		// Replace Stdout and Stderr with ioutil.Discard
+		// Replace Stdout and Stderr with temporary string buffers
 		oldStdout, oldStderr := vm.GetStdout(), vm.GetStderr()
 		var newStdout, newStderr strings.Builder
-		vm.SetStdout(&newStdout); vm.SetStderr(&newStderr)
+		vm.SetStdout(&newStdout)
+		vm.SetStderr(&newStderr)
 
 		// Create a copy of the current heap
 		newHeap := make(data.Heap)
@@ -568,29 +594,33 @@ func (b *Batch) Eval(vm VM) (err error, result *data.Value) {
 		*vm.GetCallStack().Current().GetHeap() = newHeap
 		// Set up the BatchSuite. vm.Batch is now not nil, but vm.BatchResults is...
 		vm.CreateBatch(b)
+		// Start the BatchSuite workers...
+		vm.StartBatch()
 
-		// Evaluate the Block for the first time. This will collect all the MethodCalls in the Batch to be executed in 
-		// parallel.
+		// Evaluate the Block for the first time. This will enqueue work to the worker goroutines running within the
+		// BatchSuite.
 		if err, result = b.Block.Eval(vm); err != nil {
-			// We also have to set the stdout and stderr back to their originals as well as deleting the batch 
-			// altogether
-			vm.SetStdout(oldStdout); vm.SetStderr(oldStderr)
+			// We also have to set the stdout and stderr back to their originals as well as stopping and deleting the
+			// batch altogether
+			vm.SetStdout(oldStdout)
+			vm.SetStderr(oldStderr)
 			vm.DeleteBatch()
 			return err, nil
 		}
 
 		// Then we set the stdout and stderr back to the old ones.
-		vm.SetStdout(oldStdout); vm.SetStderr(oldStderr)
+		vm.SetStdout(oldStdout)
+		vm.SetStderr(oldStderr)
+		// Then we wait for all the work to be processed by stopping the BatchSuite...
+		vm.StopBatch()
 
-		// We assign batch again to find the amount of work we have just enqueued. If we have found now work then we 
-		// optimise by skipping batch execution and running the Block again. We also keep the current copied over heap.
-		batch, _ = vm.GetBatch()
-		work := batch.Work()
+		// We find the number of results that have been processed. If nothing has been processed, then we optimise by
+		// not running the Block again. We also keep the current copied over heap.
+		_, results = vm.GetBatch()
+		work := results.Len()
 
 		if work > 0 {
-			// We then execute the collected MethodCalls. This will set vm.BatchResults to not be nil anymore.
-			vm.ExecuteBatch()
-			// We also set the current heap back to the old one...
+			// We set the current heap back to the old one...
 			*vm.GetCallStack().Current().GetHeap() = *oldHeap
 			// Then we evaluate the Block again...
 			if err, result = b.Block.Eval(vm); err != nil {
@@ -598,7 +628,7 @@ func (b *Batch) Eval(vm VM) (err error, result *data.Value) {
 				return err, nil
 			}
 
-			// If we still have results in the Batch that we haven't attached to a MethodCall. Then we will throw an 
+			// If we still have results in the Batch that we haven't attached to a MethodCall. Then we will throw an
 			// error.
 			if _, results = vm.GetBatch(); results.Len() > 0 {
 				vm.DeleteBatch()
@@ -618,9 +648,9 @@ func (b *Batch) Eval(vm VM) (err error, result *data.Value) {
 	return errors.BatchWithinBatch.Errorf(vm), nil
 }
 
-// Eval for TryCatch will first execute the Block pointed to by the Try field. If Try returns an error then we will 
-// check if the error is user constructed by testing if the result returned by Try is not nil. If so we will construct 
-// a user defined error, otherwise we will construct a sttp error. This error will then be placed on the current heap 
+// Eval for TryCatch will first execute the Block pointed to by the Try field. If Try returns an error then we will
+// check if the error is user constructed by testing if the result returned by Try is not nil. If so we will construct
+// a user defined error, otherwise we will construct a sttp error. This error will then be placed on the current heap
 // as the CatchAs identifier. The Caught Block will then be executed.
 func (tc *TryCatch) Eval(vm VM) (err error, result *data.Value) {
 	vm.SetPos(tc.GetPos())
@@ -649,10 +679,10 @@ func (tc *TryCatch) Eval(vm VM) (err error, result *data.Value) {
 	return nil, nil
 }
 
-// Eval for FunctionDefinition will place the pointer to this AST node on the heap at the JSONPath. The 
-// FunctionDefinition data.Value can only be Global and ReadOnly if the variable does not exist in the heap. Global is 
-// only set when the current scope is 0, and ReadOnly is only set if the FunctionDefinition is being set to a root 
-// property. Otherwise, if the variable can be found then the Global and ReadOnly flags are inherited from that 
+// Eval for FunctionDefinition will place the pointer to this AST node on the heap at the JSONPath. The
+// FunctionDefinition data.Value can only be Global and ReadOnly if the variable does not exist in the heap. Global is
+// only set when the current scope is 0, and ReadOnly is only set if the FunctionDefinition is being set to a root
+// property. Otherwise, if the variable can be found then the Global and ReadOnly flags are inherited from that
 // variable.
 func (f *FunctionDefinition) Eval(vm VM) (err error, result *data.Value) {
 	vm.SetPos(f.GetPos())
@@ -665,16 +695,16 @@ func (f *FunctionDefinition) Eval(vm VM) (err error, result *data.Value) {
 	// We get the root identifier of the JSONPath. This is the variable name.
 	variableName := path[0].(string)
 
-	heap := vm.GetCallStack().Current().GetHeap()
+	hp := vm.GetCallStack().Current().GetHeap()
 
 	// Then we get value of the variable.
-	variableVal := heap.Get(variableName)
+	variableVal := hp.Get(variableName)
 	// If it cannot be found then we will set the value to be null initially.
 	if variableVal == nil {
 		variableVal = &data.Value{
-			Value:    nil,
-			Type:     data.Function,
-			Global:   *vm.GetScope() == 0,
+			Value:  nil,
+			Type:   data.Function,
+			Global: *vm.GetScope() == 0,
 			// The Value is only ReadOnly if the FunctionDefinition is being set to a root property.
 			ReadOnly: len(path) == 0,
 		}
@@ -688,15 +718,15 @@ func (f *FunctionDefinition) Eval(vm VM) (err error, result *data.Value) {
 	}
 
 	// Finally, we assign the new value to the variable on the heap.
-	// NOTE: The variable's Global and ReadOnly flags are inherited from the variableVal. This means that either the 
+	// NOTE: The variable's Global and ReadOnly flags are inherited from the variableVal. This means that either the
 	// function definition is stored within a fresh new Value of Type Function, or nested within another Value.
-	err = heap.Assign(variableName, val, variableVal.Global, variableVal.ReadOnly)
+	err = hp.Assign(variableName, val, variableVal.Global, variableVal.ReadOnly)
 	if err != nil {
 		return err, nil
 	}
 
 	if debug, ok := vm.GetDebug(); ok {
-		_, _ = fmt.Fprintf(debug,"after function definition heap is: %v\n", heap)
+		_, _ = fmt.Fprintf(debug, "after function definition heap is: %v\n", hp)
 	}
 	return nil, nil
 }
@@ -716,14 +746,14 @@ func (f *FunctionDefinition) Eval(vm VM) (err error, result *data.Value) {
 //    to it.
 func (f *FunctionCall) Eval(vm VM) (err error, result *data.Value) {
 	vm.SetPos(f.GetPos())
-	*vm.GetScope() ++
+	*vm.GetScope()++
 	// We start a panic catcher to give us more helpful error messages
 	defer func() {
-		*vm.GetScope() --
+		*vm.GetScope()--
 		if p := recover(); p != nil {
 			switch p.(type) {
-			case struct { errors.ProtoSttpError }:
-				err = p.(struct { errors.ProtoSttpError })
+			case struct{ errors.ProtoSttpError }:
+				err = p.(struct{ errors.ProtoSttpError })
 			default:
 				err = fmt.Errorf("%v", p)
 			}
@@ -776,7 +806,6 @@ func (f *FunctionCall) Eval(vm VM) (err error, result *data.Value) {
 			}
 		}
 
-
 		// Return the stack frame
 		var frame Frame
 		if err, frame = vm.GetCallStack().Return(vm); err != nil {
@@ -802,7 +831,7 @@ func (f *FunctionCall) Eval(vm VM) (err error, result *data.Value) {
 	return err, result
 }
 
-// Eval for IfElifElse will first evaluate the first IfCondition, if truthy, will then evaluate the IfBlock and return 
+// Eval for IfElifElse will first evaluate the first IfCondition, if truthy, will then evaluate the IfBlock and return
 // it. Otherwise, we will start evaluating the Elifs to see if any have a truthy condition. If not, we will evaluate the
 // Else block if we have one.
 func (i *IfElifElse) Eval(vm VM) (err error, result *data.Value) {
@@ -831,7 +860,7 @@ func (i *IfElifElse) Eval(vm VM) (err error, result *data.Value) {
 	if cond {
 		return i.IfBlock.Eval(vm)
 	} else {
-		// We evaluate the condition of each Elif statement and if it evals to true then we return the evaluation of 
+		// We evaluate the condition of each Elif statement and if it evals to true then we return the evaluation of
 		// the block of that Elif
 		for _, elif := range i.Elifs {
 			if err, cond = evalBool(elif.Condition); err != nil {
@@ -855,8 +884,8 @@ func (i *IfElifElse) Eval(vm VM) (err error, result *data.Value) {
 func (n *Null) Eval(vm VM) (err error, result *data.Value) {
 	vm.SetPos(n.GetPos())
 	return nil, &data.Value{
-		Value:  nil,
-		Type:   data.Null,
+		Value: nil,
+		Type:  data.Null,
 	}
 }
 
@@ -864,29 +893,46 @@ func (n *Null) Eval(vm VM) (err error, result *data.Value) {
 func (b *Boolean) Eval(vm VM) (err error, result *data.Value) {
 	vm.SetPos(b.GetPos())
 	return nil, &data.Value{
-		Value:  bool(*b),
-		Type:   data.Boolean,
+		Value: bool(*b),
+		Type:  data.Boolean,
 	}
 }
 
-// Eval for JSONPath calls Convert and then path.Get, to retrieve the Value at the given JSONPath. Will return data.Null
-// if the JSONPath points to nothing.
-func (j *JSONPath) Eval(vm VM) (err error, result *data.Value) {
+// jsonPath is an interface that instances of both *JSONPath, and *JSONPathFactor implement.
+type jsonPath interface {
+	Pathable
+	ASTNode
+}
+
+// jsonPathEval is called by both JSONPath.Eval and JSONPathFactor.Eval as the behaviour of both can be described as
+// agnostic using the above interface and the "reflect" package.
+func jsonPathEval(j jsonPath, vm VM) (err error, result *data.Value) {
 	vm.SetPos(j.GetPos())
-	var path Path; err, path = j.Convert(vm)
+	var path Path
+	err, path = j.Convert(vm)
 	if err != nil {
 		return err, nil
 	}
-	// We get the root identifier of the JSONPath. This is the variable name.
-	variableName := path[0].(string)
 
-	// Then we get the value of the variable from the heap so that we can set its new value appropriately.
-	variableVal := vm.GetCallStack().Current().GetHeap().Get(variableName)
+	var variableVal *data.Value
+	rootPropertyField := reflect.ValueOf(j).Elem().FieldByName("RootProperty")
+	// If the type of j is *JSONPath OR the RootProperty field exists within the value of j, then we will consider j as
+	// having a root property that is a string (variable identifier).
+	if reflect.TypeOf(j) == reflect.TypeOf((*JSONPath)(nil)) || (rootPropertyField.IsValid() && !rootPropertyField.IsNil()) {
+		// We get the root identifier of the JSONPath. This is the variable name.
+		variableName := path[0].(string)
+		// Then we get the value of the variable from the heap so that we can set its new value appropriately.
+		variableVal = vm.GetCallStack().Current().GetHeap().Get(variableName)
+	} else {
+		// The root property in a Path of j is a Value
+		variableVal = path[0].(*data.Value)
+	}
+
 	// If it cannot be found then we will set the value to be null initially.
 	if variableVal == nil {
 		variableVal = &data.Value{
-			Value:  nil,
-			Type:   data.Null,
+			Value: nil,
+			Type:  data.Null,
 		}
 	}
 
@@ -912,6 +958,18 @@ func (j *JSONPath) Eval(vm VM) (err error, result *data.Value) {
 	}
 }
 
+// Eval for JSONPath calls Convert and then path.Get, to retrieve the Value at the given JSONPath. Will return data.Null
+// if the JSONPath points to nothing.
+func (j *JSONPath) Eval(vm VM) (err error, result *data.Value) {
+	return jsonPathEval(j, vm)
+}
+
+// Eval for JSONPathFactor is similar to JSONPath.Eval. If the root property is not a root property that points to a
+// variable we will Get the value requested from that root value.
+func (j *JSONPathFactor) Eval(vm VM) (err error, result *data.Value) {
+	return jsonPathEval(j, vm)
+}
+
 // jsonDeclaration recursively generates a sttp value from a JSON declaration.
 func jsonDeclaration(j interface{}, vm VM) interface{} {
 	var out interface{}
@@ -925,7 +983,8 @@ func jsonDeclaration(j interface{}, vm VM) interface{} {
 	case *Object:
 		obj := make(map[string]interface{})
 		for _, p := range j.(*Object).Pairs {
-			var key, val *data.Value; var err error
+			var key, val *data.Value
+			var err error
 			err, key = p.Key.Eval(vm)
 			if err == nil {
 				err, val = p.Value.Eval(vm)
@@ -948,7 +1007,7 @@ func jsonDeclaration(j interface{}, vm VM) interface{} {
 		out = result.Value
 	}
 	return out
-} 
+}
 
 // Eval for JSON will use jsonDeclaration to construct the value and will then set the type appropriately.
 func (j *JSON) Eval(vm VM) (err error, result *data.Value) {
@@ -956,8 +1015,8 @@ func (j *JSON) Eval(vm VM) (err error, result *data.Value) {
 	defer func() {
 		if p := recover(); p != nil {
 			switch p.(type) {
-			case struct { errors.ProtoSttpError }:
-				err = p.(struct { errors.ProtoSttpError })
+			case struct{ errors.ProtoSttpError }:
+				err = p.(struct{ errors.ProtoSttpError })
 			default:
 				err = fmt.Errorf("%v", p)
 			}
@@ -983,7 +1042,7 @@ func (j *JSON) Eval(vm VM) (err error, result *data.Value) {
 	}
 
 	return err, &data.Value{
-		Value:  json,
-		Type:   t,
+		Value: json,
+		Type:  t,
 	}
 }

@@ -3,17 +3,17 @@ package eval
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/data"
-	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/errors"
 	"github.com/andygello555/gotils/slices"
 	str "github.com/andygello555/gotils/strings"
+	"github.com/andygello555/src/data"
+	"github.com/andygello555/src/errors"
 	"math"
 	"math/big"
 	"regexp"
 	"strings"
 )
 
-// EqualInterface will check if the two operands (interface{}) are Equal and returns a boolean. Internally this will 
+// EqualInterface will check if the two operands (interface{}) are Equal and returns a boolean. Internally this will
 // Marshal both operands to JSON and compare the produced strings.
 func EqualInterface(op1 interface{}, op2 interface{}) (err error, equal bool) {
 	var a, b []byte
@@ -32,8 +32,8 @@ func equalSymbol(op1 *data.Value, op2 *data.Value) (err error, result *data.Valu
 	var ok bool
 	err, ok = Equal(op1, op2)
 	return nil, &data.Value{
-		Value: ok,
-		Type:  data.Boolean,
+		Value:  ok,
+		Type:   data.Boolean,
 		Global: op1.Global,
 	}
 }
@@ -43,8 +43,8 @@ func nequalSymbol(op1 *data.Value, op2 *data.Value) (err error, result *data.Val
 	var ok bool
 	err, ok = Equal(op1, op2)
 	return nil, &data.Value{
-		Value: !ok,
-		Type:  data.Boolean,
+		Value:  !ok,
+		Type:   data.Boolean,
 		Global: op1.Global,
 	}
 }
@@ -68,8 +68,8 @@ func muString(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) 
 	}
 
 	return nil, &data.Value{
-		Value: strings.Repeat(op1.StringLit(), int(op2Number.Value.(float64))),
-		Type:  data.String,
+		Value:  strings.Repeat(op1.StringLit(), int(op2Number.Value.(float64))),
+		Type:   data.String,
 		Global: op1.Global,
 	}
 }
@@ -100,8 +100,8 @@ func number(op1 *data.Value, op2 *data.Value, operator Operator) (err error, res
 		return errors.InvalidOperation.Errorf(errors.GetNullVM(), operator.String(), op1.Type.String(), op2.Type.String()), nil
 	}
 	return nil, &data.Value{
-		Value: c,
-		Type:  data.Number,
+		Value:  c,
+		Type:   data.Number,
 		Global: op1.Global,
 	}
 }
@@ -119,8 +119,8 @@ func and(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) {
 		return err, nil
 	}
 	return nil, &data.Value{
-		Value: op1.Value.(bool) && op2Bool.Value.(bool),
-		Type:  data.Boolean,
+		Value:  op1.Value.(bool) && op2Bool.Value.(bool),
+		Type:   data.Boolean,
 		Global: op1.Global,
 	}
 }
@@ -133,8 +133,8 @@ func or(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) {
 		return err, nil
 	}
 	return nil, &data.Value{
-		Value: op1.Value.(bool) || op2Bool.Value.(bool),
-		Type:  data.Boolean,
+		Value:  op1.Value.(bool) || op2Bool.Value.(bool),
+		Type:   data.Boolean,
 		Global: op1.Global,
 	}
 }
@@ -151,8 +151,8 @@ func difference(a *data.Value, b *data.Value) (err error, result *data.Value) {
 		}
 	}
 	return nil, &data.Value{
-		Value: cO,
-		Type:  data.Object,
+		Value:  cO,
+		Type:   data.Object,
 		Global: a.Global,
 	}
 }
@@ -185,7 +185,7 @@ func diBoolean(op1 *data.Value, op2 *data.Value) (err error, result *data.Value)
 // formatStringRegex is the regular expression used to match verbs within format strings.
 var formatStringRegex = regexp.MustCompile(`%%`)
 
-// moString: Mod String. Checks if rhs is a string, if so will wrap the string as a singleton array, otherwise will 
+// moString: Mod String. Checks if rhs is a string, if so will wrap the string as a singleton array, otherwise will
 // cast RHS to Array then performs a string format by casting each value in the RHS array to a string.
 func moString(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) {
 	var op2Array *data.Value
@@ -225,9 +225,9 @@ func moString(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) 
 		Value: str.ReplaceCharIndexRange(
 			formatString,
 			formatStringRegex.FindAllStringIndex(formatString, -1),
-			replaceStrings...
+			replaceStrings...,
 		),
-		Type:  data.String,
+		Type:   data.String,
 		Global: op1.Global,
 	}
 }
@@ -237,7 +237,7 @@ func moNumber(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) 
 	return number(op1, op2, Mod)
 }
 
-// moBoolean: Mod Number. Casts rhs to Boolean and performs the material conditional (implies that). op1 -> op2. 
+// moBoolean: Mod Number. Casts rhs to Boolean and performs the material conditional (implies that). op1 -> op2.
 func moBoolean(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) {
 	var op2Boolean *data.Value
 	err, op2Boolean = Cast(op1, data.Boolean)
@@ -245,8 +245,8 @@ func moBoolean(op1 *data.Value, op2 *data.Value) (err error, result *data.Value)
 		return err, nil
 	}
 	return nil, &data.Value{
-		Value: (!op1.Value.(bool)) || op2Boolean.Value.(bool),
-		Type:  data.Boolean,
+		Value:  (!op1.Value.(bool)) || op2Boolean.Value.(bool),
+		Type:   data.Boolean,
 		Global: op1.Global,
 	}
 }
@@ -262,37 +262,41 @@ func adObject(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) 
 	a := op1.Value.(map[string]interface{})
 	b := op2Object.Value.(map[string]interface{})
 	c := make(map[string]interface{})
-	for k, v := range a { c[k] = v }
-	for k, v := range b { c[k] = v }
+	for k, v := range a {
+		c[k] = v
+	}
+	for k, v := range b {
+		c[k] = v
+	}
 	return nil, &data.Value{
-		Value: c,
-		Type:  data.Object,
+		Value:  c,
+		Type:   data.Object,
 		Global: op1.Global,
 	}
 }
 
-// adArray: Add to Array. Append RHS to new Array. If RHS is an array then the LHS will be "extended" with the RHS 
+// adArray: Add to Array. Append RHS to new Array. If RHS is an array then the LHS will be "extended" with the RHS
 // (elements of RHS will be added to LHS).
 func adArray(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) {
 	a := op1.Array()
 	var c []interface{}
 	if op2.Type != data.Array {
 		b := op2.Value
-		c = make([]interface{}, len(a) + 1)
+		c = make([]interface{}, len(a)+1)
 		copy(c, a)
 		c[len(a)] = b
 	} else {
 		b := op2.Array()
-		c = make([]interface{}, len(a) + len(b))
+		c = make([]interface{}, len(a)+len(b))
 		copy(c, a)
-		for i := len(a); i < len(a) + len(b); i ++ {
-			c[i] = b[i - len(a)]
+		for i := len(a); i < len(a)+len(b); i++ {
+			c[i] = b[i-len(a)]
 		}
 	}
 
 	return nil, &data.Value{
-		Value: c,
-		Type:  data.Array,
+		Value:  c,
+		Type:   data.Array,
 		Global: op1.Global,
 	}
 }
@@ -305,8 +309,8 @@ func adString(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) 
 		return err, nil
 	}
 	return nil, &data.Value{
-		Value: op1.StringLit() + op2String.StringLit(),
-		Type:  data.String,
+		Value:  op1.StringLit() + op2String.StringLit(),
+		Type:   data.String,
 		Global: op1.Global,
 	}
 }
@@ -361,8 +365,8 @@ func suArray(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) {
 	}
 
 	return nil, &data.Value{
-		Value: slices.RemoveElems(a, elementsToRemove...),
-		Type:  data.Array,
+		Value:  slices.RemoveElems(a, elementsToRemove...),
+		Type:   data.Array,
 		Global: op1.Global,
 	}
 }
@@ -403,14 +407,14 @@ func suString(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) 
 					"cannot remove %d characters from string (len(%s) - %d = %d)",
 					int(op2.Value.(float64)),
 					op1Str,
-					int(op2.Value.(float64)), 
+					int(op2.Value.(float64)),
 					n,
 				),
 			), nil
 		}
 	case data.Object:
 		obj := op2.Value.(map[string]interface{})
-		pairs := make([]string, len(obj) * 2)
+		pairs := make([]string, len(obj)*2)
 		i := 0
 		for k, v := range obj {
 			// Construct a new symbol for the value and cast it into a string then add the key and that converted value
@@ -419,14 +423,14 @@ func suString(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) 
 			err = t.Get(v)
 			if err == nil {
 				vSym := &data.Value{
-					Value: v,
-					Type:  t,
+					Value:  v,
+					Type:   t,
 					Global: false,
 				}
 				err, vSym = Cast(vSym, data.String)
 				if err == nil {
 					pairs[i] = k
-					pairs[i + 1] = vSym.StringLit()
+					pairs[i+1] = vSym.StringLit()
 					i += 2
 					continue
 				}
@@ -438,22 +442,22 @@ func suString(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) 
 		op1Str = replacer.Replace(op1Str)
 	case data.Array:
 		arr := op2.Value.([]interface{})
-		pairs := make([]string, len(arr) * 2)
+		pairs := make([]string, len(arr)*2)
 		for i, v := range arr {
-			// Construct a new symbol for the element and cast it into a string then add the converted element and an 
+			// Construct a new symbol for the element and cast it into a string then add the converted element and an
 			// empty string to the pairs array
 			var t data.Type
 			err = t.Get(v)
 			if err == nil {
 				vSym := &data.Value{
-					Value: v,
-					Type:  t,
+					Value:  v,
+					Type:   t,
 					Global: false,
 				}
 				err, vSym = Cast(vSym, data.String)
 				if err == nil {
-					pairs[i * 2] = vSym.StringLit()
-					pairs[i * 2 + 1] = ""
+					pairs[i*2] = vSym.StringLit()
+					pairs[i*2+1] = ""
 					continue
 				}
 			}
@@ -479,8 +483,8 @@ func suString(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) 
 	}
 
 	return nil, &data.Value{
-		Value: op1Str,
-		Type:  data.String,
+		Value:  op1Str,
+		Type:   data.String,
 		Global: op1.Global,
 	}
 }
@@ -528,13 +532,13 @@ func boolean(op1 *data.Value, op2 *data.Value, operator Operator) (err error, re
 		return errors.InvalidOperation.Errorf(errors.GetNullVM(), operator.String(), op1.Type.String(), op2.Type.String()), nil
 	}
 	return nil, &data.Value{
-		Value: c,
-		Type:  data.Boolean,
+		Value:  c,
+		Type:   data.Boolean,
 		Global: op1.Global,
 	}
 }
 
-// comparison operator logic. For Numbers and Strings (the only two directly comparable types). If op1 is not a Number 
+// comparison operator logic. For Numbers and Strings (the only two directly comparable types). If op1 is not a Number
 // or a String it will check if op1 can be converted to a Number or a String and if so will convert it. op2 will then be
 // cast to whatever type op1 now is. Then op1 and op2 will be compared. If either op1 or op2 cannot be cast then we will
 // return an error. op1 will be checked to be Number first and then a String.
@@ -593,140 +597,226 @@ func comparison(op1 *data.Value, op2 *data.Value, operator Operator) (err error,
 	}
 
 	return nil, &data.Value{
-		Value: c,
-		Type:  data.Boolean,
+		Value:  c,
+		Type:   data.Boolean,
 		Global: op1.Global,
 	}
 }
 
 // ltObject: Less Than for Object.
-func ltObject(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) { return comparison(op1, op2, Lt) }
+func ltObject(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) {
+	return comparison(op1, op2, Lt)
+}
 
 // ltArray: Less Than for Array.
-func ltArray(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) { return comparison(op1, op2, Lt) }
+func ltArray(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) {
+	return comparison(op1, op2, Lt)
+}
 
 // ltString: Less Than for String.
-func ltString(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) { return comparison(op1, op2, Lt) }
+func ltString(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) {
+	return comparison(op1, op2, Lt)
+}
 
 // ltNumber: Less Than for Number.
-func ltNumber(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) { return comparison(op1, op2, Lt) }
+func ltNumber(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) {
+	return comparison(op1, op2, Lt)
+}
 
 // ltBoolean: Less Than for Boolean.
-func ltBoolean(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) { return comparison(op1, op2, Lt) }
+func ltBoolean(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) {
+	return comparison(op1, op2, Lt)
+}
 
 // gtObject: Greater Than for Object.
-func gtObject(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) { return comparison(op1, op2, Gt) }
+func gtObject(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) {
+	return comparison(op1, op2, Gt)
+}
 
 // gtArray: Greater Than for Array.
-func gtArray(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) { return comparison(op1, op2, Gt) }
+func gtArray(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) {
+	return comparison(op1, op2, Gt)
+}
 
 // gtString: Greater Than for String.
-func gtString(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) { return comparison(op1, op2, Gt) }
+func gtString(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) {
+	return comparison(op1, op2, Gt)
+}
 
 // gtNumber: Greater Than for Number.
-func gtNumber(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) { return comparison(op1, op2, Gt) }
+func gtNumber(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) {
+	return comparison(op1, op2, Gt)
+}
 
 // gtBoolean: Greater Than for Boolean.
-func gtBoolean(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) { return comparison(op1, op2, Gt) }
+func gtBoolean(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) {
+	return comparison(op1, op2, Gt)
+}
 
 // leObject: Less Than or Equal for Object.
-func leObject(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) { return comparison(op1, op2, Lte) }
+func leObject(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) {
+	return comparison(op1, op2, Lte)
+}
 
 // leArray: Less Than or Equal for Array.
-func leArray(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) { return comparison(op1, op2, Lte) }
+func leArray(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) {
+	return comparison(op1, op2, Lte)
+}
 
 // leString: Less Than or Equal for String.
-func leString(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) { return comparison(op1, op2, Lte) }
+func leString(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) {
+	return comparison(op1, op2, Lte)
+}
 
 // leNumber: Less Than or Equal for Number.
-func leNumber(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) { return comparison(op1, op2, Lte) }
+func leNumber(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) {
+	return comparison(op1, op2, Lte)
+}
 
 // leBoolean: Less Than or Equal for Boolean.
-func leBoolean(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) { return comparison(op1, op2, Lte) }
+func leBoolean(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) {
+	return comparison(op1, op2, Lte)
+}
 
 // geObject: Greater Than or Equal for Object.
-func geObject(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) { return comparison(op1, op2, Gte) }
+func geObject(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) {
+	return comparison(op1, op2, Gte)
+}
 
 // geArray: Greater Than or Equal for Array.
-func geArray(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) { return comparison(op1, op2, Gte) }
+func geArray(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) {
+	return comparison(op1, op2, Gte)
+}
 
 // geString: Greater Than or Equal for String.
-func geString(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) { return comparison(op1, op2, Gte) }
+func geString(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) {
+	return comparison(op1, op2, Gte)
+}
 
 // geNumber: Greater Than or Equal for Number.
-func geNumber(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) { return comparison(op1, op2, Gte) }
+func geNumber(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) {
+	return comparison(op1, op2, Gte)
+}
 
 // geBoolean: Greater Than or Equal for Boolean.
-func geBoolean(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) { return comparison(op1, op2, Gte) }
+func geBoolean(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) {
+	return comparison(op1, op2, Gte)
+}
 
 // eqObject: Equal for Object.
-func eqObject(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) { return equalSymbol(op1, op2) }
+func eqObject(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) {
+	return equalSymbol(op1, op2)
+}
 
 // eqArray: Equal for Array.
-func eqArray(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) { return equalSymbol(op1, op2) }
+func eqArray(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) {
+	return equalSymbol(op1, op2)
+}
 
 // eqString: Equal for String.
-func eqString(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) { return equalSymbol(op1, op2) }
+func eqString(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) {
+	return equalSymbol(op1, op2)
+}
 
 // eqNumber: Equal for Number.
-func eqNumber(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) { return equalSymbol(op1, op2) }
+func eqNumber(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) {
+	return equalSymbol(op1, op2)
+}
 
 // eqBoolean: Equal for Boolean.
-func eqBoolean(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) { return equalSymbol(op1, op2) }
+func eqBoolean(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) {
+	return equalSymbol(op1, op2)
+}
 
 // eqNull: Equal for Null.
-func eqNull(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) { return equalSymbol(op1, op2) }
+func eqNull(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) {
+	return equalSymbol(op1, op2)
+}
 
 // neObject: Not Equal for Object.
-func neObject(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) { return nequalSymbol(op1, op2) }
+func neObject(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) {
+	return nequalSymbol(op1, op2)
+}
 
 // neArray: Not Equal for Array.
-func neArray(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) { return nequalSymbol(op1, op2) }
+func neArray(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) {
+	return nequalSymbol(op1, op2)
+}
 
 // neString: Not Equal for String.
-func neString(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) { return nequalSymbol(op1, op2) }
+func neString(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) {
+	return nequalSymbol(op1, op2)
+}
 
 // neNumber: Not Equal for Number.
-func neNumber(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) { return nequalSymbol(op1, op2) }
+func neNumber(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) {
+	return nequalSymbol(op1, op2)
+}
 
 // neBoolean: Not Equal for Boolean.
-func neBoolean(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) { return nequalSymbol(op1, op2) }
+func neBoolean(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) {
+	return nequalSymbol(op1, op2)
+}
 
 // neNull: Not Equal for Null.
-func neNull(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) { return nequalSymbol(op1, op2) }
+func neNull(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) {
+	return nequalSymbol(op1, op2)
+}
 
 // anObject: And Object.
-func anObject(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) { return boolean(op1, op2, And) }
+func anObject(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) {
+	return boolean(op1, op2, And)
+}
 
 // anArray: And Array.
-func anArray(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) { return boolean(op1, op2, And) }
+func anArray(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) {
+	return boolean(op1, op2, And)
+}
 
 // anString: And String.
-func anString(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) { return boolean(op1, op2, And) }
+func anString(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) {
+	return boolean(op1, op2, And)
+}
 
 // anNumber: And Number.
-func anNumber(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) { return boolean(op1, op2, And) }
+func anNumber(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) {
+	return boolean(op1, op2, And)
+}
 
 // anBoolean: And Boolean. Casts rhs to Boolean then performs a logical AND operation.
-func anBoolean(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) { return and(op1, op2) }
+func anBoolean(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) {
+	return and(op1, op2)
+}
 
 // anNull: And Null.
-func anNull(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) { return boolean(op1, op2, And) }
+func anNull(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) {
+	return boolean(op1, op2, And)
+}
 
 // orObject: Or Object.
-func orObject(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) { return boolean(op1, op2, Or) }
+func orObject(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) {
+	return boolean(op1, op2, Or)
+}
 
 // orArray: Or Array.
-func orArray(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) { return boolean(op1, op2, Or) }
+func orArray(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) {
+	return boolean(op1, op2, Or)
+}
 
 // orString: Or String.
-func orString(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) { return boolean(op1, op2, Or) }
+func orString(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) {
+	return boolean(op1, op2, Or)
+}
 
 // orNumber: Or Number.
-func orNumber(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) { return boolean(op1, op2, Or) }
+func orNumber(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) {
+	return boolean(op1, op2, Or)
+}
 
 // orBoolean: Or Boolean. Performs a logical OR.
 func orBoolean(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) { return or(op1, op2) }
 
 // orNull: Or Null.
-func orNull(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) { return boolean(op1, op2, Or) }
+func orNull(op1 *data.Value, op2 *data.Value) (err error, result *data.Value) {
+	return boolean(op1, op2, Or)
+}

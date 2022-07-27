@@ -2,14 +2,14 @@ package main
 
 import (
 	"fmt"
-	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/data"
+	"github.com/andygello555/src/data"
 	"github.com/atomicgo/cursor"
 	"github.com/pkg/term"
 	"strconv"
 	"strings"
 )
 
-// Returns either an ascii code, or (if input is an arrow) a Javascript key code. This is taken from: 
+// Returns either an ascii code, or (if input is an arrow) a Javascript key code. This is taken from:
 // https://github.com/paulrademacher/climenu/blob/master/getchar.go.
 func getChar() (ascii int, keyCode int, err error) {
 	t, _ := term.Open("/dev/tty")
@@ -59,7 +59,7 @@ func REPL() {
 	lineNo := 0
 
 	// The queue of history items
-	const historyLength = 3
+	const historyLength = 100
 	history := make([]string, historyLength)
 	// The pointer to the position in history with the next free history space.
 	newHistoryPointer := 0
@@ -69,29 +69,29 @@ func REPL() {
 	addHistory := func(text string) {
 		text = strings.TrimSuffix(text, "\n")
 		// If the previous history is the same as the text to add, then we will skip this action
-		if newHistoryPointer > 0 && history[newHistoryPointer - 1] == text {
+		if newHistoryPointer > 0 && history[newHistoryPointer-1] == text {
 			return
 		}
 
 		history[newHistoryPointer] = text
 
 		// If we have run out of space in history we will rotate the entire history
-		if newHistoryPointer == historyLength - 1 {
+		if newHistoryPointer == historyLength-1 {
 			copy(history, history[1:])
-			history[historyLength - 1] = ""
+			history[historyLength-1] = ""
 		} else {
-			newHistoryPointer ++
+			newHistoryPointer++
 		}
 	}
 	previousHistory := func() string {
 		if searchHistoryPointer > 0 {
-			searchHistoryPointer --
+			searchHistoryPointer--
 		}
 		return history[searchHistoryPointer]
 	}
 	futureHistory := func() string {
 		if searchHistoryPointer < newHistoryPointer {
-			searchHistoryPointer ++
+			searchHistoryPointer++
 		}
 		return history[searchHistoryPointer]
 	}
@@ -119,7 +119,7 @@ func REPL() {
 			case 37:
 				// Left: move the cursor left
 				if cursorPos > 0 {
-					cursorPos --
+					cursorPos--
 				}
 			case 38:
 				// Up: scroll upwards through history
@@ -128,7 +128,7 @@ func REPL() {
 			case 39:
 				// Right: move the cursor right
 				if cursorPos < len(text) {
-					cursorPos ++
+					cursorPos++
 				}
 			case 40:
 				// Down: scroll downwards through history
@@ -140,9 +140,9 @@ func REPL() {
 					// Backspace
 					if cursorPos != 0 {
 						if cursorPos == len(text) {
-							text = text[:cursorPos - 1]
+							text = text[:cursorPos-1]
 						} else {
-							text = text[:cursorPos - 1] + text[cursorPos:]
+							text = text[:cursorPos-1] + text[cursorPos:]
 						}
 						cursorPos--
 					}
@@ -150,7 +150,7 @@ func REPL() {
 					char = rune(ascii)
 					if strconv.IsPrint(char) {
 						text = text[:cursorPos] + string(char) + text[cursorPos:]
-						cursorPos ++
+						cursorPos++
 					}
 				}
 			}
@@ -158,7 +158,7 @@ func REPL() {
 			cursor.StartOfLine()
 			fmt.Printf("> %s", text)
 			cursor.StartOfLine()
-			cursor.Move(cursorPos + 2, 0)
+			cursor.Move(cursorPos+2, 0)
 		}
 		//text, err := reader.ReadString('\n')
 
@@ -175,7 +175,7 @@ func REPL() {
 		addHistory(text)
 		fmt.Println()
 
-		// We set stdout and stderr to temporary buffers so that we can check if anything was written to them and 
+		// We set stdout and stderr to temporary buffers so that we can check if anything was written to them and
 		// display them in a nice way
 		var stdout strings.Builder
 		var stderr strings.Builder
@@ -207,6 +207,6 @@ func REPL() {
 		if err == nil {
 			fmt.Printf("Current heap: %v\n", *vm.GetCallStack().Current().GetHeap())
 		}
-		lineNo ++
+		lineNo++
 	}
 }

@@ -2,24 +2,23 @@ out = "";
 
 // Traditional for loops
 for i = 0; i < 100; i = i + 1 do
-    if i % 3 == 0 && i % 5 == 0 then
+    is i % 3 == 0 && i % 5 == 0?
         out = out + "FizzBuzz";
-    elif i % 3 == 0 then
+    elis i % 3 == 0?
         out = out + "Fizz";
-    elif i % 5 == 0 then
+    elis i % 5 == 0?
         out = out + "Buzz";
     else
         out = out + i;
-    end;
-end;
+    end
+end
 
 $print(out);
 
 for i = 0; i < 100; i = i + 1 do
-    if i == 50 then
+    is i == 50?
         $print("Found 50, now we take a break...");
         break;
-    end;
+    end
     $print("On %%..." % i);
-end;
-
+end
