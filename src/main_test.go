@@ -444,8 +444,11 @@ func TestBatchSuite_Execute(t *testing.T) {
 		},
 	}{
 		batch := Batch(nil)
-		batch.Batch = test.items
-		results := batch.Execute(-1)
+		batch.Start(-1)
+		for _, item := range test.items {
+			batch.AddWork(item.Method, item.Args...)
+		}
+		results := batch.Stop()
 		heap.Init(&test.expected)
 
 		if results.Len() != len(test.expected) {
