@@ -1,4 +1,4 @@
-module github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src
+module github.com/andygello555/src
 
 go 1.17
 

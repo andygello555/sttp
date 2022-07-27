@@ -1,4 +1,9 @@
-url = "http://127.0.0.1:3000/api/sub";
+url = env.url_format % [
+    env.host,
+    env.port,
+    env.api_prefix,
+    env.query_params
+];
 
 resp = $GET(url);
 

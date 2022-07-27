@@ -3,10 +3,9 @@ package main
 import (
 	"container/heap"
 	"fmt"
-	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/data"
-	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/eval"
-	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/parser"
-	"github.com/andygello555/gotils/slices"
+	"github.com/andygello555/src/data"
+	"github.com/andygello555/src/eval"
+	"github.com/andygello555/src/parser"
 	"io/fs"
 	"io/ioutil"
 	"os"
@@ -32,7 +31,7 @@ type example struct {
 	stdout string
 	stderr string
 	tests  string
-	err	   string
+	err    string
 	heap   *data.Heap
 }
 
@@ -100,7 +99,7 @@ func TestParse(t *testing.T) {
 	for testNo, e := range examples {
 		err, p := parser.Parse(e.name, e.script)
 		if err != nil && t != nil {
-			t.Error(testNo + 1, "error:", err.Error())
+			t.Error(testNo+1, "error:", err.Error())
 		}
 
 		//fmt.Println(testNo, ">>>>>>>>")
@@ -113,15 +112,15 @@ func TestParse(t *testing.T) {
 			}
 		}
 
-		actual := strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(p.String(0)                  , " ", ""), "\t", ""), "\n", ""), ";", "")
-		expected := strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(                 strings.Join(expectedLines, ""), " ", ""), "\t", ""), ";", "")
+		actual := strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(p.String(0), " ", ""), "\t", ""), "\n", ""), ";", "")
+		expected := strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(strings.Join(expectedLines, ""), " ", ""), "\t", ""), ";", "")
 		if actual != expected && t != nil {
 			t.Errorf("%d: parsed output does not match input script", testNo+1)
-			//fmt.Println("-------")
-			//fmt.Println(actual)
-			//fmt.Println(">>>>>>>>>>>")
-			//fmt.Println(expected)
-			//fmt.Println("-------")
+			fmt.Println("-------")
+			fmt.Println(actual)
+			fmt.Println(">>>>>>>>>>>")
+			fmt.Println(expected)
+			fmt.Println("-------")
 		}
 	}
 }
@@ -136,19 +135,29 @@ func checkOut(key string, e *example, vm *VM, err error) (ok bool, actual string
 	switch key {
 	case "stdout":
 		actual = vm.Stdout.(*strings.Builder).String()
-		if e.stdout == "" { break }
+		if e.stdout == "" {
+			break
+		}
 		return e.stdout == actual, actual, e.stdout
 	case "stderr":
 		actual = vm.Stderr.(*strings.Builder).String()
-		if e.stderr == "" { break }
+		if e.stderr == "" {
+			break
+		}
 		return e.stderr == actual, actual, e.stderr
 	case "tests":
-		if !vm.CheckTestResults() { break }
+		if !vm.CheckTestResults() {
+			break
+		}
 		actual = vm.TestResults.String(0)
-		if e.tests == "" { break }
+		if e.tests == "" {
+			break
+		}
 		return e.tests == actual, actual, e.tests
 	case "err":
-		if err == nil && e.err == "" { break }
+		if err == nil && e.err == "" {
+			break
+		}
 		if err != nil {
 			actual = err.Error()
 		} else {
@@ -162,7 +171,7 @@ func checkOut(key string, e *example, vm *VM, err error) (ok bool, actual string
 }
 
 func TestVM_Eval(t *testing.T) {
-	skip := []int{}
+	var skip []int
 	skipPtr := 0
 
 	// Start the echo chamber web server
@@ -176,11 +185,11 @@ func TestVM_Eval(t *testing.T) {
 			err, result := vm.Eval(e.name, e.script)
 
 			if testing.Verbose() {
-				fmt.Println(testNo + 1, "vm Eval:", err, result)
+				fmt.Println(testNo+1, "vm Eval:", err, result)
 			}
 
 			// For each output that a test we can produce, we check if there is an expected output for it. If there is,
-			// then we check if the actual output of that kind matches the expected output for that kind. If not, we 
+			// then we check if the actual output of that kind matches the expected output for that kind. If not, we
 			// error.
 			for _, output := range []string{"stdout", "stderr", "tests", "err"} {
 				ok, actual, expected := checkOut(output, e, vm, err)
@@ -200,7 +209,7 @@ func TestVM_Eval(t *testing.T) {
 				}
 			}
 		} else {
-			skipPtr ++
+			skipPtr++
 		}
 	}
 
@@ -215,36 +224,33 @@ func BenchmarkVM_Eval(b *testing.B) {
 }
 
 func TestTestSuite_Run(t *testing.T) {
-	expected := [][]string{
-		{
-			`PENTHOUSE SUITE: _examples/test_suites/example_01  (PASS)`,
-			`	_examples/test_suites/example_01/check_a.sttp:1:1 - "test 1 + 1 == 2" (PASS)`,
-			`	_examples/test_suites/example_01/check_b.sttp:1:1 - "test 2 * 2 == 4" (PASS)`,
-			`	_examples/test_suites/example_01/check_c.sttp:1:1 - "test 4 % 2 == 0" (PASS)`,
-			`	SUB SUITE: _examples/test_suites/example_01/get_facebook  (PASS)`,
-			`		_examples/test_suites/example_01/get_facebook/facebook.sttp:2:1 - "test "" + a == "true"" (PASS)`,
-			`		_examples/test_suites/example_01/get_facebook/facebook.sttp:3:1 - "test a" (PASS)`,
-			`	SUB SUITE: _examples/test_suites/example_01/get_google  (PASS)`,
-			`		_examples/test_suites/example_01/get_google/google.sttp:2:1 - "test a" (PASS)`,
-			`	SUB SUITE: _examples/test_suites/example_01/get_twitter  (PASS)`,
-			`		_examples/test_suites/example_01/get_twitter/twitter.sttp:2:1 - "test a" (PASS)`,
-			``,
-		},
-		{
-			`PENTHOUSE SUITE: _examples/test_suites/example_02  (FAIL)`,
-			`	_examples/test_suites/example_02/api.sttp:5:1 - "test resp.code == 200" (PASS)`,
-			`	_examples/test_suites/example_02/api.sttp:6:1 - "test resp.content.method == "GET"" (PASS)`,
-			`	_examples/test_suites/example_02/api.sttp:7:1 - "test resp.content.url == url" (PASS)`,
-			`	_examples/test_suites/example_02/api.sttp:8:1 - "test resp.content.query_params == {"hello": "world"}" (PASS)`,
-			`	SUB SUITE: _examples/test_suites/example_02/sub_fail  (FAIL)`,
-			`		_examples/test_suites/example_02/sub_fail/fail.sttp:0:0 - error occurred (FAIL)`,
-			`	SUB SUITE: _examples/test_suites/example_02/sub  (PASS)`,
-			`		_examples/test_suites/example_02/sub/sub.sttp:5:1 - "test resp.code == 200" (PASS)`,
-			`		_examples/test_suites/example_02/sub/sub.sttp:6:1 - "test resp.content.method == "GET"" (PASS)`,
-			`		_examples/test_suites/example_02/sub/sub.sttp:7:1 - "test resp.content.url == url" (PASS)`,
-			`		_examples/test_suites/example_02/sub/sub.sttp:8:1 - "test resp.content.query_params == {}" (PASS)`,
-			``,
-		},
+	expected := []string{
+		`PENTHOUSE SUITE: _examples/test_suites/example_01  (PASS)
+	_examples/test_suites/example_01/check_a.sttp:1:1 - "test 1 + 1 == 2" (PASS)
+	_examples/test_suites/example_01/check_b.sttp:1:1 - "test 2 * 2 == 4" (PASS)
+	_examples/test_suites/example_01/check_c.sttp:1:1 - "test 4 % 2 == 0" (PASS)
+	SUB SUITE: _examples/test_suites/example_01/get_facebook  (PASS)
+		_examples/test_suites/example_01/get_facebook/facebook.sttp:2:1 - "test "" + a == "true"" (PASS)
+		_examples/test_suites/example_01/get_facebook/facebook.sttp:3:1 - "test a" (PASS)
+	SUB SUITE: _examples/test_suites/example_01/get_google  (PASS)
+		_examples/test_suites/example_01/get_google/google.sttp:2:1 - "test a" (PASS)
+	SUB SUITE: _examples/test_suites/example_01/get_twitter  (PASS)
+		_examples/test_suites/example_01/get_twitter/twitter.sttp:2:1 - "test a" (PASS)
+`,
+		`PENTHOUSE SUITE: _examples/test_suites/example_02  (FAIL)
+	_examples/test_suites/example_02/api.sttp:10:1 - "test resp.code == 200" (PASS)
+	_examples/test_suites/example_02/api.sttp:11:1 - "test resp.content.method == "GET"" (PASS)
+	_examples/test_suites/example_02/api.sttp:12:1 - "test resp.content.url == url" (PASS)
+	_examples/test_suites/example_02/api.sttp:13:1 - "test resp.content.query_params == {"hello": "world"}" (PASS)
+	SUB SUITE: _examples/test_suites/example_02/sub  (PASS)
+		_examples/test_suites/example_02/sub/sub.sttp:10:1 - "test resp.code == 200" (PASS)
+		_examples/test_suites/example_02/sub/sub.sttp:11:1 - "test resp.content.method == "GET"" (PASS)
+		_examples/test_suites/example_02/sub/sub.sttp:12:1 - "test resp.content.url == url" (PASS)
+		_examples/test_suites/example_02/sub/sub.sttp:13:1 - "test resp.content.query_params == {}" (PASS)
+	SUB SUITE: _examples/test_suites/example_02/sub_fail  (FAIL)
+		_examples/test_suites/example_02/sub_fail/fail.sttp:12:1 - "test e != null" (PASS)
+		_examples/test_suites/example_02/sub_fail/fail.sttp:13:1 - "test resp.code == 200" (FAIL)
+`,
 	}
 
 	if files, err := ioutil.ReadDir(ExampleTestSuitePath); err != nil {
@@ -256,27 +262,19 @@ func TestTestSuite_Run(t *testing.T) {
 		for testNo, file := range files {
 			if file.IsDir() && strings.HasPrefix(file.Name(), ExamplePrefix) {
 				suite := NewSuite(filepath.Join(ExampleTestSuitePath, file.Name()), true, 0)
-				_ = suite.Run(nil, nil, os.Stdout)
+				//if err = suite.Run(nil, nil, os.Stdout, nil); err != nil {
+				//	panic(err)
+				//}
+				_ = suite.Run(nil, nil, os.Stdout, nil)
 
 				if testing.Verbose() {
-					fmt.Println("TEST SUITE", testNo + 1, ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-					fmt.Println(suite.String())
+					fmt.Println("TEST SUITE", testNo+1, ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+					fmt.Println(suite.String(0))
 					fmt.Println("===================================================")
 				}
 
-				ifSlice := func(lines []string) []interface{} {
-					s := make([]interface{}, len(lines))
-					for i, line := range lines {
-						s[i] = line
-					}
-					return s
-				}
-
-				if !slices.SameElements(
-					ifSlice(strings.Split(suite.String(), "\n")),
-					ifSlice(expected[testNo]),
-				) {
-					t.Errorf("test no. %d suite's string output does not match expected output", testNo + 1)
+				if expected[testNo] != suite.String(0) {
+					t.Errorf("test no. %d suite's string output does not match expected output", testNo+1)
 				}
 			}
 		}
@@ -289,8 +287,8 @@ func TestBatchSuite_Execute(t *testing.T) {
 	// Start the echo chamber web server
 	echoChamber := startServer()
 
-	for testNo, test := range []struct{
-		items []*BatchItem
+	for testNo, test := range []struct {
+		items    []*BatchItem
 		expected BatchResults
 	}{
 		{
@@ -299,61 +297,61 @@ func TestBatchSuite_Execute(t *testing.T) {
 					Method: &parser.MethodCall{
 						Method: eval.GET,
 					},
-					Args:   []*data.Value{
+					Args: []*data.Value{
 						{
 							Value: "http://127.0.0.1:3000/a",
-							Type: data.String,
+							Type:  data.String,
 						},
 					},
-					Id:     0,
+					Id: 0,
 				},
 				{
 					Method: &parser.MethodCall{
 						Method: eval.GET,
 					},
-					Args:   []*data.Value{
+					Args: []*data.Value{
 						{
 							Value: "http://127.0.0.1:3000/b",
-							Type: data.String,
+							Type:  data.String,
 						},
 					},
-					Id:     1,
+					Id: 1,
 				},
 				{
 					Method: &parser.MethodCall{
 						Method: eval.GET,
 					},
-					Args:   []*data.Value{
+					Args: []*data.Value{
 						{
 							Value: "http://127.0.0.1:3000/c",
-							Type: data.String,
+							Type:  data.String,
 						},
 					},
-					Id:     2,
+					Id: 2,
 				},
 				{
 					Method: &parser.MethodCall{
 						Method: eval.GET,
 					},
-					Args:   []*data.Value{
+					Args: []*data.Value{
 						{
 							Value: "http://127.0.0.1:3000/d",
-							Type: data.String,
+							Type:  data.String,
 						},
 					},
-					Id:     3,
+					Id: 3,
 				},
 				{
 					Method: &parser.MethodCall{
 						Method: eval.GET,
 					},
-					Args:   []*data.Value{
+					Args: []*data.Value{
 						{
 							Value: "http://127.0.0.1:3000/e",
-							Type: data.String,
+							Type:  data.String,
 						},
 					},
-					Id:     4,
+					Id: 4,
 				},
 			},
 			expected: BatchResults{
@@ -368,10 +366,10 @@ func TestBatchSuite_Execute(t *testing.T) {
 								"host":            "127.0.0.1:3000",
 								"user-agent":      "go-resty/2.7.0 (https://github.com/go-resty/resty)",
 							},
-							"method": "GET",
-							"query_params": map[string]interface{} {},
-							"url":     "http://127.0.0.1:3000/a",
-							"version": "1.1",
+							"method":       "GET",
+							"query_params": map[string]interface{}{},
+							"url":          "http://127.0.0.1:3000/a",
+							"version":      "1.1",
 						},
 						Type: data.Object,
 					},
@@ -387,10 +385,10 @@ func TestBatchSuite_Execute(t *testing.T) {
 								"host":            "127.0.0.1:3000",
 								"user-agent":      "go-resty/2.7.0 (https://github.com/go-resty/resty)",
 							},
-							"method": "GET",
-							"query_params": map[string]interface{} {},
-							"url":     "http://127.0.0.1:3000/b",
-							"version": "1.1",
+							"method":       "GET",
+							"query_params": map[string]interface{}{},
+							"url":          "http://127.0.0.1:3000/b",
+							"version":      "1.1",
 						},
 						Type: data.Object,
 					},
@@ -406,10 +404,10 @@ func TestBatchSuite_Execute(t *testing.T) {
 								"host":            "127.0.0.1:3000",
 								"user-agent":      "go-resty/2.7.0 (https://github.com/go-resty/resty)",
 							},
-							"method": "GET",
-							"query_params": map[string]interface{} {},
-							"url":     "http://127.0.0.1:3000/c",
-							"version": "1.1",
+							"method":       "GET",
+							"query_params": map[string]interface{}{},
+							"url":          "http://127.0.0.1:3000/c",
+							"version":      "1.1",
 						},
 						Type: data.Object,
 					},
@@ -425,10 +423,10 @@ func TestBatchSuite_Execute(t *testing.T) {
 								"host":            "127.0.0.1:3000",
 								"user-agent":      "go-resty/2.7.0 (https://github.com/go-resty/resty)",
 							},
-							"method": "GET",
-							"query_params": map[string]interface{} {},
-							"url":     "http://127.0.0.1:3000/d",
-							"version": "1.1",
+							"method":       "GET",
+							"query_params": map[string]interface{}{},
+							"url":          "http://127.0.0.1:3000/d",
+							"version":      "1.1",
 						},
 						Type: data.Object,
 					},
@@ -444,24 +442,27 @@ func TestBatchSuite_Execute(t *testing.T) {
 								"host":            "127.0.0.1:3000",
 								"user-agent":      "go-resty/2.7.0 (https://github.com/go-resty/resty)",
 							},
-							"method": "GET",
-							"query_params": map[string]interface{} {},
-							"url":     "http://127.0.0.1:3000/e",
-							"version": "1.1",
+							"method":       "GET",
+							"query_params": map[string]interface{}{},
+							"url":          "http://127.0.0.1:3000/e",
+							"version":      "1.1",
 						},
 						Type: data.Object,
 					},
 				},
 			},
 		},
-	}{
+	} {
 		batch := Batch(nil)
-		batch.Batch = test.items
-		results := batch.Execute(-1)
+		batch.Start(-1)
+		for _, item := range test.items {
+			batch.AddWork(item.Method, item.Args...)
+		}
+		results := batch.Stop()
 		heap.Init(&test.expected)
 
 		if results.Len() != len(test.expected) {
-			t.Errorf("test no. %d has %d results, expected %d results", testNo + 1, results.Len(), len(test.expected))
+			t.Errorf("test no. %d has %d results, expected %d results", testNo+1, results.Len(), len(test.expected))
 		} else {
 			i := 0
 			for results.Len() > 0 {
@@ -509,8 +510,8 @@ func TestBatchSuite_Execute(t *testing.T) {
 //      oops_forgot_this = $GET("http://127.0.0.1:3000/" + %d);
 //      $print(oops_forgot_this.content);
 //  end;
-// Each script will iterate up to the given number of iterations (10, 20, 30, 50, 100, 200). Each benchmark will run 5 
-// times. Anything more than 5 will cause problems with the limit of the number of open sockets. If you are getting 
+// Each script will iterate up to the given number of iterations (10, 20, 30, 50, 100, 200). Each benchmark will run 5
+// times. Anything more than 5 will cause problems with the limit of the number of open sockets. If you are getting
 // i/o timeouts or other socket issues, then try increasing ulimit -n.
 func batchBenchmarkSetup(i int) []interface{} {
 	var null strings.Builder
@@ -533,7 +534,8 @@ func benchmarkNoBatch(args []interface{}, b *testing.B) {
     oops_forgot_this = $GET("http://127.0.0.1:3000/" + %d);
     $print(oops_forgot_this.content);`, i, i)
 	var stdout, stderr strings.Builder
-	vm.SetStdout(&stdout); vm.SetStderr(&stderr)
+	vm.SetStdout(&stdout)
+	vm.SetStderr(&stderr)
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
@@ -549,16 +551,41 @@ func benchmarkNoBatch(args []interface{}, b *testing.B) {
 			fmt.Println(expected)
 			b.Error("stdout does not match to expected")
 		}
-		stdout.Reset(); stderr.Reset()
+		stdout.Reset()
+		stderr.Reset()
 	}
 }
 
-func BenchmarkNoBatch10(b *testing.B) { s := startServer(); benchmarkNoBatch(batchBenchmarkSetup(10), b); killServer(s) }
-func BenchmarkNoBatch20(b *testing.B) { s := startServer(); benchmarkNoBatch(batchBenchmarkSetup(20), b); killServer(s) }
-func BenchmarkNoBatch30(b *testing.B) { s := startServer(); benchmarkNoBatch(batchBenchmarkSetup(30), b); killServer(s) }
-func BenchmarkNoBatch50(b *testing.B) { s := startServer(); benchmarkNoBatch(batchBenchmarkSetup(50), b); killServer(s) }
-func BenchmarkNoBatch100(b *testing.B) { s := startServer(); benchmarkNoBatch(batchBenchmarkSetup(100), b); killServer(s) }
-func BenchmarkNoBatch200(b *testing.B) { s := startServer(); benchmarkNoBatch(batchBenchmarkSetup(200), b); killServer(s) }
+func BenchmarkNoBatch10(b *testing.B) {
+	s := startServer()
+	benchmarkNoBatch(batchBenchmarkSetup(10), b)
+	killServer(s)
+}
+func BenchmarkNoBatch20(b *testing.B) {
+	s := startServer()
+	benchmarkNoBatch(batchBenchmarkSetup(20), b)
+	killServer(s)
+}
+func BenchmarkNoBatch30(b *testing.B) {
+	s := startServer()
+	benchmarkNoBatch(batchBenchmarkSetup(30), b)
+	killServer(s)
+}
+func BenchmarkNoBatch50(b *testing.B) {
+	s := startServer()
+	benchmarkNoBatch(batchBenchmarkSetup(50), b)
+	killServer(s)
+}
+func BenchmarkNoBatch100(b *testing.B) {
+	s := startServer()
+	benchmarkNoBatch(batchBenchmarkSetup(100), b)
+	killServer(s)
+}
+func BenchmarkNoBatch200(b *testing.B) {
+	s := startServer()
+	benchmarkNoBatch(batchBenchmarkSetup(200), b)
+	killServer(s)
+}
 
 func benchmarkBatch(args []interface{}, b *testing.B) {
 	i := args[0].(int)
@@ -574,7 +601,8 @@ func benchmarkBatch(args []interface{}, b *testing.B) {
     $print(oops_forgot_this.content);
 end;`, i, i)
 	var stdout, stderr strings.Builder
-	vm.SetStdout(&stdout); vm.SetStderr(&stderr)
+	vm.SetStdout(&stdout)
+	vm.SetStderr(&stderr)
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
@@ -590,13 +618,38 @@ end;`, i, i)
 			fmt.Println(expected)
 			b.Error("stdout does not match to expected")
 		}
-		stdout.Reset(); stderr.Reset()
+		stdout.Reset()
+		stderr.Reset()
 	}
 }
 
-func BenchmarkBatch10(b *testing.B) { s := startServer(); benchmarkBatch(batchBenchmarkSetup(10), b); killServer(s) }
-func BenchmarkBatch20(b *testing.B) { s := startServer(); benchmarkBatch(batchBenchmarkSetup(20), b); killServer(s) }
-func BenchmarkBatch30(b *testing.B) { s := startServer(); benchmarkBatch(batchBenchmarkSetup(30), b); killServer(s) }
-func BenchmarkBatch50(b *testing.B) { s := startServer(); benchmarkBatch(batchBenchmarkSetup(50), b); killServer(s) }
-func BenchmarkBatch100(b *testing.B) { s := startServer(); benchmarkBatch(batchBenchmarkSetup(100), b); killServer(s) }
-func BenchmarkBatch200(b *testing.B) { s := startServer(); benchmarkBatch(batchBenchmarkSetup(200), b); killServer(s) }
+func BenchmarkBatch10(b *testing.B) {
+	s := startServer()
+	benchmarkBatch(batchBenchmarkSetup(10), b)
+	killServer(s)
+}
+func BenchmarkBatch20(b *testing.B) {
+	s := startServer()
+	benchmarkBatch(batchBenchmarkSetup(20), b)
+	killServer(s)
+}
+func BenchmarkBatch30(b *testing.B) {
+	s := startServer()
+	benchmarkBatch(batchBenchmarkSetup(30), b)
+	killServer(s)
+}
+func BenchmarkBatch50(b *testing.B) {
+	s := startServer()
+	benchmarkBatch(batchBenchmarkSetup(50), b)
+	killServer(s)
+}
+func BenchmarkBatch100(b *testing.B) {
+	s := startServer()
+	benchmarkBatch(batchBenchmarkSetup(100), b)
+	killServer(s)
+}
+func BenchmarkBatch200(b *testing.B) {
+	s := startServer()
+	benchmarkBatch(batchBenchmarkSetup(200), b)
+	killServer(s)
+}

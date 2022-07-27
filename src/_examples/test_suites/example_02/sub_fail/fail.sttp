@@ -1,8 +1,13 @@
-url = "http://127.0.0.1:3001/api/sub/fail";
+url = env.url_format % [
+    env.host,
+    env.port,
+    env.api_prefix,
+    env.query_params
+];
 
 try this
     resp = $GET(url);
-catch as e do ;end;
+catch as e do ;end
 
 test e != null;
 test resp.code == 200;

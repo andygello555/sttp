@@ -3,11 +3,11 @@ package parser
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/eval"
+	"github.com/andygello555/src/eval"
 	"strings"
 )
 
-type indentString interface {
+type IndentString interface {
 	String(indent int) string
 }
 
@@ -33,11 +33,11 @@ func (b *Block) String(indent int) string {
 }
 
 func (e *Elif) String(indent int) string {
-	return fmt.Sprintf("%selif %s then\n%s", tabs(indent), e.Condition.String(0), e.Block.String(indent + 1))
+	return fmt.Sprintf("%selis %s?\n%s", tabs(indent), e.Condition.String(0), e.Block.String(indent+1))
 }
 
 func (i *IfElifElse) String(indent int) string {
-	ifElifElse := fmt.Sprintf("%sif %s then\n%s", tabs(indent), i.IfCondition.String(0), i.IfBlock.String(indent + 1))
+	ifElifElse := fmt.Sprintf("%sis %s?\n%s", tabs(indent), i.IfCondition.String(0), i.IfBlock.String(indent+1))
 	if len(i.Elifs) > 0 {
 		elifs := make([]string, len(i.Elifs))
 		for e, elif := range i.Elifs {
@@ -46,22 +46,22 @@ func (i *IfElifElse) String(indent int) string {
 		ifElifElse += strings.Join(elifs, "")
 	}
 	if i.Else != nil {
-		ifElifElse += fmt.Sprintf("%selse\n%s", tabs(indent), i.Else.String(indent + 1))
+		ifElifElse += fmt.Sprintf("%selse\n%s", tabs(indent), i.Else.String(indent+1))
 	}
 	ifElifElse += fmt.Sprintf("%send", tabs(indent))
 	return ifElifElse
 }
 
 func (f *FunctionDefinition) String(indent int) string {
-	return fmt.Sprintf("%sfunction %s%s", tabs(indent), f.JSONPath.String(0), f.Body.String(0))
+	return fmt.Sprintf("%sfun %s%s", tabs(indent), f.JSONPath.String(0), f.Body.String(0))
 }
 
 func (tc *TryCatch) String(indent int) string {
-	return fmt.Sprintf("%stry this\n%s%scatch as %s then\n%s%send", tabs(indent), tc.Try.String(indent + 1), tabs(indent), *tc.CatchAs, tc.Caught.String(indent + 1), tabs(indent))
+	return fmt.Sprintf("%stry this\n%s%scatch as %s do\n%s%send", tabs(indent), tc.Try.String(indent+1), tabs(indent), *tc.CatchAs, tc.Caught.String(indent+1), tabs(indent))
 }
 
 func (b *Batch) String(indent int) string {
-	return fmt.Sprintf("%sbatch this\n%s%send", tabs(indent), b.Block.String(indent + 1), tabs(indent))
+	return fmt.Sprintf("%sbatch this\n%s%send", tabs(indent), b.Block.String(indent+1), tabs(indent))
 }
 
 func (f *ForEach) String(indent int) string {
@@ -69,7 +69,7 @@ func (f *ForEach) String(indent int) string {
 	if f.Value != nil {
 		forEach += fmt.Sprintf(", %s", *f.Value)
 	}
-	return forEach + fmt.Sprintf(" in %s do\n%s%send", f.In.String(0), f.Block.String(indent + 1), tabs(indent))
+	return forEach + fmt.Sprintf(" in %s do\n%s%send", f.In.String(0), f.Block.String(indent+1), tabs(indent))
 }
 
 func (f *For) String(indent int) string {
@@ -77,11 +77,11 @@ func (f *For) String(indent int) string {
 	if f.Step != nil {
 		forLoop += fmt.Sprintf("; %s", f.Step.String(0))
 	}
-	return forLoop + fmt.Sprintf(" do\n%s%send", f.Block.String(indent + 1), tabs(indent))
+	return forLoop + fmt.Sprintf(" do\n%s%send", f.Block.String(indent+1), tabs(indent))
 }
 
 func (w *While) String(indent int) string {
-	return fmt.Sprintf("%swhile %s do\n%s\n%send", tabs(indent), w.Condition.String(0), w.Block.String(indent + 1), tabs(indent))
+	return fmt.Sprintf("%swhile %s do\n%s\n%send", tabs(indent), w.Condition.String(0), w.Block.String(indent+1), tabs(indent))
 }
 
 func (t *TestStatement) String(indent int) string {
@@ -130,14 +130,7 @@ func (p *Part) String(indent int) string {
 	if len(p.Indices) > 0 {
 		expressions := make([]string, len(p.Indices))
 		for i, expression := range p.Indices {
-			var indexOut string
-			switch {
-			case expression.ExpressionIndex != nil:
-				indexOut = fmt.Sprintf("[%s]", expression.ExpressionIndex.String(0))
-			case expression.FilterIndex != nil:
-				indexOut = fmt.Sprintf("```\n%s```", expression.FilterIndex.String(indent + 1))
-			}
-			expressions[i] = indexOut
+			expressions[i] = expression.String(0)
 		}
 		part += strings.Join(expressions, "")
 	}
@@ -150,6 +143,67 @@ func (j *JSONPath) String(indent int) string {
 		parts[i] = part.String(0)
 	}
 	return strings.Join(parts, ".")
+}
+
+func (j *JSONPathFactor) String(indent int) string {
+	parts := make([]string, len(j.Parts)+1)
+	switch {
+	case j.RootProperty != nil:
+		parts[0] = j.RootProperty.String(0)
+	case j.RootJSON != nil:
+		parts[0] = j.RootJSON.String(0)
+	case j.RootString != nil:
+		parts[0] = j.RootString.String(0)
+	}
+
+	for i, part := range j.Parts {
+		parts[i+1] = part.String(0)
+	}
+	return strings.Join(parts, ".")
+}
+
+func (jp *JSONPart) String(indent int) string {
+	part := jp.JSON.String(0)
+	if len(jp.Indices) > 0 {
+		expressions := make([]string, len(jp.Indices))
+		for i, expression := range jp.Indices {
+			expressions[i] = expression.String(0)
+		}
+		part += strings.Join(expressions, "")
+	}
+	return part
+}
+
+func (slp *StringLitPart) String(indent int) string {
+	var b strings.Builder
+	var part string
+	encoder := json.NewEncoder(&b)
+	encoder.SetEscapeHTML(false)
+	if err := encoder.Encode(*slp.StringLit); err != nil {
+		panic(err)
+	} else {
+		part = strings.TrimSuffix(b.String(), "\n")
+	}
+
+	if len(slp.Indices) > 0 {
+		expressions := make([]string, len(slp.Indices))
+		for i, expression := range slp.Indices {
+			expressions[i] = expression.String(0)
+		}
+		part += strings.Join(expressions, "")
+	}
+	return part
+}
+
+func (i *Index) String(indent int) string {
+	var indexOut string
+	switch {
+	case i.ExpressionIndex != nil:
+		indexOut = fmt.Sprintf("[%s]", i.ExpressionIndex.String(0))
+	case i.FilterIndex != nil:
+		indexOut = fmt.Sprintf("```\n%s```", i.FilterIndex.String(indent+1))
+	}
+	return indexOut
 }
 
 func (r *ReturnStatement) String(indent int) string {
@@ -197,10 +251,10 @@ func (fb *FunctionBody) String(indent int) string {
 	for i, param := range fb.Parameters {
 		params[i] = param.String(0)
 	}
-	return fmt.Sprintf("(%s)\n%send", strings.Join(params, ", "), fb.Block.String(indent + 1))
+	return fmt.Sprintf("(%s)\n%send", strings.Join(params, ", "), fb.Block.String(indent+1))
 }
 
-func termString(indent int, factor indentString, next []indentString) string {
+func termString(indent int, factor IndentString, next []IndentString) string {
 	expression := fmt.Sprintf("%s%s", tabs(indent), factor.String(0))
 	if len(next) > 0 {
 		nextStrs := make([]string, len(next))
@@ -212,12 +266,12 @@ func termString(indent int, factor indentString, next []indentString) string {
 	return expression
 }
 
-func precString(operator eval.Operator, factor indentString) string {
+func precString(operator eval.Operator, factor IndentString) string {
 	return fmt.Sprintf("%s %s", operator.String(), factor.String(0))
 }
 
 func (e *Expression) String(indent int) string {
-	next := make([]indentString, len(e.Right))
+	next := make([]IndentString, len(e.Right))
 	for i, n := range e.Right {
 		next[i] = n
 	}
@@ -229,7 +283,7 @@ func (p5 *Prec5) String(indent int) string {
 }
 
 func (p5t *Prec5Term) String(indent int) string {
-	next := make([]indentString, len(p5t.Right))
+	next := make([]IndentString, len(p5t.Right))
 	for i, n := range p5t.Right {
 		next[i] = n
 	}
@@ -241,7 +295,7 @@ func (p4 *Prec4) String(indent int) string {
 }
 
 func (p4t *Prec4Term) String(indent int) string {
-	next := make([]indentString, len(p4t.Right))
+	next := make([]IndentString, len(p4t.Right))
 	for i, n := range p4t.Right {
 		next[i] = n
 	}
@@ -253,7 +307,7 @@ func (p3 *Prec3) String(indent int) string {
 }
 
 func (p3t *Prec3Term) String(indent int) string {
-	next := make([]indentString, len(p3t.Right))
+	next := make([]IndentString, len(p3t.Right))
 	for i, n := range p3t.Right {
 		next[i] = n
 	}
@@ -265,7 +319,7 @@ func (p2 *Prec2) String(indent int) string {
 }
 
 func (p2t *Prec2Term) String(indent int) string {
-	next := make([]indentString, len(p2t.Right))
+	next := make([]IndentString, len(p2t.Right))
 	for i, n := range p2t.Right {
 		next[i] = n
 	}
@@ -277,7 +331,7 @@ func (p1 *Prec1) String(indent int) string {
 }
 
 func (p1t *Prec1Term) String(indent int) string {
-	next := make([]indentString, len(p1t.Right))
+	next := make([]IndentString, len(p1t.Right))
 	for i, n := range p1t.Right {
 		next[i] = n
 	}
@@ -297,19 +351,8 @@ func (f *Factor) String(indent int) string {
 		fac = fmt.Sprintf("%v", bool(*f.Boolean))
 	case f.Number != nil:
 		fac = fmt.Sprintf("%v", *f.Number)
-	case f.StringLit != nil:
-		var b strings.Builder
-		encoder := json.NewEncoder(&b)
-		encoder.SetEscapeHTML(false)
-		if err := encoder.Encode(*f.StringLit); err != nil {
-			panic(err)
-		} else {
-			fac = strings.TrimSuffix(b.String(), "\n")
-		}
-	case f.JSONPath != nil:
-		fac = f.JSONPath.String(0)
-	case f.JSON != nil:
-		fac = f.JSON.String(0)
+	case f.JSONPathFactor != nil:
+		fac = f.JSONPathFactor.String(0)
 	case f.FunctionCall != nil:
 		fac = f.FunctionCall.String(0)
 	case f.MethodCall != nil:

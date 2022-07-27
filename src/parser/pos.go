@@ -36,6 +36,7 @@ func (p1 *Prec1) GetPos() lexer.Position { return p1.Pos }
 func (p1t *Prec1Term) GetPos() lexer.Position { return p1t.Pos }
 func (p0 *Prec0) GetPos() lexer.Position { return p0.Pos }
 func (f *Factor) GetPos() lexer.Position { return f.Pos }
+func (j *JSONPathFactor) GetPos() lexer.Position { return j.Pos }
 func (j *JSON) GetPos() lexer.Position { return j.Pos }
 func (n *Null) GetPos() lexer.Position { return lexer.Position{} }
 func (b *Boolean) GetPos() lexer.Position { return lexer.Position{} }

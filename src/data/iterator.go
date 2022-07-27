@@ -3,7 +3,7 @@ package data
 import (
 	"container/heap"
 	"fmt"
-	"github.com/RHUL-CS-Projects/IndividualProject_2021_Jakab.Zeller/src/errors"
+	"github.com/andygello555/src/errors"
 	"strings"
 )
 
@@ -62,8 +62,8 @@ func Iterate(result *Value) (err error, it *Iterator) {
 	defer func() {
 		if p := recover(); p != nil {
 			switch p.(type) {
-			case struct { errors.ProtoSttpError }:
-				err = p.(struct { errors.ProtoSttpError })
+			case struct{ errors.ProtoSttpError }:
+				err = p.(struct{ errors.ProtoSttpError })
 			default:
 				err = fmt.Errorf("%v", p)
 			}

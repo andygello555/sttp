@@ -1,19 +1,19 @@
 // Standard recursive n-th fibonacci function definition
-function fib(n)
-    if n < 2 then
+fun fib(n)
+    is n < 2?
         return n;
-    end;
+    end
     $print(n - 1, n - 2);
     return $fib(n - 1) + $fib(n - 2);
-end;
+end
 
 a = {"n": 7};
 
 // Here we define a similar fibonacci function as above but within an object.
-function a.fib()
-    if self.n < 2 then
+fun a.fib()
+    is self.n < 2?
         return self.n;
-    end;
+    end
 
     // We create two new object that are effectively copies of a but with the n - 1 and n - 2. We then recursively call
     // the fib function and store it in fib1 and fib2 variables.
@@ -27,7 +27,7 @@ function a.fib()
     $print(b.n, c.n);
 
     return fib1 + fib2;
-end;
+end
 
 fib7 = $fib(7);
 $print("fib7 =", fib7);
