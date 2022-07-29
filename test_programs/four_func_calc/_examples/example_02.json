@@ -1,5 +1,0 @@
-{
-  "script": "let a=5;1+((a+2)*2)",
-  "results": [0, 15],
-  "errors": []
-}
