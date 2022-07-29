@@ -1,140 +1,27 @@
 <!-- omit in toc -->
-# Individual Project 2021 - Jakab Zeller
+# `sttp`
 
 - [Abstract](#abstract)
-- [Submission directory structure](#submission-directory-structure)
-  - [How to run `reports/full/blog_api/`](#how-to-run-reportsfullblog_api)
-    - [`reports/full/blog_api/blog_api_server/`](#reportsfullblog_apiblog_api_server)
-    - [`reports/full/blog_api/blog_api_tests/`](#reportsfullblog_apiblog_api_tests)
-- [`sttp`](#sttp)
+- [Source code](#source-code)
   - [Libraries/Code used](#librariescode-used)
   - [How to use](#how-to-use)
     - [Prerequisites](#prerequisites)
-    - [Running from the `src/` directory](#running-from-the-src-directory)
+    - [Running from within the repository](#running-from-within-the-repository)
     - [Building an executable and running it](#building-an-executable-and-running-it)
     - [Examples](#examples)
   - [Running tests](#running-tests)
     - [Debugging info](#debugging-info)
     - [Benchmarks](#benchmarks)
-- [Test Programs](#test-programs)
-  - [Four Function Calculator](#four-function-calculator)
+- [Echo-chamber Web API](#echo-chamber-web-api)
     - [Prerequisites](#prerequisites-1)
-    - [Executing a file/input](#executing-a-fileinput)
-    - [Interactive mode](#interactive-mode)
-  - [Thompsons](#thompsons)
-    - [Prerequisites](#prerequisites-2)
     - [How to use](#how-to-use-1)
-  - [Echo-chamber Web API](#echo-chamber-web-api)
-    - [Prerequisites](#prerequisites-3)
-    - [How to use](#how-to-use-2)
 
 ## Abstract
 
 The idea for creating a simple scripting language for the development and testing of Web APIs came from my use, reliance and creation of such APIs in my work life as well as in my spare time. I’ve often found the available tools for such development (such as Postman or Insomnia) quite limited when it comes to control-flow before or after requesting a resource from an API. Thus, the idea of a scripting language for this very purpose came about.
 The language will include variable declaration/definition, control-flow (if and for statements), function definitions, short builtin functions for every HTTP method, and JSON manipulation via json-path. The language will also be dynamically typed with values being stored as JSON parsable strings. My hopes are that this will make working with JSON Web APIs (the standard when it comes to popular Web APIs) easier and more intuitive. This means that the only supported “types” will be strings, integers, floats, JSON objects and lists.
 
-## Submission directory structure
-
-```
-IndividualProject_2021_Jakab.Zeller
-├── README.md - Contains information on how to run sttp and the test
-│               programs
-├── COPYING - GPL3.0: does not clash with any 3rd party libraries
-│
-├── documents - PDF versions of the reports found in reports/
-│   ├── context_free_languages_parser_generators.pdf
-│   ├── derivations_idioms_associativity_priority.pdf
-│   ├── full.pdf
-│   ├── interim.pdf
-│   ├── project_plan.pdf
-│   └── specification_for_language.pdf
-│
-├── reports - Reports written towards my final project
-│   ├── context_free_grammars_and_manual_procedures - 1st report on theory,
-│   │                                                 which forms part of
-│   │                                                 my interim report
-│   ├── derivations_idioms_associativity_priority - 2nd report on theory,
-│   │                                               which forms part of
-│   │                                               my interim report
-│   ├── full - This report
-│   │   └── blog_api
-│   │       ├── blog_api_server - The REST API server used in part 1
-│   │       └── blog_api_tests - The sttp test suite for the above server
-│   │           ├── 01_topics
-│   │           ├── 02_blogs
-│   │           ├── 03_comments
-│   │           └── 04_cleanup
-│   ├── interim - Interim report
-│   └── specification_for_language - The specification for sttp
-│
-├── src - The source code for sttp
-│   ├── _examples - The examples used to test sttp (included within the
-│   │   │           appendix of this report)
-│   │   ├── echo_chamber - The echo chamber web API used during testing
-│   │   │                  (copy from test_programs/test-web-api/)
-│   │   ├── example_01
-│   │   ├── example_02
-│   │   ├── example_03
-│   │   ├── example_04
-│   │   ├── example_05
-│   │   ├── example_06
-│   │   ├── example_07
-│   │   ├── example_08
-│   │   ├── example_09
-│   │   ├── example_10
-│   │   ├── example_11
-│   │   ├── example_12
-│   │   ├── example_13
-│   │   ├── example_14
-│   │   ├── example_15
-│   │   └── test_suites - Examples for testing test suites
-│   │       ├── example_01
-│   │       └── example_02
-│   ├── data
-│   ├── errors
-│   ├── eval
-│   └── parser
-│
-└── test_programs - The test programs written towards my final project
-    ├── four_func_calc - A four-function calculator
-    ├── test-web-api - The echo chamber web API used to test sttp
-    └── thompsons - The regex minimiser
-```
-
-### How to run `reports/full/blog_api/`
-
-This directory contains two sub-directories:
-
-- `blog_api_server`: a Django REST web API that will be tested by the test suite contained within `blog_api_tests`. The implementation of this will not be discussed.
-- `blog_api_tests`: the `sttp` test suite used to test the web API.
-
-#### `reports/full/blog_api/blog_api_server/`
-
-How to install and run the web server (UNIX based console commands).
-
-```shell
-cd reports/full/blog_api/blog_api_server/
-# Create a python3.10 virtual environment and activate it
-python3.10 -m venv .venv
-source .venv/bin/activate
-# Install dependencies
-pip3 install -r requirements.txt
-# Will start a gunicorn web server with 4 workers, each with 4 threads
-gunicorn --reload --threads 4 -w 4 --log-level debug blog_api_server.wsgi
-```
-
-#### `reports/full/blog_api/blog_api_tests/`
-
-To run the test suite for `blog_api_server` it is recommended that you build an `sttp` executable. This can be done by following [this](#building-an-executable-and-running-it) section. After this, copy or move the executable to `reports/full/blog_api/`, then run the tests using the following command:
-
-```shell
-cd reports/full/blog_api/
-./sttp blog_api_tests
-```
-
-## `sttp`
-
-*Located in: `src/`*
+## Source code
 
 ### Libraries/Code used
 
@@ -148,7 +35,7 @@ cd reports/full/blog_api/
 
 ### How to use
 
-You can either run the `sttp` interpreter from the `src/` directory, or by creating an executable that can be run later. You can provide the interpreter with the following inputs:
+You can either run the `sttp` interpreter from within the repository, or by creating an executable that can be run later. You can provide the interpreter with the following inputs:
 
 - Interactively using the new REPL mode. This is entered by not supplying any arguments.
 - An `.sttp` file containing `sttp` source code.
@@ -159,7 +46,7 @@ You can either run the `sttp` interpreter from the `src/` directory, or by creat
 
 You must have `go 1.17` (or later) installed.
 
-#### Running from the `src/` directory
+#### Running from within the repository
 
 `go run . [ FILE | DIRECTORY | INPUT ]`
 
@@ -172,7 +59,7 @@ go build -o sttp
 
 #### Examples
 
-Examples for `sttp` can be found within the `src/_examples` directory. Each example is stored within its own directory holding the following files:
+Examples for `sttp` can be found within the `_examples/` directory. Each example is stored within its own directory holding the following files:
 
 - `*.sttp` file (required): containing the source code for the example.
 - `*.stdout` file (optional): containing the expected stdout output for the example.
@@ -180,7 +67,7 @@ Examples for `sttp` can be found within the `src/_examples` directory. Each exam
 - `*.tests` file (optional): containing the expected test output.
 - `*.err` file (optional): containing the expected errors that bubble up to the bottommost stack frame during execution.
 
-Some of these examples utilise the echo-chamber web API. The web server for which is located within: `src/_examples/echo_chamber` directory. The usage of which can be found [here](#echo-chamber-web-api).<br/>
+Some of these examples utilise the echo-chamber web API. The web server for which is located within: `_examples/echo_chamber/` directory. The usage of which can be found [here](#echo-chamber-web-api).<br/>
 
 ### Running tests
 
@@ -206,63 +93,9 @@ go test -run=XXX -bench="Benchmark(No)?Batch" -benchtime=5x -cpu=8 -count=3
 
 As with [tests](#running-tests), this can chew through **a lot** of sockets on your system, so it is advised you tinker around with the `-benchtime` and `-count` flags.
 
-## Test Programs
+## Echo-chamber Web API
 
-There are instructions on how to run each program in their respective sections. These instructions require you to be in the test program's respective directory.
-
-### Four Function Calculator
-
-*Located in: `test_programs/four_func_calc/`*<br/>
-
-A simple four function calculator which uses the [participle](https://github.com/alecthomas/participle) parser to parse and evaluate simple mathematical expressions. The following is an example script.
-
-```
-let a=3*3
-let b=a*2;(a+b)/2
-clear a
-let a=b*2
-a+b
-```
-
-The output to this example would be a list of numbers representing the output of each statement. To run the interpreter you can use the following options:
-
-#### Prerequisites
-
-You must have `go 1.17` installed.
-
-#### Executing a file/input
-
-`go run . [<FILE> | <INPUT>]`
-
-#### Interactive mode
-
-`go run .`
-
-### Thompsons
-
-*Located in: `test_programs/thompsons/`*<br/>
-
-A parser for simple regular expressions which outputs minimised DFAs. The parser first produces a NFA using Thompson's construction, then converts this to a DFA using the Subset construction, and finally minimises this DFA using Dead State minimisation.<br/>
-
-Behind the scenes this uses [participle](https://github.com/alecthomas/participle) to parse the regular expression and the [go-graphviz](https://github.com/goccy/go-graphviz) library to render the graphs to PNG files.
-
-#### Prerequisites
-
-You must have `go 1.17` installed.
-
-#### How to use
-
-`go run . <REGEX>`
-
-This will parse the given input regex and produce the following files (in the current directory):
-
-- `thompsons.png`: the graph after parsing the regular expression to an NFA using Thompson's construction
-- `subset.png`: the graph after carrying out the Subset construction on the NFA
-- `deadstate.png`: the graph after minimising the DFA using Dead State minimisation
-
-### Echo-chamber Web API
-
-*Located in: `test_programs/test-web-api/`*<br/>
+*Located in: `_examples/echo_chamber/`*<br/>
 
 A simple node.js based web API server which echoes back information about any HTTP request made to it. This was created in order to have a web-API for testing `sttp` with. If the query param `format=html` is provided in the request then the response will be a mirror of the JSON response but will be returned as HTML. The server is forked 6 times creating 6 worker processes to create a rudimentary form of load balancing. This is in the hope that multiple requests can be handled at once.<br/>
 
