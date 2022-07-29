@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/alecthomas/participle/v2"
 	"github.com/alecthomas/participle/v2/lexer"
-	"github.com/andygello555/src/eval"
+	"github.com/andygello555/eval"
 	"strings"
 )
 

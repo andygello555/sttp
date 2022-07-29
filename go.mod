@@ -1,4 +1,4 @@
-module github.com/andygello555/src
+module github.com/andygello555
 
 go 1.17
 

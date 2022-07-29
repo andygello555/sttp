@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/andygello555/src/data"
+	"github.com/andygello555/data"
 	"github.com/atomicgo/cursor"
 	"github.com/pkg/term"
 	"strconv"

@@ -3,8 +3,8 @@ package main
 import (
 	"container/heap"
 	"fmt"
-	"github.com/andygello555/src/data"
-	"github.com/andygello555/src/parser"
+	"github.com/andygello555/data"
+	"github.com/andygello555/parser"
 	"strings"
 	"sync"
 )
