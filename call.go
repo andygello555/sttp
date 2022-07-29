@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/andygello555/src/data"
-	"github.com/andygello555/src/errors"
-	"github.com/andygello555/src/parser"
+	"github.com/andygello555/data"
+	"github.com/andygello555/errors"
+	"github.com/andygello555/parser"
 	"strings"
 )
 

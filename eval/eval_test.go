@@ -3,8 +3,9 @@ package eval
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/andygello555/src/data"
-	"github.com/andygello555/src/errors"
+	"github.com/andygello555/data"
+	"github.com/andygello555/errors"
+	"os"
 	"os/exec"
 	"syscall"
 	"testing"
@@ -588,12 +589,14 @@ func TestCast(t *testing.T) {
 
 func TestMethod_Call(t *testing.T) {
 	// Start the echo chamber web server
+	dir, err := os.Getwd()
+	fmt.Println(dir)
 	echoChamber := exec.Command(EchoChamberCmd, EchoChamberSource)
 	echoChamber.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	if err := echoChamber.Start(); err != nil {
 		panic(fmt.Errorf("could not start echo chamber: \"%s\"", err.Error()))
 	}
-	time.Sleep(150 * time.Millisecond)
+	time.Sleep(250 * time.Millisecond)
 
 	for testNo, test := range []struct {
 		args   []*data.Value

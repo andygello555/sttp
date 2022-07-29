@@ -3,10 +3,10 @@ package eval
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/andygello555/data"
+	"github.com/andygello555/errors"
 	"github.com/andygello555/gotils/slices"
 	str "github.com/andygello555/gotils/strings"
-	"github.com/andygello555/src/data"
-	"github.com/andygello555/src/errors"
 	"math"
 	"math/big"
 	"regexp"

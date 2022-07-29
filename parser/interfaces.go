@@ -4,8 +4,8 @@ import (
 	"container/heap"
 	"fmt"
 	"github.com/alecthomas/participle/v2/lexer"
-	"github.com/andygello555/src/data"
-	"github.com/andygello555/src/errors"
+	"github.com/andygello555/data"
+	"github.com/andygello555/errors"
 	"io"
 )
 
@@ -17,18 +17,18 @@ type ASTNode interface {
 
 // VM acts as an interface for the overarching state of the VM used for evaluation of programs.
 type VM interface {
-	// Eval will parse and evaluate the given sttp script as a string. Filename, can also be given to give errors more 
+	// Eval will parse and evaluate the given sttp script as a string. Filename, can also be given to give errors more
 	// context.
 	Eval(filename, s string) (err error, result *data.Value)
 	// GetCallStack will return the parser.CallStack bound to the VM.
 	GetCallStack() CallStack
 	// errors.VM also implement the GetPos and CallStackValue instance methods.
 	errors.VM
-	// SetPos will set the position state to the given position. This is used to give context to the VM, so should be 
-	// used whenever possible (within reason) to give errors the best possible context. 
+	// SetPos will set the position state to the given position. This is used to give context to the VM, so should be
+	// used whenever possible (within reason) to give errors the best possible context.
 	SetPos(position lexer.Position)
-	// GetScope will return a pointer to an integer representing the current scope of execution. This is incremented 
-	// whenever a FunctionCall is started to be evaluated, and decremented whenever a FunctionCall has stopped 
+	// GetScope will return a pointer to an integer representing the current scope of execution. This is incremented
+	// whenever a FunctionCall is started to be evaluated, and decremented whenever a FunctionCall has stopped
 	// evaluation.
 	GetScope() *int
 	// CheckTestResults checks whether there are TestResults to add a result to.
@@ -68,7 +68,7 @@ type VM interface {
 
 // CallStack is implemented by the call stack that is used within the VM.
 type CallStack interface {
-	// Call will add a new stack frame to the call stack with the given fields. It will also create a new Heap 
+	// Call will add a new stack frame to the call stack with the given fields. It will also create a new Heap
 	// accordingly with the given computed arguments as values on the Heap.
 	Call(caller *FunctionCall, current *FunctionDefinition, vm VM, args ...*data.Value) error
 	// Return will remove the top frame from the call stack and return it.

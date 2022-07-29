@@ -3,7 +3,7 @@ package data
 import (
 	"container/heap"
 	"fmt"
-	"github.com/andygello555/src/errors"
+	"github.com/andygello555/errors"
 	"strings"
 )
 

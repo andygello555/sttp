@@ -2,7 +2,7 @@ package data
 
 import (
 	"encoding/json"
-	"github.com/andygello555/src/errors"
+	"github.com/andygello555/errors"
 	"reflect"
 	"strconv"
 	"strings"

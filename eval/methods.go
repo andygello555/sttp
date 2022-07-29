@@ -2,8 +2,8 @@ package eval
 
 import (
 	"fmt"
-	"github.com/andygello555/src/data"
-	"github.com/andygello555/src/errors"
+	"github.com/andygello555/data"
+	"github.com/andygello555/errors"
 	"github.com/go-resty/resty/v2"
 	"golang.org/x/net/html"
 	"net/http"

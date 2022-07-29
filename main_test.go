@@ -3,9 +3,9 @@ package main
 import (
 	"container/heap"
 	"fmt"
-	"github.com/andygello555/src/data"
-	"github.com/andygello555/src/eval"
-	"github.com/andygello555/src/parser"
+	"github.com/andygello555/data"
+	"github.com/andygello555/eval"
+	"github.com/andygello555/parser"
 	"io/fs"
 	"io/ioutil"
 	"os"

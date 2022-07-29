@@ -2,7 +2,7 @@ package parser
 
 import (
 	"fmt"
-	"github.com/andygello555/src/eval"
+	"github.com/andygello555/eval"
 	"testing"
 )
 
